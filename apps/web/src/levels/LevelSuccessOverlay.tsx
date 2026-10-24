@@ -1,4 +1,4 @@
-import type { LevelDefinition } from '@circuits/shared';
+import type { LevelDefinition } from '@circuits/shared/levels';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useState, type PointerEvent as ReactPointerEvent } from 'react';
 

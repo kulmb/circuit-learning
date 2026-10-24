@@ -62,4 +62,45 @@ describe('App', () => {
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/admin');
   });
+
+  it('opens the sandbox from the map and comes back to the map', async () => {
+    render(<App />);
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: /jouer/i }));
+    fireEvent.pointerDown(
+      await screen.findByRole('button', { name: /jouer en invité/i }),
+    );
+
+    fireEvent.pointerDown(
+      await screen.findByRole('button', { name: /atelier libre/i }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Atelier libre' }),
+    ).toBeInTheDocument();
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: /retour/i }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Chapitre 1 : La lumière' }),
+    ).toBeInTheDocument();
+  });
+
+  it('loads the parent settings behind a small question', async () => {
+    render(<App />);
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: /réglages parents/i }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Réglages parents' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Petite question' }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/parents');
+  });
 });

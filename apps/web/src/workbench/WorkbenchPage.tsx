@@ -4,11 +4,12 @@ import {
   starsForHints,
   type CircuitComponent,
   type CircuitSimulation,
-  type LevelDefinition,
   type Vec2,
 } from '@circuits/shared';
+import type { LevelDefinition } from '@circuits/shared/levels';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -19,6 +20,10 @@ import {
 } from 'react';
 
 import { Zap, ZapCharacter, type ZapVariant } from '../components/Zap';
+import {
+  vibrateShortCircuit,
+  vibrateSuccess,
+} from '../feedback/haptics';
 import { useLayout } from '../layout/LayoutContext';
 import { LevelSuccessOverlay } from '../levels/LevelSuccessOverlay';
 import { useLevelSession } from '../levels/useLevelSession';
@@ -99,7 +104,7 @@ interface Status {
   tone: 'success' | 'danger' | 'info' | 'neutral';
 }
 
-export function WorkbenchPage({
+export const WorkbenchPage = memo(function WorkbenchPage({
   onBack,
   level,
   onNextLevel,
@@ -310,6 +315,7 @@ export function WorkbenchPage({
       if (lastFeedbackRef.current !== 'short') {
         lastFeedbackRef.current = 'short';
         setExpression('alert');
+        vibrateShortCircuit();
         narration.say('zap.short');
       }
       return;
@@ -354,6 +360,7 @@ export function WorkbenchPage({
     completedRef.current = true;
     setSaveError(false);
     playSuccessFanfare();
+    vibrateSuccess();
     const fallbackStars = starsForHints(levelSession.hintsUsed);
 
     void levelSession
@@ -430,34 +437,37 @@ export function WorkbenchPage({
     );
   }
 
-  function acquirePointer(pointerId: number): boolean {
+  const acquirePointer = useCallback((pointerId: number): boolean => {
     if (activePointerRef.current !== null) {
       return false;
     }
 
     activePointerRef.current = pointerId;
     return true;
-  }
+  }, []);
 
-  function releasePointer(pointerId: number): void {
+  const releasePointer = useCallback((pointerId: number): void => {
     if (activePointerRef.current === pointerId) {
       activePointerRef.current = null;
     }
-  }
+  }, []);
 
-  function isOverTrash(clientX: number, clientY: number): boolean {
-    const rect = trashRef.current?.getBoundingClientRect();
-    if (!rect) {
-      return false;
-    }
+  const isOverTrash = useCallback(
+    (clientX: number, clientY: number): boolean => {
+      const rect = trashRef.current?.getBoundingClientRect();
+      if (!rect) {
+        return false;
+      }
 
-    return (
-      clientX >= rect.left &&
-      clientX <= rect.right &&
-      clientY >= rect.top &&
-      clientY <= rect.bottom
-    );
-  }
+      return (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      );
+    },
+    [],
+  );
 
   function computePlacement(
     clientX: number,
@@ -974,7 +984,7 @@ export function WorkbenchPage({
       ) : null}
     </div>
   );
-}
+});
 
 function activateButton(
   event: ReactPointerEvent<HTMLButtonElement>,

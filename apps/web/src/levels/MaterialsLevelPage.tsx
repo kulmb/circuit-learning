@@ -3,10 +3,10 @@ import {
   createWire,
   simulateCircuit,
   starsForHints,
-  type LevelDefinition,
   type MaterialCardDefinition,
   type MaterialVisualKind,
 } from '@circuits/shared';
+import type { LevelDefinition } from '@circuits/shared/levels';
 import {
   useEffect,
   useMemo,
@@ -20,6 +20,7 @@ import { getText } from '../narration/fr';
 import type { ZapExpression } from '../narration/hints';
 import { unlockNarration } from '../narration/narrationService';
 import { useNarration } from '../narration/useNarration';
+import { vibrateSuccess } from '../feedback/haptics';
 import { playSuccessFanfare, unlockAudio } from '../workbench/audio';
 import { LevelSuccessOverlay } from './LevelSuccessOverlay';
 import { useLevelSession } from './useLevelSession';
@@ -130,6 +131,7 @@ export function MaterialsLevelPage({
     completedRef.current = true;
     setSaveError(false);
     playSuccessFanfare();
+    vibrateSuccess();
     setExpression('content');
     narration.say('zap.successGeneric');
     const fallbackStars = starsForHints(session.hintsUsed);

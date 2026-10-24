@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type {
-  AttemptStart,
-  LevelDefinition,
-  PlayerProgress,
-} from '@circuits/shared';
+import type { AttemptStart, PlayerProgress } from '@circuits/shared';
+import type { LevelDefinition } from '@circuits/shared/levels';
 
 import { useProgressRepository } from '../progress/ProgressContext';
 

@@ -11,6 +11,7 @@ export class Mp3NarrationService implements NarrationService {
   private manifestPromise: Promise<Set<string>> | null = null;
   private lastTextId: string | null = null;
   private muted = false;
+  private rate = 1;
   private currentAudio: HTMLAudioElement | null = null;
   private pendingResolve: (() => void) | null = null;
 
@@ -63,6 +64,7 @@ export class Mp3NarrationService implements NarrationService {
       this.pendingResolve = () => finish();
 
       const audio = new Audio(`${this.audioBaseUrl}${textId}.mp3`);
+      audio.playbackRate = this.rate;
       this.currentAudio = audio;
       audio.onended = () => finish();
       audio.onerror = () => finish(new RecordingUnavailableError(textId));
@@ -86,6 +88,14 @@ export class Mp3NarrationService implements NarrationService {
     this.muted = muted;
     if (muted) {
       this.stop();
+    }
+  }
+
+  setRate(rate: number): void {
+    // The speech default is 0.9, while recordings play at their normal speed.
+    this.rate = Math.min(1.4, Math.max(0.7, rate / 0.9));
+    if (this.currentAudio !== null) {
+      this.currentAudio.playbackRate = this.rate;
     }
   }
 

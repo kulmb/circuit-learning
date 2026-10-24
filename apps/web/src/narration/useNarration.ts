@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { setAudioMuted } from '../workbench/audio';
+import { setSoundEnabled } from '../settings/preferences';
 import { getText } from './fr';
-import {
-  isNarrationMuted,
-  narrationService,
-  setNarrationMuted,
-} from './narrationService';
+import { isNarrationMuted, narrationService } from './narrationService';
 
 interface NarrationState {
   textId: string | null;
@@ -69,8 +65,7 @@ export function useNarration() {
 
   const toggleMute = useCallback(() => {
     const next = !isNarrationMuted();
-    setNarrationMuted(next);
-    setAudioMuted(next);
+    setSoundEnabled(!next);
     setMuted(next);
 
     if (next) {

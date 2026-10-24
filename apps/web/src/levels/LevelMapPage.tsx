@@ -1,11 +1,13 @@
 import {
-  CHAPTER_1_LEVELS,
-  CHAPTER_1_TITLE_ID,
   avatarEmoji,
-  type LevelDefinition,
   type LevelProgress,
   type PlayerProgress,
 } from '@circuits/shared';
+import {
+  CHAPTER_1_LEVELS,
+  CHAPTER_1_TITLE_ID,
+  type LevelDefinition,
+} from '@circuits/shared/levels';
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { ZapCharacter } from '../components/Zap';

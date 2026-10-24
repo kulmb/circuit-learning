@@ -8,6 +8,7 @@ import {
   getLevelById,
   getNextLevel,
 } from './chapterLight';
+import { CHAPTER_1_LEVEL_METADATA } from './metadata';
 import { starsForHints } from './stars';
 import { evaluateLevelSuccess } from './success';
 
@@ -43,6 +44,21 @@ function wire(id: string, from: ReturnType<typeof ref>, to: ReturnType<typeof re
 }
 
 describe('chapter 1 data', () => {
+  it('keeps the lightweight metadata in sync with the level definitions', () => {
+    expect(CHAPTER_1_LEVEL_METADATA).toHaveLength(CHAPTER_1_LEVELS.length);
+
+    for (const [index, level] of CHAPTER_1_LEVELS.entries()) {
+      const metadata = CHAPTER_1_LEVEL_METADATA[index];
+
+      expect(metadata).toEqual({
+        id: level.id,
+        order: level.order,
+        nextLevelId: level.nextLevelId,
+        vocabularyIds: level.vocabularyIds,
+      });
+    }
+  });
+
   it('has unique ids, ordered levels and coherent next links', () => {
     const ids = CHAPTER_1_LEVELS.map((level) => level.id);
 

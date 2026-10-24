@@ -1,4 +1,4 @@
-import { CHAPTER_1_LEVELS } from '@circuits/shared';
+import { CHAPTER_1_LEVELS } from '@circuits/shared/levels';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import mongoose from 'mongoose';

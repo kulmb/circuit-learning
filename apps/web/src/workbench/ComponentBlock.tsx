@@ -1,4 +1,5 @@
 import type { CircuitComponent, ComponentState } from '@circuits/shared';
+import { memo } from 'react';
 
 import { RealisticArt, SymbolArt, SymbolBadge } from './ComponentArt';
 import {
@@ -22,7 +23,7 @@ export interface ComponentBlockProps {
   showTerminals?: boolean;
 }
 
-export function ComponentBlock({
+export const ComponentBlock = memo(function ComponentBlock({
   component,
   state,
   selected,
@@ -162,4 +163,4 @@ export function ComponentBlock({
         : null}
     </g>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { getLevelById } from '@circuits/shared';
+import { getLevelById } from '@circuits/shared/levels';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -283,6 +283,68 @@ describe('workbench interactions', () => {
     expect(switchComponent?.type === 'switch' ? switchComponent.closed : null).toBe(
       true,
     );
+  });
+
+  it('vibrates twice when the battery is shorted', () => {
+    const vibrate = vi.fn();
+    Object.defineProperty(window.navigator, 'vibrate', {
+      configurable: true,
+      writable: true,
+      value: vibrate,
+    });
+
+    try {
+      render(<WorkbenchPage onBack={() => undefined} />);
+      getSvg();
+
+      act(() => {
+        useWorkbenchStore.getState().addWire(
+          { componentId: 'battery-1', terminalId: 'positive' },
+          { componentId: 'battery-1', terminalId: 'negative' },
+        );
+      });
+
+      expect(vibrate).toHaveBeenCalledWith([45, 60, 45]);
+    } finally {
+      Object.defineProperty(window.navigator, 'vibrate', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+    }
+  });
+
+  it('vibrates once when a level succeeds', async () => {
+    const vibrate = vi.fn();
+    Object.defineProperty(window.navigator, 'vibrate', {
+      configurable: true,
+      writable: true,
+      value: vibrate,
+    });
+
+    const level = getLevelById('light-01');
+    if (!level) throw new Error('Level missing');
+
+    try {
+      render(<WorkbenchPage level={level} onBack={() => undefined} />);
+      getSvg();
+
+      tap(getTerminal('battery-1', 'positive'), 100, 100);
+      tap(getTerminal('bulb-1', 'a'), 200, 100);
+      tap(getTerminal('bulb-1', 'b'), 260, 100);
+      tap(getTerminal('battery-1', 'negative'), 100, 200);
+
+      expect(
+        await screen.findByRole('heading', { name: getText('success.title') }),
+      ).toBeInTheDocument();
+      expect(vibrate).toHaveBeenCalledWith(25);
+    } finally {
+      Object.defineProperty(window.navigator, 'vibrate', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+    }
   });
 
   it('fits tiny screens, zooms with the wheel and restores the full board', async () => {

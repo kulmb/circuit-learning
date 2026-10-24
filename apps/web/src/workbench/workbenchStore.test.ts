@@ -1,4 +1,4 @@
-import { getLevelById } from '@circuits/shared';
+import { getLevelById } from '@circuits/shared/levels';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createSandboxStarter } from './sandbox';

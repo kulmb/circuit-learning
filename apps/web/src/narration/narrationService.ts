@@ -41,6 +41,11 @@ class PreferredNarrationService implements NarrationService {
     this.speech.setMuted(muted);
   }
 
+  setRate(rate: number): void {
+    this.recordings.setRate(rate);
+    this.speech.setRate(rate);
+  }
+
   unlock(): void {
     this.speech.unlock();
     this.recordings.unlock();
@@ -67,4 +72,8 @@ export function setNarrationMuted(next: boolean): void {
 
 export function isNarrationMuted(): boolean {
   return muted;
+}
+
+export function setNarrationRate(rate: number): void {
+  narrationService.setRate(rate);
 }

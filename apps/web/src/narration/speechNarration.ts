@@ -39,6 +39,7 @@ export function pickFrenchVoice(
 
 export class SpeechNarrationService implements NarrationService {
   private muted = false;
+  private rate = 0.9;
   private lastTextId: string | null = null;
   private pendingResolve: (() => void) | null = null;
   private audioContext: AudioContext | null = null;
@@ -122,7 +123,7 @@ export class SpeechNarrationService implements NarrationService {
       const utterance = new Utterance(text);
       utterance.lang = voice.lang || 'fr-FR';
       utterance.voice = voice;
-      utterance.rate = 0.9;
+      utterance.rate = this.rate;
       utterance.pitch = 1.1;
       utterance.volume = 1;
       utterance.onend = this.pendingResolve;
@@ -147,6 +148,10 @@ export class SpeechNarrationService implements NarrationService {
     if (muted) {
       this.stop();
     }
+  }
+
+  setRate(rate: number): void {
+    this.rate = Math.min(1.25, Math.max(0.65, rate));
   }
 
   destroy(): void {

@@ -1,6 +1,6 @@
 import {
-  CHAPTER_1_LEVELS,
-  getLevelById,
+  CHAPTER_1_LEVEL_METADATA,
+  getLevelMetadata,
   starsForHints,
   type AttemptResult,
   type AttemptStart,
@@ -55,7 +55,7 @@ export class LocalProgressRepository implements ProgressRepository {
   ): Promise<PlayerProgress> {
     const state = this.readState();
     const now = Date.now();
-    const level = getLevelById(attempt.levelId);
+    const level = getLevelMetadata(attempt.levelId);
     const hintsUsed = Math.max(0, Math.round(result.hintsUsed));
     const durationMs = Math.max(0, Math.round(result.durationMs));
     const errorsDetected = [...new Set(result.errorsDetected)].sort();
@@ -184,6 +184,17 @@ export class LocalProgressRepository implements ProgressRepository {
     }
   }
 
+  /**
+   * Parent settings reset the levels and stars of this device. The child's
+   * sandbox creations are not progress and are kept on purpose.
+   */
+  resetLocalProgress(): void {
+    const current = this.readState();
+    const reset = createInitialState();
+    reset.sandbox = current.sandbox.map(cloneSandbox);
+    this.writeState(reset);
+  }
+
   private readState(): StoredState {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -217,7 +228,7 @@ export class LocalProgressRepository implements ProgressRepository {
 function createInitialState(): StoredState {
   const levels: Record<string, LevelProgress> = {};
 
-  for (const [index, level] of CHAPTER_1_LEVELS.entries()) {
+  for (const [index, level] of CHAPTER_1_LEVEL_METADATA.entries()) {
     levels[level.id] = createLevelProgress(
       level.id,
       index === 0 ? 'unlocked' : 'locked',
@@ -245,7 +256,7 @@ function normalizeState(raw: unknown): StoredState {
 
   const levels: Record<string, LevelProgress> = {};
 
-  for (const [index, level] of CHAPTER_1_LEVELS.entries()) {
+  for (const [index, level] of CHAPTER_1_LEVEL_METADATA.entries()) {
     const stored = record.levels?.[level.id];
     levels[level.id] =
       stored !== undefined
@@ -258,7 +269,7 @@ function normalizeState(raw: unknown): StoredState {
       (level) => level.status === 'unlocked' || level.status === 'completed',
     )
   ) {
-    const first = CHAPTER_1_LEVELS[0];
+    const first = CHAPTER_1_LEVEL_METADATA[0];
     if (first !== undefined) {
       levels[first.id] = createLevelProgress(first.id, 'unlocked');
     }

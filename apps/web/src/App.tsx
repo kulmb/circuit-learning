@@ -1,21 +1,20 @@
-import { getLevelById } from '@circuits/shared';
 import {
   lazy,
   Suspense,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, MotionConfig, useReducedMotion } from 'framer-motion';
 
 import { ZapCharacter } from './components/Zap';
+import type { AppScreen } from './GameShell';
 import { LayoutProvider } from './layout/LayoutContext';
-import { ChildLoginPage } from './levels/ChildLoginPage';
-import { CollectionPage } from './levels/CollectionPage';
-import { LevelMapPage } from './levels/LevelMapPage';
-import { MaterialsLevelPage } from './levels/MaterialsLevelPage';
-import { SymbolMatchingPage } from './levels/SymbolMatchingPage';
 import { fr, getText } from './narration/fr';
 import { unlockNarration } from './narration/narrationService';
+import {
+  PerformanceProvider,
+  usePerformance,
+} from './performance/PerformanceContext';
 import { GuestMergeDialog } from './progress/GuestMergeDialog';
 import {
   ProgressProvider,
@@ -23,21 +22,41 @@ import {
 } from './progress/ProgressContext';
 import { navigate, usePathname } from './router';
 import { unlockAudio } from './workbench/audio';
-import { SandboxPage } from './workbench/SandboxPage';
-import { WorkbenchPage } from './workbench/WorkbenchPage';
 import './App.css';
 
 const AdminApp = lazy(() => import('./admin/AdminApp'));
-
-type Screen = 'home' | 'login' | 'map' | 'play' | 'sandbox' | 'collection';
+const GameShell = lazy(() => import('./GameShell'));
+const ParentSettingsPage = lazy(
+  () => import('./settings/ParentSettingsPage'),
+);
 
 export function App() {
   return (
     <LayoutProvider>
+      <PerformanceProvider>
+        <PerformanceShell />
+      </PerformanceProvider>
+    </LayoutProvider>
+  );
+}
+
+function PerformanceShell() {
+  const { lowPerformance } = usePerformance();
+
+  return (
+    <MotionConfig reducedMotion={lowPerformance ? 'always' : 'user'}>
       <ProgressProvider>
         <RootRoutes />
       </ProgressProvider>
-    </LayoutProvider>
+    </MotionConfig>
+  );
+}
+
+function RouteLoading() {
+  return (
+    <main className="route-loading" aria-busy="true">
+      <div className="route-loading__spinner" aria-hidden="true" />
+    </main>
   );
 }
 
@@ -48,15 +67,17 @@ function RootRoutes() {
     path.startsWith('/admin/') ||
     path.startsWith('/invitation/');
 
+  if (path === '/parents') {
+    return (
+      <Suspense fallback={<RouteLoading />}>
+        <ParentSettingsPage onBack={() => navigate('/')} />
+      </Suspense>
+    );
+  }
+
   if (adminRoute) {
     return (
-      <Suspense
-        fallback={
-          <main className="route-loading" aria-busy="true">
-            <div className="route-loading__spinner" aria-hidden="true" />
-          </main>
-        }
-      >
+      <Suspense fallback={<RouteLoading />}>
         <AdminApp />
       </Suspense>
     );
@@ -71,106 +92,32 @@ function RootRoutes() {
 }
 
 function AppContent() {
-  const [screen, setScreen] = useState<Screen>('home');
+  const [screen, setScreen] = useState<AppScreen>('home');
   const [levelId, setLevelId] = useState<string | null>(null);
-  const [sandboxReturn, setSandboxReturn] = useState<'home' | 'map'>('home');
   const { session } = useProgress();
   const reduceMotion = useReducedMotion() ?? false;
-  const level = levelId === null ? undefined : getLevelById(levelId);
   const child = session?.user.role === 'eleve' ? session.user : null;
 
-  function openSandbox(returnScreen: 'home' | 'map'): void {
+  function openSandbox(): void {
     unlockNarration();
     unlockAudio();
-    setSandboxReturn(returnScreen);
     setScreen('sandbox');
   }
 
-  if (screen === 'login') {
+  if (screen !== 'home') {
     return (
-      <ChildLoginPage
-        onCancel={() => setScreen('home')}
-        onGuest={() => setScreen('map')}
-        onSuccess={() => setScreen('map')}
-      />
-    );
-  }
-
-  if (screen === 'sandbox') {
-    return <SandboxPage onBack={() => setScreen(sandboxReturn)} />;
-  }
-
-  if (screen === 'collection') {
-    return <CollectionPage onBack={() => setScreen('map')} />;
-  }
-
-  if (screen === 'map') {
-    return (
-      <LevelMapPage
-        onBack={() => setScreen('home')}
-        onCollection={() => setScreen('collection')}
-        onSandbox={() => openSandbox('map')}
-        onSelectLevel={(selectedLevelId) => {
-          setLevelId(selectedLevelId);
-          setScreen('play');
-        }}
-      />
-    );
-  }
-
-  if (screen === 'play') {
-    if (level === undefined) {
-      return (
-        <LevelMapPage
-          onBack={() => setScreen('home')}
-          onCollection={() => setScreen('collection')}
-          onSandbox={() => openSandbox('map')}
-          onSelectLevel={(selectedLevelId) => {
-            setLevelId(selectedLevelId);
-            setScreen('play');
+      <Suspense fallback={<RouteLoading />}>
+        <GameShell
+          screen={screen}
+          levelId={levelId}
+          onNavigate={(next, nextLevelId) => {
+            setScreen(next);
+            if (nextLevelId !== undefined) {
+              setLevelId(nextLevelId);
+            }
           }}
         />
-      );
-    }
-
-    const nextLevelProps =
-      level.nextLevelId === null
-        ? {}
-        : {
-            onNextLevel: () => {
-              setLevelId(level.nextLevelId);
-            },
-          };
-
-    if (level.kind === 'materials') {
-      return (
-        <MaterialsLevelPage
-          key={level.id}
-          level={level}
-          onBack={() => setScreen('map')}
-          {...nextLevelProps}
-        />
-      );
-    }
-
-    if (level.kind === 'matching') {
-      return (
-        <SymbolMatchingPage
-          key={level.id}
-          level={level}
-          onBack={() => setScreen('map')}
-          {...nextLevelProps}
-        />
-      );
-    }
-
-    return (
-      <WorkbenchPage
-        key={level.id}
-        level={level}
-        onBack={() => setScreen('map')}
-        {...nextLevelProps}
-      />
+      </Suspense>
     );
   }
 
@@ -206,7 +153,7 @@ function AppContent() {
             type="button"
             className="big-button big-button--secondary"
             onPointerDown={(event) =>
-              activate(event, () => openSandbox('home'))
+              activate(event, openSandbox)
             }
           >
             <WrenchIcon />
@@ -214,15 +161,26 @@ function AppContent() {
           </button>
         </div>
 
-        <button
-          type="button"
-          className="home__adult"
-          onPointerDown={(event) =>
-            activate(event, () => navigate('/admin'))
-          }
-        >
-          {getText('home.adultSpace')}
-        </button>
+        <div className="home__links">
+          <button
+            type="button"
+            className="home__adult"
+            onPointerDown={(event) =>
+              activate(event, () => navigate('/admin'))
+            }
+          >
+            {getText('home.adultSpace')}
+          </button>
+          <button
+            type="button"
+            className="home__adult"
+            onPointerDown={(event) =>
+              activate(event, () => navigate('/parents'))
+            }
+          >
+            {getText('home.parentSettings')}
+          </button>
+        </div>
       </main>
     </motion.div>
   );

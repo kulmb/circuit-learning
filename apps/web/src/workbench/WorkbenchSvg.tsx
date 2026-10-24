@@ -8,6 +8,7 @@ import {
   type Vec2,
 } from '@circuits/shared';
 import {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -153,7 +154,7 @@ interface RenderedWire {
   path: string;
 }
 
-export function WorkbenchSvg({
+export const WorkbenchSvg = memo(function WorkbenchSvg({
   circuit,
   simulation,
   selected,
@@ -935,45 +936,17 @@ export function WorkbenchSvg({
         );
 
         return (
-          <g key={wire.id} data-wire-id={wire.id}>
-            <path
-              d={path}
-              className={isShort ? 'wire--short' : undefined}
-              fill="none"
-              stroke={isSelected ? '#1d4ed8' : '#355070'}
-              strokeWidth={isSelected ? 11 : 8}
-              strokeLinecap="round"
-            />
-            {showCurrent ? (
-              <path
-                d={path}
-                className="wire-current"
-                style={{
-                  animationDuration: `${duration}s`,
-                  animationDirection: current < 0 ? 'reverse' : 'normal',
-                }}
-              />
-            ) : null}
-            {isHinted ? (
-              <path
-                d={path}
-                className="wire--hint"
-                fill="none"
-                stroke="#f97316"
-                strokeWidth={14}
-                strokeDasharray="10 9"
-                strokeLinecap="round"
-                pointerEvents="none"
-              />
-            ) : null}
-            <path
-              d={path}
-              fill="none"
-              stroke="transparent"
-              strokeWidth={30}
-              pointerEvents="stroke"
-            />
-          </g>
+          <WirePath
+            key={wire.id}
+            wireId={wire.id}
+            path={path}
+            selected={isSelected}
+            current={current}
+            showCurrent={showCurrent}
+            isShort={isShort}
+            isHinted={isHinted}
+            duration={duration}
+          />
         );
       })}
 
@@ -1127,7 +1100,75 @@ export function WorkbenchSvg({
       ) : null}
     </svg>
   );
+});
+
+interface WirePathProps {
+  wireId: string;
+  path: string;
+  selected: boolean;
+  current: number;
+  showCurrent: boolean;
+  isShort: boolean;
+  isHinted: boolean;
+  duration: number;
 }
+
+/**
+ * Memoized wire keeps every unchanged wire out of the drag render path.
+ * All props are primitives, so a shallow comparison is exact.
+ */
+const WirePath = memo(function WirePath({
+  wireId,
+  path,
+  selected,
+  current,
+  showCurrent,
+  isShort,
+  isHinted,
+  duration,
+}: WirePathProps) {
+  return (
+    <g data-wire-id={wireId}>
+      <path
+        d={path}
+        className={isShort ? 'wire--short' : undefined}
+        fill="none"
+        stroke={selected ? '#1d4ed8' : '#355070'}
+        strokeWidth={selected ? 11 : 8}
+        strokeLinecap="round"
+      />
+      {showCurrent ? (
+        <path
+          d={path}
+          className="wire-current"
+          style={{
+            animationDuration: `${duration}s`,
+            animationDirection: current < 0 ? 'reverse' : 'normal',
+          }}
+        />
+      ) : null}
+      {isHinted ? (
+        <path
+          d={path}
+          className="wire--hint"
+          fill="none"
+          stroke="#f97316"
+          strokeWidth={14}
+          strokeDasharray="10 9"
+          strokeLinecap="round"
+          pointerEvents="none"
+        />
+      ) : null}
+      <path
+        d={path}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={30}
+        pointerEvents="stroke"
+      />
+    </g>
+  );
+});
 
 interface SelectionToolbarProps {
   component: CircuitComponent;

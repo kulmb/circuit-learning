@@ -287,6 +287,7 @@ pnpm test       # tests de tous les paquets
 pnpm typecheck  # vérification TypeScript de tous les paquets
 pnpm build      # build de production de tous les paquets
 pnpm verify     # typecheck + tests + build
+pnpm build:report  # build web + docs/build-size-report.md
 
 pnpm --filter @circuits/api db:migrate         # applique les migrations
 pnpm --filter @circuits/api db:migrate:status  # état des migrations
@@ -357,6 +358,41 @@ Le panneau est plein écran sur téléphone en paysage ; sur tablette et ordinat
 il reste une boîte centrée. La photo est rendue depuis une copie SVG hors écran
 (`SandboxSnapshot`), sans sélection, bornes ni contrôles.
 
+## Performance et retour haptique
+
+- Les composants du plan, les fils et le plan lui-même sont mémorisés
+  (`memo`) : pendant un déplacement, seuls le composant saisi et les fils qui
+  le touchent se redessinent. Le plan de travail et les écrans de jeu sont aussi
+  sortis du premier écran par un import dynamique.
+- `PerformanceProvider` mesure les images par seconde par fenêtres de 2 s. Deux
+  fenêtres sous 40 fps activent le mode faible performance ; trois fenêtres à
+  50 fps ou plus le désactivent. `prefers-reduced-motion` l’active aussi.
+- Ce mode réduit l’espacement des points de courant, atténue les halos, supprime
+  les ombres animées, les vagues du buzzer et les effets de surimpression. Il
+  passe aussi `MotionConfig` en `reducedMotion="always"`.
+- Sur les appareils qui exposent `navigator.vibrate`, une réussite de niveau
+  déclenche une vibration courte et un court-circuit deux impulsions. Le réglage
+  peut être coupé par un adulte.
+- Images du build : uniquement SVG, plus les deux polices Nunito auto-hébergées.
+  Le rapport de taille est généré par `pnpm build:report` dans
+  `docs/build-size-report.md`.
+
+## Réglages parents
+
+La page `/parents`, accessible depuis l’accueil, est chargée à la demande et
+protégée par une petite multiplication à trois choix. Elle permet de :
+
+- activer ou couper le son (voix et effets) ;
+- choisir la vitesse de la voix : lent, normal ou rapide ;
+- activer ou couper les vibrations ;
+- forcer le mode faible performance, avec un état automatique affiché ;
+- effacer la progression locale de l’appareil après confirmation. Les
+  créations de l’atelier et la progression d’un compte enfant sur le serveur
+  sont conservées.
+
+Les réglages sont stockés dans `localStorage`
+(`circuits-de-zap:preferences:v1`) et appliqués dès le chargement de l’app.
+
 ## Zoom et déplacement
 
 La taille logique du plan vient du niveau (`board.columns` × `board.rows`) et le
@@ -380,8 +416,9 @@ Tous les textes français sont dans `apps/web/src/narration/fr.ts`, indexés par
 identifiant (`zap.hint.open.1`, `workbench.statusClosed`, etc.).
 
 - La voix utilise la Web Speech API en `fr-FR`, avec une préférence pour les voix
-  Google, Amélie et Thomas, un débit de 0,9 et une hauteur légèrement plus aiguë.
-  La liste `voiceschanged` est écoutée pour iOS.
+  Google, Amélie et Thomas, un débit de 0,9 par défaut (réglable par un parent)
+  et une hauteur légèrement plus aiguë. La liste `voiceschanged` est écoutée
+  pour iOS.
 - Si un enregistrement existe, `/audio/{textId}.mp3` est préféré à la synthèse.
   Pour l'activer, déposer le MP3 dans `apps/web/public/audio/` et ajouter son
   identifiant dans `apps/web/public/audio/manifest.json`.
@@ -399,7 +436,10 @@ identifiant (`zap.hint.open.1`, `workbench.statusClosed`, etc.).
 Le chapitre 1, « La lumière », contient dix niveaux et une transition
 « Les symboles ». Les définitions, conditions de réussite et règles d'étoiles
 vivent dans `packages/shared/src/levels` ; le front les consomme sans les
-dupliquer.
+dupliquer. Les définitions complètes sont chargées avec l’écran de jeu
+(`@circuits/shared/levels`), tandis que les règles de progression n’utilisent
+que `CHAPTER_1_LEVEL_METADATA` (identifiants, ordre, niveau suivant,
+vocabulaire).
 
 La progression est enregistrée dans `localStorage` derrière l’interface
 `ProgressRepository` (`apps/web/src/progress`). Un niveau réussi débloque le

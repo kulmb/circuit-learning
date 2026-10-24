@@ -1,5 +1,4 @@
 import {
-  CHAPTER_1_LEVELS,
   PROGRESS_CONCEPTS,
   initialPlayerProgress,
   type GroupDashboardResponse,
@@ -7,6 +6,7 @@ import {
   type GroupLevelStats,
   type StudentDashboardResponse,
 } from '@circuits/shared';
+import { CHAPTER_1_LEVELS } from '@circuits/shared/levels';
 import { Types } from 'mongoose';
 
 import {

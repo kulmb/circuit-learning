@@ -3,6 +3,7 @@ export interface NarrationService {
   stop(): void;
   replay(): Promise<void>;
   setMuted(muted: boolean): void;
+  setRate(rate: number): void;
   unlock(): void;
   destroy(): void;
 }

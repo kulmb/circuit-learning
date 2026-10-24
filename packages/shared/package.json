@@ -5,18 +5,23 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./levels": {
+      "types": "./dist/levels.d.ts",
+      "import": "./dist/levels.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "dev": "tsup src/index.ts --format esm --dts --clean --watch",
-    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsup --watch",
+    "build": "tsup",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

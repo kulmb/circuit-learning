@@ -12,12 +12,12 @@ import {
   type CircuitSimulation,
   type ComponentType,
   type CreateComponentOptions,
-  type LevelDefinition,
   type Rotation,
   type TerminalRef,
   type Vec2,
   type Wire,
 } from '@circuits/shared';
+import type { LevelDefinition } from '@circuits/shared/levels';
 import { create } from 'zustand';
 
 import { nextDisplayMode, type DisplayMode } from './displayMode';

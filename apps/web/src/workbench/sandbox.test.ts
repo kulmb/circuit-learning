@@ -1,11 +1,11 @@
 import {
-  CHAPTER_1_LEVELS,
   createComponent,
   createWire,
   simulateCircuit,
   type LevelProgress,
   type PlayerProgress,
 } from '@circuits/shared';
+import { CHAPTER_1_LEVELS } from '@circuits/shared/levels';
 import { describe, expect, it } from 'vitest';
 
 import {

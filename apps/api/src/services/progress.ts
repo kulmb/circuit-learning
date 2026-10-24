@@ -1,12 +1,14 @@
 import {
-  CHAPTER_1_LEVELS,
-  getLevelById,
   initialPlayerProgress,
   starsForHints,
-  type LevelDefinition,
   type PlayerProgress,
   type PlayerProgressResponse,
 } from '@circuits/shared';
+import {
+  CHAPTER_1_LEVELS,
+  getLevelById,
+  type LevelDefinition,
+} from '@circuits/shared/levels';
 import mongoose, { Types } from 'mongoose';
 
 import {

@@ -10,6 +10,7 @@ export const texts = {
   'home.sandbox': 'Atelier libre',
   'home.back': 'Retour',
   'home.adultSpace': 'Espace adulte',
+  'home.parentSettings': 'Réglages parents',
 
   'workbench.title': 'Plan de travail',
   'workbench.hint': 'Relie les composants avec des fils.',
@@ -165,6 +166,52 @@ export const texts = {
   'map.collection': 'Ma collection',
   'map.sandbox': 'Atelier libre',
   'map.bye': 'Au revoir',
+
+  'parentSettings.title': 'Réglages parents',
+  'parentSettings.subtitle': 'Pour les adultes qui accompagnent l’enfant.',
+  'parentSettings.back': 'Retour',
+  'parentSettings.gateTitle': 'Petite question',
+  'parentSettings.question': 'Combien font',
+  'parentSettings.gateError': 'Ce n’est pas la bonne réponse. Réessaie.',
+  'parentSettings.gateHint':
+    'Cette question protège les réglages des jeunes enfants.',
+  'parentSettings.unlocked': 'Réglages déverrouillés.',
+  'parentSettings.soundTitle': 'Son',
+  'parentSettings.soundHint': 'La voix de Zap et les effets sonores.',
+  'parentSettings.soundOn': 'Son activé',
+  'parentSettings.soundOff': 'Son coupé',
+  'parentSettings.voiceTitle': 'Vitesse de la voix',
+  'parentSettings.voiceHint': 'Choisis le rythme qui convient à l’enfant.',
+  'parentSettings.voiceSlow': 'Lent',
+  'parentSettings.voiceNormal': 'Normal',
+  'parentSettings.voiceFast': 'Rapide',
+  'parentSettings.voiceSample': 'Bonjour ! Je suis Zap. Voici ma voix.',
+  'parentSettings.vibrationTitle': 'Vibrations',
+  'parentSettings.vibrationHint':
+    'Une petite vibration quand un niveau est réussi, deux en cas de court-circuit.',
+  'parentSettings.vibrationOn': 'Vibrations activées',
+  'parentSettings.vibrationOff': 'Vibrations coupées',
+  'parentSettings.vibrationUnsupported':
+    'Les vibrations ne sont pas disponibles sur cet appareil.',
+  'parentSettings.lowTitle': 'Mode faible performance',
+  'parentSettings.lowHint':
+    'Moins de points de courant et moins d’effets lumineux.',
+  'parentSettings.lowOn': 'Activé',
+  'parentSettings.lowOff': 'Désactivé',
+  'parentSettings.lowAuto': 'Réduit automatiquement car le jeu ralentit.',
+  'parentSettings.lowReduced': 'Réduit par les réglages du système.',
+  'parentSettings.resetTitle': 'Progression locale',
+  'parentSettings.resetHint':
+    'Efface les niveaux et les étoiles enregistrés sur cet appareil. Les créations de l’atelier sont gardées.',
+  'parentSettings.resetAccountNote':
+    'La progression d’un compte enfant reste enregistrée sur le serveur.',
+  'parentSettings.reset': 'Effacer la progression locale',
+  'parentSettings.resetConfirmTitle': 'Effacer la progression locale ?',
+  'parentSettings.resetConfirmText':
+    'Les niveaux et les étoiles de cet appareil seront effacés.',
+  'parentSettings.resetYes': 'Oui, effacer',
+  'parentSettings.resetNo': 'Non, garder',
+  'parentSettings.resetDone': 'La progression locale a été effacée.',
 
   'login.title': 'Qui joue ?',
   'login.groupTitle': 'Entre le code du groupe',

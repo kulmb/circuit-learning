@@ -1,3 +1,4 @@
+import { serializeCircuit } from '@circuits/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { LocalProgressRepository } from './LocalProgressRepository';
@@ -165,5 +166,35 @@ describe('LocalProgressRepository', () => {
     expect((await repository.getProgress()).levels['light-01']?.status).toBe(
       'unlocked',
     );
+  });
+
+  it('resets local progress while keeping sandbox creations', async () => {
+    const repository = new LocalProgressRepository();
+    const attempt = await repository.startAttempt('light-01');
+    await repository.finishAttempt(attempt, {
+      success: true,
+      hintsUsed: 0,
+      durationMs: 1000,
+      errorsDetected: [],
+    });
+    await repository.saveSandbox({
+      id: 'work-1',
+      name: 'Mon circuit 1',
+      data: serializeCircuit({ components: [], wires: [] }),
+    });
+
+    repository.resetLocalProgress();
+
+    const progress = await repository.getProgress();
+    expect(progress.levels['light-01']?.status).toBe('unlocked');
+    expect(progress.levels['light-01']?.stars).toBe(0);
+    expect(progress.levels['light-02']?.status).toBe('locked');
+    expect(progress.vocabulary).toEqual([]);
+    expect(await repository.listSandbox()).toHaveLength(1);
+
+    const stored = JSON.parse(
+      window.localStorage.getItem(STORAGE_KEY) ?? '{}',
+    ) as { attempts?: unknown[] };
+    expect(stored.attempts).toEqual([]);
   });
 });

@@ -1,8 +1,8 @@
+import { serializeCircuit } from '@circuits/shared';
 import {
   CHAPTER_1_LEVELS,
-  serializeCircuit,
   type LevelDefinition,
-} from '@circuits/shared';
+} from '@circuits/shared/levels';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import mongoose, { Types } from 'mongoose';

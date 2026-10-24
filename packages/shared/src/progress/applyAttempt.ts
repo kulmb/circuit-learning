@@ -1,4 +1,7 @@
-import { CHAPTER_1_LEVELS, getLevelById } from '../levels/chapterLight';
+import {
+  CHAPTER_1_LEVEL_METADATA,
+  getLevelMetadata,
+} from '../levels/metadata';
 import { starsForHints } from '../levels/stars';
 import type {
   AttemptResult,
@@ -26,7 +29,7 @@ function emptyLevelProgress(
 export function initialPlayerProgress(): PlayerProgress {
   return {
     levels: Object.fromEntries(
-      CHAPTER_1_LEVELS.map((level, index) => [
+      CHAPTER_1_LEVEL_METADATA.map((level, index) => [
         level.id,
         emptyLevelProgress(level.id, index === 0 ? 'unlocked' : 'locked'),
       ]),
@@ -46,7 +49,7 @@ export function applyAttemptToProgress(
   result: AttemptResult,
   now = Date.now(),
 ): PlayerProgress {
-  const level = getLevelById(levelId);
+  const level = getLevelMetadata(levelId);
 
   if (level === undefined) {
     return progress;

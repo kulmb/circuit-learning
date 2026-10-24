@@ -1,11 +1,13 @@
 import {
-  CHAPTER_1_LEVELS,
   avatarEmoji,
   groupDashboardResponseSchema,
   type GroupDashboardResponse,
   type GroupDashboardStudent,
-  type LevelDefinition,
 } from '@circuits/shared';
+import {
+  CHAPTER_1_LEVELS,
+  type LevelDefinition,
+} from '@circuits/shared/levels';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Bar,

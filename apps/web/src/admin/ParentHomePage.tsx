@@ -1,11 +1,11 @@
 import {
-  CHAPTER_1_LEVELS,
   PROGRESS_CONCEPTS,
   studentDashboardResponseSchema,
   studentsResponseSchema,
   type StudentDashboardResponse,
   type StudentSummary,
 } from '@circuits/shared';
+import { CHAPTER_1_LEVELS } from '@circuits/shared/levels';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ApiClientError, apiRequest } from '../api/client';

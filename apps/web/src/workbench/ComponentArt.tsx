@@ -203,6 +203,7 @@ function RealisticBulb({ state }: { state: ComponentState | undefined }) {
     <>
       {on ? (
         <circle
+          className="component-glow"
           cx={0}
           cy={-5}
           r={26 + brightness * 10}
@@ -256,6 +257,7 @@ function SymbolBulb({ state }: { state: ComponentState | undefined }) {
     <>
       {on ? (
         <circle
+          className="component-glow"
           cx={0}
           cy={0}
           r={22 + brightness * 7}
@@ -384,7 +386,16 @@ function SymbolMotor({ state }: { state: ComponentState | undefined }) {
 
   return (
     <>
-      {on ? <circle cx={0} cy={0} r={23} fill="#93c5fd" opacity={0.25} /> : null}
+      {on ? (
+        <circle
+          className="component-glow"
+          cx={0}
+          cy={0}
+          r={23}
+          fill="#93c5fd"
+          opacity={0.25}
+        />
+      ) : null}
       <line x1={-LEAD_X} y1={0} x2={-18} y2={0} stroke={INK} strokeWidth={3} />
       <line x1={18} y1={0} x2={LEAD_X} y2={0} stroke={INK} strokeWidth={3} />
       <circle
@@ -500,6 +511,7 @@ function RealisticLed({ state }: { state: ComponentState | undefined }) {
     <>
       {on ? (
         <circle
+          className="component-glow"
           cx={0}
           cy={-4}
           r={22 + brightness * 7}
@@ -527,7 +539,16 @@ function SymbolLed({ state }: { state: ComponentState | undefined }) {
 
   return (
     <>
-      {on ? <circle cx={0} cy={0} r={24} fill="#ef476f" opacity={0.18} /> : null}
+      {on ? (
+        <circle
+          className="component-glow"
+          cx={0}
+          cy={0}
+          r={24}
+          fill="#ef476f"
+          opacity={0.18}
+        />
+      ) : null}
       <line x1={-LEAD_X} y1={0} x2={-14} y2={0} stroke={INK} strokeWidth={3} />
       <line x1={8} y1={0} x2={LEAD_X} y2={0} stroke={INK} strokeWidth={3} />
       <path

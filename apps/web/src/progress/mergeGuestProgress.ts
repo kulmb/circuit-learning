@@ -1,5 +1,5 @@
 import {
-  CHAPTER_1_LEVELS,
+  CHAPTER_1_LEVEL_METADATA,
   type AttemptResult,
   type LevelProgress,
 } from '@circuits/shared';
@@ -48,7 +48,7 @@ export async function mergeGuestProgressIntoApi(
   const attempts = source.getAttemptHistory();
   let syntheticIndex = 0;
 
-  for (const level of CHAPTER_1_LEVELS) {
+  for (const level of CHAPTER_1_LEVEL_METADATA) {
     const levelAttempts = attempts
       .filter((attempt) => attempt.levelId === level.id)
       .sort((left, right) => left.endedAt - right.endedAt);
