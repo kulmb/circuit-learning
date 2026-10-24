@@ -12,21 +12,34 @@ Monorepo pnpm :
 
 ## Prérequis
 
-- Node.js 20 ou plus récent (`nvm use` lit `.nvmrc`)
+- Node.js 20.19 ou plus récent (`nvm use` lit `.nvmrc`)
 - pnpm 10 ou plus récent
+- Docker, pour MongoDB 7 en développement
 
 ## Démarrage
 
 ```bash
+# MongoDB 7, en replica set à un seul nœud (transactions)
+docker compose -f docker-compose.dev.yml up -d
+
+cp .env.example .env       # puis adapter ADMIN_EMAIL / ADMIN_PASSWORD
 pnpm install
+pnpm --filter @circuits/api db:migrate
+pnpm --filter @circuits/api db:seed
+
 pnpm dev
 ```
 
 - Front : http://127.0.0.1:5173/
 - API de développement : http://127.0.0.1:3101/api/health
 
-Le serveur Vite redirige `/api` vers l'API locale (port 3101). L'API de
-production tourne séparément dans Docker sur le port 3100.
+Le serveur Vite redirige `/api` vers l'API locale (port 3101). L'API se
+connecte à MongoDB au démarrage : sans base, elle s'arrête avec une erreur.
+L'API de production tourne séparément dans Docker sur le port 3100.
+
+Le seed est idempotent. Il affiche le code à six caractères du groupe
+« Équipe Camelot » et le motif de démonstration des trois élèves
+(`renard → pomme → ballon`).
 
 ## Commandes
 
@@ -36,6 +49,11 @@ pnpm test       # tests de tous les paquets
 pnpm typecheck  # vérification TypeScript de tous les paquets
 pnpm build      # build de production de tous les paquets
 pnpm verify     # typecheck + tests + build
+
+pnpm --filter @circuits/api db:migrate         # applique les migrations
+pnpm --filter @circuits/api db:migrate:status  # état des migrations
+pnpm --filter @circuits/api db:migrate:down    # annule la dernière
+pnpm --filter @circuits/api db:seed            # admin + groupe + 3 élèves
 ```
 
 ## Moteur de circuit
@@ -119,6 +137,52 @@ La progression est enregistrée dans `localStorage` derrière l'interface
 `ProgressRepository` (`apps/web/src/progress`). Un niveau réussi débloque le
 suivant ; le nombre d'étoiles dépend des indices demandés à Zap.
 
+## Base de données
+
+L'API utilise MongoDB 7 via Mongoose (`apps/api/src/db/models`). Les schémas
+sont stricts (`strict: 'throw'`), horodatés et nomment explicitement leur
+collection.
+
+| Collection | Contenu |
+|---|---|
+| `users` | rôle, prénom/pseudo, avatar, e-mail et mot de passe adultes, secret image des élèves, verrouillage, liens parent, vocabulaire |
+| `groups` | nom, code d'invitation, créateur, archivage, membres avec leur rôle |
+| `sessions` | sessions adultes et enfants, expiration |
+| `invites` | invitations encadrant, parent et réinitialisation |
+| `levelprogress` | une ligne par élève et par niveau |
+| `levelattempts` | historique des tentatives, avec le groupe dénormalisé |
+| `sandboxcircuits` | circuits libres, format partagé, 200 Ko maximum |
+| `auditlogs` | actions sensibles des adultes |
+
+Points structurants :
+
+- l'e-mail n'est unique que lorsqu'il existe (index partiel), et un élève ne
+  peut avoir ni e-mail ni mot de passe : la minimisation RGPD est appliquée par
+  le schéma ;
+- les mots de passe adultes et les secrets image des élèves sont hachés en
+  argon2id, jamais stockés en clair ;
+- le code de groupe fait six caractères parmi les lettres et chiffres non
+  ambigus (`0`, `O`, `1`, `I` exclus) et est unique ;
+- les sessions et les invitations expirent par index TTL ;
+- `levelprogress` est unique par couple (élève, niveau) et les étoiles vont
+  de 0 à 3 ;
+- un circuit libre est validé avec `deserializeCircuit` partagé et limité à
+  200 Ko ;
+- `sanitizeFilter` est activé : les filtres internes qui utilisent volontairement
+  des opérateurs (`$in`, `$or`) sont marqués avec `mongoose.trusted`, les
+  entrées HTTP seront validées par zod.
+
+Les migrations vivent dans `apps/api/migrations` (configuration
+`apps/api/migrate-mongo-config.js`). La première crée tous les index ; l'API
+appelle aussi `syncIndexes()` au démarrage, les deux chemins étant idempotents.
+
+`deleteStudent` (`apps/api/src/services/deleteStudent.ts`) supprime, dans une
+transaction, l'élève et ses données (`levelprogress`, `levelattempts`,
+`sandboxcircuits`, `sessions`, invitations liées), puis le retire des
+`groups.members` et des `users.parentOf`. Les journaux d'audit sont conservés
+pour la traçabilité des actions adultes. Les tests vérifient qu'il ne reste
+aucune donnée de l'élève.
+
 ## Affichage adaptatif
 
 Le mode d'affichage est choisi d'après la taille réelle mesurée par
@@ -147,6 +211,10 @@ L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
 - Le front est compilé pour la racine du domaine puis copié dans
   `/srv/circuits/web` (servi par Caddy).
 - L'API tourne dans Docker Compose et écoute uniquement sur `127.0.0.1:3100`.
+- MongoDB 7 tourne dans le même Compose, en replica set `rs0`, avec le volume
+  `mongo-data`. Son port n'est publié que sur `127.0.0.1:27018`, pour les
+  migrations et les seeds lancés depuis l'hôte ; l'API le joint par
+  `mongo:27017` sur le réseau Compose.
 - Caddy sert le front à la racine et `/api/*` en reverse proxy. Le bloc de site
   est fourni dans `deploy/caddy/circuit-learning.caddy`.
 - Les anciennes URL `kulmb.87543362.xyz/circuit/*` redirigent en 301 vers le
@@ -156,8 +224,17 @@ L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
 # Une seule fois : créer le dossier servi par Caddy
 sudo install -d -o "$(id -un)" -g "$(id -gn)" -m 755 /srv/circuits/web
 
-# Déployer l'API et le front
+# Déployer MongoDB, l'API et le front
 ./scripts/deploy.sh
+
+# Appliquer les migrations sur la base de production
+MONGODB_URI='mongodb://127.0.0.1:27018/circuits?directConnection=true' \
+  pnpm --filter @circuits/api db:migrate
+
+# Créer l'administrateur (une seule fois, avec un vrai mot de passe)
+MONGODB_URI='mongodb://127.0.0.1:27018/circuits?directConnection=true' \
+ADMIN_EMAIL='...' ADMIN_PASSWORD='...' \
+  pnpm --filter @circuits/api db:seed
 ```
 
 Vérification :
