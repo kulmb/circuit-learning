@@ -117,6 +117,13 @@ describe('indexes', () => {
     expect(await indexNamed(SessionModel, 'sessions_user_id')).toMatchObject({
       key: { userId: 1 },
     });
+    expect(
+      await indexNamed(SessionModel, 'sessions_token_hash_unique'),
+    ).toMatchObject({
+      key: { tokenHash: 1 },
+      unique: true,
+      partialFilterExpression: { tokenHash: { $type: 'string' } },
+    });
 
     expect(
       await indexNamed(InviteModel, 'invites_token_hash_unique'),
@@ -385,6 +392,8 @@ describe('invites and audit logs', () => {
     const invite = await InviteModel.create({
       tokenHash: 'encadrant-token',
       type: 'encadrant',
+      username: 'coach',
+      displayName: 'Coach',
       expiresAt: futureDate(),
     });
 
@@ -392,6 +401,8 @@ describe('invites and audit logs', () => {
       InviteModel.create({
         tokenHash: 'encadrant-token',
         type: 'encadrant',
+        username: 'coach',
+        displayName: 'Coach',
         expiresAt: futureDate(),
       }),
     ).rejects.toMatchObject({ code: 11000 });
@@ -679,6 +690,8 @@ describe('deleteStudent', () => {
       {
         tokenHash: 'parent-invite',
         type: 'parent',
+        username: 'parent-invite',
+        displayName: 'Parent',
         childId: student._id,
         expiresAt: futureDate(),
       },
@@ -804,9 +817,11 @@ describe('migration', () => {
     };
     const first = await loadMigration('20261024000001-create-indexes.js');
     const second = await loadMigration('20261024000002-add-username-index.js');
+    const third = await loadMigration('20261024000003-session-token-index.js');
 
     await first.up(db);
     await second.up(db);
+    await third.up(db);
 
     const names = async (collection: string): Promise<(string | undefined)[]> =>
       (await db.collection(collection).indexes()).map((index) => index.name);
@@ -817,6 +832,7 @@ describe('migration', () => {
     expect(await names('groups')).toContain('groups_members_user_id');
     expect(await names('sessions')).toContain('sessions_expires_ttl');
     expect(await names('sessions')).toContain('sessions_user_id');
+    expect(await names('sessions')).toContain('sessions_token_hash_unique');
     expect(await names('invites')).toContain('invites_token_hash_unique');
     expect(await names('invites')).toContain('invites_expires_ttl');
     expect(await names('levelprogress')).toContain(
@@ -848,6 +864,7 @@ describe('migration', () => {
     );
     expect(sessionTtl?.expireAfterSeconds).toBe(0);
 
+    await third.down(db);
     await second.down(db);
     await first.down(db);
 
@@ -856,6 +873,7 @@ describe('migration', () => {
     expect(await names('groups')).not.toContain('groups_join_code_unique');
     expect(await names('groups')).not.toContain('groups_members_user_id');
     expect(await names('sessions')).not.toContain('sessions_expires_ttl');
+    expect(await names('sessions')).not.toContain('sessions_token_hash_unique');
     expect(await names('invites')).not.toContain('invites_token_hash_unique');
     expect(await names('levelprogress')).not.toContain(
       'levelprogress_user_level_unique',

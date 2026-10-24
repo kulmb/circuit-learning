@@ -6,6 +6,8 @@ import mongoose, {
   type Types,
 } from 'mongoose';
 
+import { USERNAME_PATTERN } from '../../services/username.js';
+
 export const INVITE_TYPES = [
   'encadrant',
   'parent',
@@ -19,6 +21,10 @@ export interface Invite {
   type: InviteType;
   targetUserId: Types.ObjectId | null;
   childId: Types.ObjectId | null;
+  /** Planned account for an encadrant or parent invitation. */
+  username: string | null;
+  displayName: string | null;
+  createdBy: Types.ObjectId | null;
   expiresAt: Date;
   usedAt: Date | null;
   createdAt: Date;
@@ -37,6 +43,19 @@ const inviteSchema = new Schema<Invite>(
       default: null,
     },
     childId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    username: {
+      type: String,
+      default: null,
+      trim: true,
+      lowercase: true,
+      match: USERNAME_PATTERN,
+    },
+    displayName: { type: String, default: null, trim: true, maxlength: 80 },
+    createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       default: null,
@@ -76,6 +95,19 @@ inviteSchema.pre('validate', function validateInviteTargets() {
     this.invalidate(
       'targetUserId',
       'Une invitation de mot de passe doit viser un compte.',
+    );
+  }
+
+  const hasText = (value: string | null | undefined): boolean =>
+    typeof value === 'string' && value.trim().length > 0;
+
+  if (
+    this.type !== 'password_reset' &&
+    (!hasText(this.username) || !hasText(this.displayName))
+  ) {
+    this.invalidate(
+      'username',
+      'Une invitation doit contenir le futur identifiant et son nom.',
     );
   }
 });

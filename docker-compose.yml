@@ -48,6 +48,10 @@ services:
       HOST: 0.0.0.0
       PORT: "3100"
       MONGODB_URI: mongodb://mongo:27017/circuits?replicaSet=rs0
+      COOKIE_SECRET: ${COOKIE_SECRET:?Definis COOKIE_SECRET dans .env, 32 caracteres minimum}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://circuit-learning.87543362.xyz}
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: "true"
     ports:
       - "127.0.0.1:3100:3100"
     healthcheck:

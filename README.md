@@ -23,6 +23,7 @@ Monorepo pnpm :
 docker compose -f docker-compose.dev.yml up -d
 
 cp .env.example .env       # puis adapter ADMIN_USERNAME / ADMIN_PASSWORD
+openssl rand -base64 48    # coller le résultat dans COOKIE_SECRET
 pnpm install
 pnpm --filter @circuits/api db:migrate
 pnpm --filter @circuits/api db:seed
@@ -65,6 +66,71 @@ caractères minimum), révoque les sessions existantes et inscrit l'action dans
 `auditlogs`. Pour un script, `ADMIN_NEW_PASSWORD` évite l'invite, mais le secret
 apparaît alors dans l'environnement du processus : à réserver à l'automatisation.
 L'interface web « Mon compte » arrivera avec l'écran de connexion des adultes.
+
+## Authentification
+
+### Adultes
+
+Les adultes se connectent avec leur **nom court + mot de passe**, jamais avec
+un e-mail. L'API vérifie le mot de passe avec argon2id, limite les tentatives
+par IP et bloque un compte après huit échecs pendant quinze minutes.
+
+- `POST /api/auth/login` ouvre une session de **30 jours** rangée dans
+  `sessions` ; le cookie `zap_session` est `httpOnly`, `SameSite=Lax` et
+  `Secure` en production. Chaque requête authentifiée repousse l'expiration à
+  trente jours (session glissante).
+- `GET /api/auth/me` renvoie l'adulte connecté, `POST /api/auth/logout` ferme
+  la session.
+- `POST /api/auth/password` change son propre mot de passe **sans demander
+  l'ancien**, révoque toutes les sessions et en ouvre une nouvelle.
+- `POST /api/auth/invites` (admin ou encadrant) crée un lien **à usage unique
+  valable 7 jours** pour un futur encadrant ou parent. La réponse contient
+  l'URL à copier ; aucun e-mail n'est envoyé. Un encadrant ne peut inviter un
+  parent que pour un élève de ses propres groupes.
+- `GET /api/auth/invites/:token` affiche l'invitation, et
+  `POST /api/auth/invites/:token/accept` fixe le mot de passe et ouvre la
+  session.
+- `POST /api/auth/password-resets` (admin) crée le même type de lien pour
+  réinitialiser le mot de passe d'un adulte.
+
+Les jetons d'invitation et de session ne sont conservés qu'en SHA-256. Les
+requêtes qui modifient l'état sont refusées si l'en-tête `Origin` vient d'un
+autre domaine.
+
+### Enfants
+
+1. `GET /api/auth/children/group/:joinCode` liste les élèves du groupe à
+   partir du code à six caractères. Si l'appareil est fixé (`GET
+   /api/auth/device-pin`), l'écran saute cette étape.
+2. `POST /api/auth/children/login` reçoit l'élève et **trois images dans
+   l'ordre** parmi les neuf de `PICTURE_PATTERNS` (renard, panda, grenouille,
+   pomme, banane, fraise, ballon, voiture, étoile).
+3. Cinq erreurs consécutives bloquent l'élève dix minutes avec le message
+   « Demande de l’aide à ton encadrant. ». Une réussite remet le compteur à
+   zéro.
+4. La session enfant dure **huit heures**, sans prolongation, et son cookie
+   disparaît au `POST /api/auth/logout` (« Au revoir »).
+
+Un encadrant ou un administrateur peut régénérer la suite d'images d'un élève
+avec `POST /api/auth/students/:studentId/picture-password/reset` : la nouvelle
+suite est affichée une seule fois, seule son empreinte argon2id est stockée,
+et les sessions enfant de l'élève sont révoquées.
+
+### Fixation d'appareil
+
+`POST /api/auth/device-pin` (admin ou encadrant ayant accès au groupe) pose un
+cookie `zap_device` **signé** qui retient le groupe pendant trente jours. Les
+enfants de cette tablette n'ont alors plus à saisir le code. `DELETE
+/api/auth/device-pin` l'efface.
+
+### Configuration
+
+| Variable | Rôle |
+|---|---|
+| `COOKIE_SECRET` | signature des cookies, 32 caractères minimum ; obligatoire en production |
+| `PUBLIC_ORIGIN` | origine utilisée pour les liens d'invitation et le contrôle d'origine |
+| `COOKIE_SECURE` | force l'attribut `Secure` (activé par défaut en production) |
+| `TRUST_PROXY` | lit `X-Forwarded-For` derrière Caddy, pour la limitation par IP |
 
 ## Commandes
 
@@ -174,7 +240,7 @@ collection.
 |---|---|
 | `users` | rôle, prénom/pseudo, identifiant et mot de passe adultes, avatar, e-mail optionnel, secret image des élèves, verrouillage, liens parent, vocabulaire |
 | `groups` | nom, code d'invitation, créateur, archivage, membres avec leur rôle |
-| `sessions` | sessions adultes et enfants, expiration |
+| `sessions` | sessions adultes et enfants, empreinte du jeton, groupe de l'enfant, expiration |
 | `invites` | invitations encadrant, parent et réinitialisation |
 | `levelprogress` | une ligne par élève et par niveau |
 | `levelattempts` | historique des tentatives, avec le groupe dénormalisé |
@@ -202,8 +268,14 @@ Points structurants :
 
 Les migrations vivent dans `apps/api/migrations` (configuration
 `apps/api/migrate-mongo-config.js`). La première crée les index de base, la
-seconde l'index unique des identifiants adultes ; l'API appelle aussi
-`syncIndexes()` au démarrage, les deux chemins étant idempotents.
+seconde l'index unique des identifiants adultes, la troisième l'index unique
+de l'empreinte des sessions ; l'API appelle aussi `syncIndexes()` au démarrage,
+les deux chemins étant idempotents.
+
+Les sessions ne stockent jamais le jeton du cookie : `tokenHash` contient son
+SHA-256 et un index unique partiel empêche deux sessions de partager un jeton.
+Une session enfant retient aussi le groupe choisi, ce qui permet de vérifier
+l'accès sans redemander le code.
 
 `deleteStudent` (`apps/api/src/services/deleteStudent.ts`) supprime, dans une
 transaction, l'élève et ses données (`levelprogress`, `levelattempts`,
@@ -252,6 +324,9 @@ L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
 ```bash
 # Une seule fois : créer le dossier servi par Caddy
 sudo install -d -o "$(id -un)" -g "$(id -gn)" -m 755 /srv/circuits/web
+
+# Une seule fois : ajouter COOKIE_SECRET au .env de production
+printf 'COOKIE_SECRET=%s\n' "$(openssl rand -base64 48)" >> .env
 
 # Déployer MongoDB, l'API et le front
 ./scripts/deploy.sh

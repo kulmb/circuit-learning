@@ -21,10 +21,13 @@
   },
   "dependencies": {
     "@circuits/shared": "workspace:*",
+    "@fastify/cookie": "^9.4.0",
+    "@fastify/rate-limit": "^9.1.0",
     "argon2": "^0.41.1",
     "dotenv": "^18.0.9",
     "fastify": "^4.28.1",
-    "mongoose": "^9.11.4"
+    "mongoose": "^9.11.4",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.17.6",
