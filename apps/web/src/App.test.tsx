@@ -12,12 +12,15 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /atelier libre/i })).toBeInTheDocument();
   });
 
-  it('shows a placeholder when starting the game', () => {
+  it('opens the workbench when starting the game', () => {
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: /jouer/i }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: /jouer/i }));
 
-    expect(screen.getByText('Le premier niveau arrive bientôt !')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Plan de travail' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /retour/i })).toBeInTheDocument();
+    expect(screen.getByText('Pile')).toBeInTheDocument();
   });
 });

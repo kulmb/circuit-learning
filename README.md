@@ -52,6 +52,19 @@ pnpm verify     # typecheck + tests + build
 Les tests couvrent le circuit simple, le série, le parallèle, les courts-circuits,
 les LED, les matériaux conducteurs/isolants et la sérialisation.
 
+## Plan de travail
+
+Le bouton « Jouer » ouvre le plan de travail :
+
+- palette de composants avec glisser-déposer et aimantation à la grille ;
+- câblage par deux appuis sur des bornes, ou en glissant d'une borne à l'autre ;
+- sélection d'un composant avec rotation et suppression, interrupteurs activables
+  d'un simple appui ;
+- suppression par glisser vers la corbeille et bouton d'annulation.
+
+Le moteur recalcule le circuit après chaque modification ; pendant un déplacement,
+seul l'aperçu visuel bouge.
+
 ## Déploiement
 
 L'application est publiée sous `https://circuit-learning.87543362.xyz/`.

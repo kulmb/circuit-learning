@@ -1,18 +1,22 @@
-import { useState } from 'react';
+import { useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
+import { WorkbenchPage } from './workbench/WorkbenchPage';
 import './App.css';
 
 type Screen = 'home' | 'play' | 'sandbox';
 
-const PLACEHOLDER_TEXT: Record<Exclude<Screen, 'home'>, string> = {
-  play: 'Le premier niveau arrive bientôt !',
+const PLACEHOLDER_TEXT: Record<Exclude<Screen, 'home' | 'play'>, string> = {
   sandbox: 'L’atelier libre arrive bientôt !',
 };
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const reduceMotion = useReducedMotion() ?? false;
+
+  if (screen === 'play') {
+    return <WorkbenchPage onBack={() => setScreen('home')} />;
+  }
 
   return (
     <motion.div
@@ -33,7 +37,7 @@ export function App() {
             <button
               type="button"
               className="big-button big-button--primary"
-              onClick={() => setScreen('play')}
+              onPointerDown={(event) => activate(event, () => setScreen('play'))}
             >
               <PlayIcon />
               <span>Jouer</span>
@@ -41,7 +45,7 @@ export function App() {
             <button
               type="button"
               className="big-button big-button--secondary"
-              onClick={() => setScreen('sandbox')}
+              onPointerDown={(event) => activate(event, () => setScreen('sandbox'))}
             >
               <WrenchIcon />
               <span>Atelier libre</span>
@@ -57,7 +61,7 @@ export function App() {
           <button
             type="button"
             className="big-button big-button--ghost"
-            onClick={() => setScreen('home')}
+            onPointerDown={(event) => activate(event, () => setScreen('home'))}
           >
             <BackIcon />
             <span>Retour</span>
@@ -66,6 +70,18 @@ export function App() {
       )}
     </motion.div>
   );
+}
+
+function activate(
+  event: ReactPointerEvent<HTMLButtonElement>,
+  action: () => void,
+): void {
+  if (event.pointerType === 'mouse' && event.button !== 0) {
+    return;
+  }
+
+  event.preventDefault();
+  action();
 }
 
 function ZapFace() {
