@@ -79,6 +79,7 @@ export async function buildStudentExport(
         endedAt: iso(attempt.endedAt),
         success: attempt.success,
         hintsUsed: attempt.hintsUsed,
+        durationMs: attempt.durationMs ?? 0,
         errorsDetected: [...attempt.errorsDetected],
       }))
       .sort((left, right) => right.startedAt.localeCompare(left.startedAt)),

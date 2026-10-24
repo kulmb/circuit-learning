@@ -269,6 +269,7 @@ export const studentExportSchema = z.object({
       endedAt: nullableDateTimeSchema,
       success: z.boolean(),
       hintsUsed: z.number().int().nonnegative(),
+      durationMs: z.number().int().nonnegative(),
       errorsDetected: z.array(z.string()),
     }),
   ),
