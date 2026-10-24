@@ -43,8 +43,8 @@ pnpm verify     # typecheck + tests + build
 `@circuits/shared` expose un moteur pur TypeScript, sans React ni DOM :
 
 - `createComponent(type, options)` et `createWire(id, from, to)`
-- `simulateCircuit(circuit)` : courants, états qualitatifs (`off`, `dim`, `normal`,
-  `bright`) et diagnostics
+- `simulateCircuit(circuit)` : courants des composants et des fils, états qualitatifs
+  (`off`, `dim`, `normal`, `bright`) et diagnostics
 - `describeCircuit(circuit)` : court-circuit, circuit ouvert, interrupteur ouvert,
   LED inversée, matériau isolant, terminal non connecté
 - `serializeCircuit(circuit)` / `deserializeCircuit(json)` : format JSON versionné
@@ -60,7 +60,12 @@ Le bouton « Jouer » ouvre le plan de travail :
 - câblage par deux appuis sur des bornes, ou en glissant d'une borne à l'autre ;
 - sélection d'un composant avec rotation et suppression, interrupteurs activables
   d'un simple appui ;
-- suppression par glisser vers la corbeille et bouton d'annulation.
+- suppression par glisser vers la corbeille et bouton d'annulation ;
+- trois affichages : réaliste, symboles normalisés, ou les deux côte à côte ;
+- ampoule, moteur, buzzer et LED réagissent au courant ; le court-circuit secoue
+  la pile et fait clignoter le fil responsable ;
+- petits points jaunes animés sur les fils, dans le sens du courant et à une vitesse
+  proportionnelle à son intensité.
 
 Le moteur recalcule le circuit après chaque modification ; pendant un déplacement,
 seul l'aperçu visuel bouge.

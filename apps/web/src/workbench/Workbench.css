@@ -291,6 +291,49 @@
   background: #f8fafc;
 }
 
+.wire-current {
+  fill: none;
+  stroke: #ffd166;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 20;
+  animation-name: wire-current-flow;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  pointer-events: none;
+}
+
+@keyframes wire-current-flow {
+  to {
+    stroke-dashoffset: -20.1;
+  }
+}
+
+.wire--short {
+  stroke: #ef4444;
+  animation: short-wire 1.2s ease-in-out infinite;
+}
+
+@keyframes short-wire {
+  0%,
+  100% {
+    stroke: #355070;
+  }
+  50% {
+    stroke: #ef4444;
+  }
+}
+
+.workbench-mode-button {
+  min-width: 118px;
+}
+
+.workbench-mode-button svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
 .palette-ghost {
   position: fixed;
   z-index: 60;
@@ -411,5 +454,16 @@
   .trash-zone {
     min-width: 56px;
     min-height: 56px;
+  }
+}
+
+@media (max-width: 600px) {
+  .workbench-mode-button {
+    min-width: 56px;
+    padding: 0;
+  }
+
+  .workbench-mode-button span:last-child {
+    display: none;
   }
 }

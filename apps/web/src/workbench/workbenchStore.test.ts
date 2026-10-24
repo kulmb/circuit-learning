@@ -126,6 +126,22 @@ describe('workbench store', () => {
     expect(store().history).toHaveLength(historyLength);
   });
 
+  it('cycles through the three display modes', () => {
+    expect(store().displayMode).toBe('realistic');
+
+    store().cycleDisplayMode();
+    expect(store().displayMode).toBe('symbol');
+
+    store().cycleDisplayMode();
+    expect(store().displayMode).toBe('overlay');
+
+    store().cycleDisplayMode();
+    expect(store().displayMode).toBe('realistic');
+
+    store().setDisplayMode('overlay');
+    expect(store().displayMode).toBe('overlay');
+  });
+
   it('creates unique ids for new components', () => {
     store().addComponent('bulb', {}, { x: 2, y: 2 });
     store().addComponent('bulb', {}, { x: 4, y: 2 });

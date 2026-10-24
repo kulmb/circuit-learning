@@ -3,6 +3,7 @@ import { NOMINAL_CURRENTS, SHORT_CIRCUIT_CURRENT } from './components';
 import { CircuitError } from './errors';
 import { solveLinearSystem } from './mna';
 import { buildCircuitModel, type CircuitModel } from './model';
+import { computeWireCurrents } from './wireCurrents';
 import type {
   Circuit,
   CircuitComponent,
@@ -30,6 +31,7 @@ interface SolvedCircuit {
   states: Record<string, ComponentState>;
   ledReversedIds: string[];
   shortInfo: ShortCircuitInfo | null;
+  wireCurrents: Record<string, number>;
 }
 
 const BLOCKING_DIAGNOSTICS = new Set<DiagnosticCode>([
@@ -46,12 +48,14 @@ export function simulateCircuit(circuit: Circuit): CircuitSimulation {
   const analysis = analyzeCircuit(model);
   let states = createEmptyStates(model.components);
   let ledReversedIds: string[] = [];
+  let wireCurrents: Record<string, number> = {};
 
   if (analysis.hasBattery && analysis.closed && analysis.shortInfo === null) {
     try {
       const solved = solveCircuit(model);
       states = solved.states;
       ledReversedIds = solved.ledReversedIds;
+      wireCurrents = solved.wireCurrents;
 
       if (solved.shortInfo !== null) {
         analysis.shortInfo = solved.shortInfo;
@@ -110,12 +114,15 @@ export function simulateCircuit(circuit: Circuit): CircuitSimulation {
     diagnostics,
     shortCircuitInfo: analysis.shortInfo,
     states,
+    wireCurrents,
   };
 }
 
 export function describeCircuit(circuit: Circuit): CircuitDescription {
-  const { states: _states, ...description } = simulateCircuit(circuit);
+  const { states: _states, wireCurrents: _wireCurrents, ...description } =
+    simulateCircuit(circuit);
   void _states;
+  void _wireCurrents;
   return description;
 }
 
@@ -195,7 +202,23 @@ function solveCircuit(model: CircuitModel): SolvedCircuit {
     };
   }
 
-  return { states, ledReversedIds, shortInfo };
+  let wireCurrents: Record<string, number> = {};
+
+  if (shortInfo === null) {
+    const result = computeWireCurrents(model, states);
+    wireCurrents = result.wireCurrents;
+
+    for (const [componentId, current] of Object.entries(result.componentCurrents)) {
+      const state = states[componentId];
+      if (state !== undefined) {
+        state.current = current;
+        state.state = Math.abs(current) > ACTIVE_CURRENT ? 'normal' : 'off';
+        state.on = true;
+      }
+    }
+  }
+
+  return { states, ledReversedIds, shortInfo, wireCurrents };
 }
 
 function assembleSystem(

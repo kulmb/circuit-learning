@@ -16,6 +16,8 @@ import {
 } from '@circuits/shared';
 import { create } from 'zustand';
 
+import { nextDisplayMode, type DisplayMode } from './displayMode';
+
 export type ComponentOptions = Omit<CreateComponentOptions, 'id' | 'position'>;
 
 export interface Selection {
@@ -35,6 +37,7 @@ export interface WorkbenchState {
   simulation: CircuitSimulation;
   selected: Selection | null;
   pendingTerminal: TerminalRef | null;
+  displayMode: DisplayMode;
   history: CircuitSnapshot[];
   addComponent: (type: ComponentType, options: ComponentOptions, position: Vec2) => void;
   moveComponent: (componentId: string, position: Vec2) => void;
@@ -45,6 +48,8 @@ export interface WorkbenchState {
   addWire: (from: TerminalRef, to: TerminalRef) => void;
   select: (selection: Selection | null) => void;
   setPendingTerminal: (ref: TerminalRef | null) => void;
+  setDisplayMode: (mode: DisplayMode) => void;
+  cycleDisplayMode: () => void;
   undo: () => void;
   resetWorkbench: () => void;
 }
@@ -56,6 +61,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
   simulation: simulateCircuit(initialCircuit),
   selected: null,
   pendingTerminal: null,
+  displayMode: 'realistic',
   history: [],
 
   addComponent(type, options, position) {
@@ -277,6 +283,18 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
     set({ pendingTerminal: ref });
   },
 
+  setDisplayMode(mode) {
+    if (get().displayMode === mode) {
+      return;
+    }
+
+    set({ displayMode: mode });
+  },
+
+  cycleDisplayMode() {
+    set({ displayMode: nextDisplayMode(get().displayMode) });
+  },
+
   undo() {
     const state = get();
     const previous = state.history[state.history.length - 1];
@@ -304,6 +322,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       simulation: simulateCircuit(circuit),
       selected: null,
       pendingTerminal: null,
+      displayMode: 'realistic',
       history: [],
     });
   },

@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { WorkbenchPage } from './WorkbenchPage';
@@ -110,6 +110,20 @@ describe('workbench interactions', () => {
       .circuit.components.find((component) => component.id === 'bulb-1');
 
     expect(moved?.position).toEqual({ x: 10, y: 4 });
+  });
+
+  it('cycles the display mode from the header', () => {
+    render(<WorkbenchPage onBack={() => undefined} />);
+    getSvg();
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: /affichage : réaliste/i }),
+    );
+
+    expect(useWorkbenchStore.getState().displayMode).toBe('symbol');
+    expect(
+      screen.getByRole('button', { name: /affichage : symboles/i }),
+    ).toBeInTheDocument();
   });
 
   it('toggles a switch with a tap', () => {

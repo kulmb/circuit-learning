@@ -18,6 +18,10 @@ export const fr = {
     statusLedReversed: 'La LED est à l’envers.',
     statusBulbOneSide: 'L’ampoule n’est reliée que d’un côté.',
     statusError: 'Oups, je n’arrive pas à calculer le circuit.',
+    displayMode: 'Affichage',
+    displayRealistic: 'Réaliste',
+    displaySymbol: 'Symboles',
+    displayOverlay: 'Les deux',
   },
   components: {
     battery: { label: 'Pile', short: '+ −' },

@@ -1,16 +1,20 @@
 import type { CircuitComponent, ComponentState } from '@circuits/shared';
 
+import { RealisticArt, SymbolArt, SymbolBadge } from './ComponentArt';
 import {
   CELL_SIZE,
   COMPONENT_HEIGHT,
   COMPONENT_WIDTH,
 } from './constants';
-import { getComponentVisual } from './paletteItems';
+import type { DisplayMode } from './displayMode';
+import './components.css';
 
 export interface ComponentBlockProps {
   component: CircuitComponent;
   state: ComponentState | undefined;
   selected: boolean;
+  displayMode: DisplayMode;
+  short: boolean;
   ghost?: boolean;
 }
 
@@ -18,15 +22,14 @@ export function ComponentBlock({
   component,
   state,
   selected,
+  displayMode,
+  short,
   ghost = false,
 }: ComponentBlockProps) {
-  const visual = getComponentVisual(component);
   const centerX = component.position.x * CELL_SIZE;
   const centerY = component.position.y * CELL_SIZE;
   const halfWidth = COMPONENT_WIDTH / 2;
   const halfHeight = COMPONENT_HEIGHT / 2;
-  const isLit =
-    state !== undefined && state.state !== 'off' && (component.type === 'bulb' || component.type === 'led');
   const dataComponentId = ghost ? undefined : component.id;
 
   return (
@@ -36,44 +39,40 @@ export function ComponentBlock({
       opacity={ghost ? 0.68 : 1}
       pointerEvents={ghost ? 'none' : undefined}
     >
-      {isLit ? (
-        <ellipse
-          cx={0}
-          cy={0}
-          rx={halfWidth * 1.35}
-          ry={halfHeight * 1.45}
-          fill={component.type === 'led' ? '#ff5c8a' : '#ffd166'}
-          opacity={0.32}
-        />
-      ) : null}
-
       <rect
         x={-halfWidth}
         y={-halfHeight}
         width={COMPONENT_WIDTH}
         height={COMPONENT_HEIGHT}
         rx={18}
-        fill={visual.color}
-        stroke={selected ? '#1d4ed8' : 'rgba(36, 50, 74, 0.28)'}
-        strokeWidth={selected ? 5 : 2}
-        strokeDasharray={ghost ? '8 8' : undefined}
+        fill="transparent"
+        pointerEvents={ghost ? 'none' : 'all'}
       />
 
-      <g transform={`rotate(${-component.rotation})`}>
-        <text
-          x={0}
-          y={component.type === 'switch' ? -7 : 0}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill={visual.textColor}
-          fontSize={16}
-          fontWeight={900}
-        >
-          {visual.shortLabel}
-        </text>
+      {displayMode === 'symbol' ? (
+        <SymbolArt component={component} state={state} short={short} />
+      ) : (
+        <RealisticArt component={component} state={state} short={short} />
+      )}
 
-        {component.type === 'switch' ? <SwitchIndicator closed={component.closed} /> : null}
-      </g>
+      {displayMode === 'overlay' ? (
+        <SymbolBadge component={component} state={state} />
+      ) : null}
+
+      {selected || ghost ? (
+        <rect
+          x={-halfWidth}
+          y={-halfHeight}
+          width={COMPONENT_WIDTH}
+          height={COMPONENT_HEIGHT}
+          rx={18}
+          fill="none"
+          stroke={selected ? '#1d4ed8' : '#94a3b8'}
+          strokeWidth={selected ? 4 : 2}
+          strokeDasharray={ghost ? '8 8' : undefined}
+          pointerEvents="none"
+        />
+      ) : null}
 
       {component.terminals.map((terminal) => {
         const terminalX = terminal.offset.x * CELL_SIZE;
@@ -90,6 +89,7 @@ export function ComponentBlock({
               cy={terminalY}
               r={32}
               fill="transparent"
+              pointerEvents={ghost ? 'none' : 'all'}
             />
             <circle
               cx={terminalX}
@@ -100,39 +100,25 @@ export function ComponentBlock({
               strokeWidth={5}
             />
             {terminal.label ? (
-              <text
-                x={terminalX}
-                y={terminalY}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fill="#24324a"
-                fontSize={13}
-                fontWeight={900}
+              <g
+                transform={`rotate(${-component.rotation} ${terminalX} ${terminalY})`}
               >
-                {terminal.label}
-              </text>
+                <text
+                  x={terminalX}
+                  y={terminalY}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill="#24324a"
+                  fontSize={13}
+                  fontWeight={900}
+                >
+                  {terminal.label}
+                </text>
+              </g>
             ) : null}
           </g>
         );
       })}
-    </g>
-  );
-}
-
-function SwitchIndicator({ closed }: { closed: boolean }) {
-  return (
-    <g transform="translate(0 15)">
-      <rect
-        x={-23}
-        y={-11}
-        width={46}
-        height={22}
-        rx={11}
-        fill={closed ? '#d9fbf6' : '#e2e8f0'}
-        stroke={closed ? '#0f766e' : '#64748b'}
-        strokeWidth={2}
-      />
-      <circle cx={closed ? 12 : -12} cy={0} r={8} fill={closed ? '#0f766e' : '#64748b'} />
     </g>
   );
 }

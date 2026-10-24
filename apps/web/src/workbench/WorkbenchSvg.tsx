@@ -17,6 +17,7 @@ import {
 } from 'react';
 
 import { fr } from '../narration/fr';
+import { unlockAudio } from './audio';
 import { ComponentBlock } from './ComponentBlock';
 import {
   BOARD_HEIGHT,
@@ -47,6 +48,7 @@ import {
   type Point,
   type TerminalCandidate,
 } from './pointer';
+import type { DisplayMode } from './displayMode';
 import type { Selection } from './workbenchStore';
 
 export interface WorkbenchSvgProps {
@@ -54,6 +56,7 @@ export interface WorkbenchSvgProps {
   simulation: CircuitSimulation;
   selected: Selection | null;
   pendingTerminal: TerminalRef | null;
+  displayMode: DisplayMode;
   previewComponent: CircuitComponent | null;
   svgRef: RefObject<SVGSVGElement>;
   acquirePointer: (pointerId: number) => boolean;
@@ -122,6 +125,7 @@ export function WorkbenchSvg({
   simulation,
   selected,
   pendingTerminal,
+  displayMode,
   previewComponent,
   svgRef,
   acquirePointer,
@@ -221,6 +225,7 @@ export function WorkbenchSvg({
   const snapPoint = wirePreview?.target
     ? terminalPoints.get(terminalKey(wirePreview.target))
     : undefined;
+  const shortWireIds = new Set(simulation.shortCircuitInfo?.wireIds ?? []);
 
   function updateTrashHover(active: boolean): void {
     if (trashHoverRef.current !== active) {
@@ -233,6 +238,8 @@ export function WorkbenchSvg({
     if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
+
+    unlockAudio();
 
     if (gestureRef.current !== null || !acquirePointer(event.pointerId)) {
       return;
@@ -605,16 +612,37 @@ export function WorkbenchSvg({
 
       {renderedWires.map(({ wire, path }) => {
         const isSelected = selected?.kind === 'wire' && selected.id === wire.id;
+        const current = simulation.wireCurrents[wire.id] ?? 0;
+        const isShort =
+          simulation.shortCircuit &&
+          (shortWireIds.size === 0 || shortWireIds.has(wire.id));
+        const showCurrent = !simulation.shortCircuit && Math.abs(current) > 0.015;
+        const duration = clamp(
+          1.6 - Math.min(Math.abs(current), 1.2) * 1.1,
+          0.5,
+          1.6,
+        );
 
         return (
           <g key={wire.id} data-wire-id={wire.id}>
             <path
               d={path}
+              className={isShort ? 'wire--short' : undefined}
               fill="none"
               stroke={isSelected ? '#1d4ed8' : '#355070'}
               strokeWidth={isSelected ? 11 : 8}
               strokeLinecap="round"
             />
+            {showCurrent ? (
+              <path
+                d={path}
+                className="wire-current"
+                style={{
+                  animationDuration: `${duration}s`,
+                  animationDirection: current < 0 ? 'reverse' : 'normal',
+                }}
+              />
+            ) : null}
             <path
               d={path}
               fill="none"
@@ -636,6 +664,8 @@ export function WorkbenchSvg({
             selected.id === component.id &&
             dragPreview === null
           }
+          displayMode={displayMode}
+          short={simulation.shortCircuit}
         />
       ))}
 
@@ -644,6 +674,8 @@ export function WorkbenchSvg({
           component={previewComponent}
           state={undefined}
           selected={false}
+          displayMode={displayMode}
+          short={false}
           ghost
         />
       ) : null}

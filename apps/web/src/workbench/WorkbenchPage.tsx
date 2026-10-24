@@ -6,12 +6,14 @@ import {
 } from '@circuits/shared';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
+  useEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
 import { fr } from '../narration/fr';
+import { playBuzzerBeep, unlockAudio } from './audio';
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
@@ -19,6 +21,7 @@ import {
   GRID_COLUMNS,
   GRID_ROWS,
 } from './constants';
+import type { DisplayMode } from './displayMode';
 import { PALETTE_ITEMS, type PaletteItem } from './paletteItems';
 import {
   applyTouchOffset,
@@ -68,6 +71,7 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
     simulation,
     selected,
     pendingTerminal,
+    displayMode,
     history,
     addComponent,
     moveComponent,
@@ -78,6 +82,7 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
     addWire,
     select,
     setPendingTerminal,
+    cycleDisplayMode,
     undo,
   } = useWorkbenchStore();
 
@@ -85,12 +90,40 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const trashRef = useRef<HTMLDivElement>(null);
   const activePointerRef = useRef<number | null>(null);
+  const previousBuzzingRef = useRef<Set<string>>(new Set());
   const [paletteDrag, setPaletteDrag] = useState<PaletteDragState | null>(null);
   const [returningGhost, setReturningGhost] = useState<ReturningGhost | null>(null);
   const [trashActive, setTrashActive] = useState(false);
 
   const status = getStatus(simulation);
   const ghostPoint = paletteDrag !== null ? paletteGhostPoint(paletteDrag) : null;
+  const modeLabel = getModeLabel(displayMode);
+  const buzzingKey = circuit.components
+    .filter(
+      (component) =>
+        component.type === 'buzzer' &&
+        simulation.states[component.id]?.state !== 'off',
+    )
+    .map((component) => component.id)
+    .sort()
+    .join('|');
+
+  useEffect(() => {
+    const next = new Set(buzzingKey === '' ? [] : buzzingKey.split('|'));
+    let started = false;
+
+    for (const id of next) {
+      if (!previousBuzzingRef.current.has(id)) {
+        started = true;
+      }
+    }
+
+    previousBuzzingRef.current = next;
+
+    if (started) {
+      playBuzzerBeep();
+    }
+  }, [buzzingKey]);
 
   function acquirePointer(pointerId: number): boolean {
     if (activePointerRef.current !== null) {
@@ -168,6 +201,8 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
     }
 
     event.preventDefault();
+    unlockAudio();
+
     if (!acquirePointer(event.pointerId)) {
       return;
     }
@@ -292,6 +327,16 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
 
         <button
           type="button"
+          className="workbench-icon-button workbench-mode-button"
+          onPointerDown={(event) => activateButton(event, cycleDisplayMode)}
+          aria-label={`${fr.workbench.displayMode} : ${modeLabel}`}
+        >
+          <ViewIcon />
+          <span>{modeLabel}</span>
+        </button>
+
+        <button
+          type="button"
           className="workbench-icon-button"
           onPointerDown={(event) => activateButton(event, undo)}
           disabled={history.length === 0}
@@ -337,6 +382,7 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
               simulation={simulation}
               selected={selected}
               pendingTerminal={pendingTerminal}
+              displayMode={displayMode}
               previewComponent={paletteDrag?.placement?.component ?? null}
               svgRef={svgRef}
               acquirePointer={acquirePointer}
@@ -452,6 +498,33 @@ function getPaletteItemCenter(key: string): Point {
   }
 
   return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+}
+
+function getModeLabel(mode: DisplayMode): string {
+  switch (mode) {
+    case 'realistic':
+      return fr.workbench.displayRealistic;
+    case 'symbol':
+      return fr.workbench.displaySymbol;
+    case 'overlay':
+      return fr.workbench.displayOverlay;
+  }
+}
+
+function ViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.6" fill="currentColor" />
+    </svg>
+  );
 }
 
 function getStatus(simulation: CircuitSimulation): Status {
