@@ -1,5 +1,8 @@
 import argon2 from 'argon2';
 
+export const MIN_PASSWORD_LENGTH = 12;
+export const MAX_PASSWORD_LENGTH = 128;
+
 /** Stable representation of the three pictures chosen by a child. */
 export function pictureSecretFromPattern(pattern: readonly string[]): string {
   return pattern

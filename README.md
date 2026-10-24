@@ -41,6 +41,28 @@ Le seed est idempotent. Il affiche le code à six caractères du groupe
 « Équipe Camelot » et le motif de démonstration des trois élèves
 (`renard → pomme → ballon`).
 
+### Compte administrateur
+
+Pour la production, `admin:create` crée uniquement l'administrateur (sans le
+groupe ni les élèves de démonstration) à partir des mêmes variables :
+
+```bash
+ADMIN_EMAIL='...' ADMIN_PASSWORD='...' ADMIN_NAME='...' \
+  pnpm --filter @circuits/api admin:create
+```
+
+Le mot de passe se change ensuite sans le connaître au préalable :
+
+```bash
+ADMIN_EMAIL='...' pnpm --filter @circuits/api admin:password
+```
+
+La commande demande deux fois le nouveau mot de passe sans l'afficher (12
+caractères minimum), révoque les sessions existantes et inscrit l'action dans
+`auditlogs`. Pour un script, `ADMIN_NEW_PASSWORD` évite l'invite, mais le secret
+apparaît alors dans l'environnement du processus : à réserver à l'automatisation.
+L'interface web « Mon compte » arrivera avec l'écran de connexion des adultes.
+
 ## Commandes
 
 ```bash
@@ -53,7 +75,9 @@ pnpm verify     # typecheck + tests + build
 pnpm --filter @circuits/api db:migrate         # applique les migrations
 pnpm --filter @circuits/api db:migrate:status  # état des migrations
 pnpm --filter @circuits/api db:migrate:down    # annule la dernière
-pnpm --filter @circuits/api db:seed            # admin + groupe + 3 élèves
+pnpm --filter @circuits/api db:seed            # admin + groupe + 3 élèves (démo)
+pnpm --filter @circuits/api admin:create       # administrateur seul (production)
+pnpm --filter @circuits/api admin:password     # change un mot de passe
 ```
 
 ## Moteur de circuit
@@ -233,8 +257,8 @@ MONGODB_URI='mongodb://127.0.0.1:27018/circuits?directConnection=true' \
 
 # Créer l'administrateur (une seule fois, avec un vrai mot de passe)
 MONGODB_URI='mongodb://127.0.0.1:27018/circuits?directConnection=true' \
-ADMIN_EMAIL='...' ADMIN_PASSWORD='...' \
-  pnpm --filter @circuits/api db:seed
+ADMIN_EMAIL='...' ADMIN_PASSWORD='...' ADMIN_NAME='...' \
+  pnpm --filter @circuits/api admin:create
 ```
 
 Vérification :

@@ -23,6 +23,10 @@ import {
   UserModel,
 } from '../src/db/models/index.js';
 import {
+  changeAccountPassword,
+  createAdminAccount,
+} from '../src/services/adminAccounts.js';
+import {
   deleteStudent,
   NotAStudentError,
   StudentNotFoundError,
@@ -36,6 +40,7 @@ import {
   seedDemoData,
 } from '../src/services/seedDemoData.js';
 import {
+  hashSecret,
   pictureSecretFromPattern,
   verifySecret,
 } from '../src/services/secrets.js';
@@ -358,6 +363,124 @@ describe('invites and audit logs', () => {
 
     expect(raw.createdAt).toBeInstanceOf(Date);
     expect('updatedAt' in raw).toBe(false);
+  });
+});
+
+describe('admin accounts', () => {
+  it('creates an admin once without overwriting the password', async () => {
+    const first = await createAdminAccount({
+      email: ' Kulmb@Example.com ',
+      password: ADMIN_PASSWORD,
+      displayName: 'kulmb',
+    });
+
+    expect(first.created).toBe(true);
+
+    const admin = await UserModel.findOne({
+      email: 'kulmb@example.com',
+    }).select('+passwordHash');
+
+    expect(admin?.role).toBe('admin');
+    expect(admin?.displayName).toBe('kulmb');
+    if (admin?.passwordHash === null || admin?.passwordHash === undefined) {
+      throw new Error('The admin password hash is missing');
+    }
+    expect(await verifySecret(admin.passwordHash, ADMIN_PASSWORD)).toBe(true);
+
+    const second = await createAdminAccount({
+      email: 'kulmb@example.com',
+      password: 'another-very-long-password',
+      displayName: 'kulmb',
+    });
+
+    expect(second.created).toBe(false);
+
+    const unchanged = await UserModel.findOne({
+      email: 'kulmb@example.com',
+    }).select('+passwordHash');
+
+    if (
+      unchanged?.passwordHash === null ||
+      unchanged?.passwordHash === undefined
+    ) {
+      throw new Error('The stored password hash is missing');
+    }
+    expect(await verifySecret(unchanged.passwordHash, ADMIN_PASSWORD)).toBe(true);
+    expect(
+      await verifySecret(unchanged.passwordHash, 'another-very-long-password'),
+    ).toBe(false);
+  });
+
+  it('changes a password, clears the lock and revokes sessions', async () => {
+    const admin = await UserModel.create({
+      role: 'admin',
+      displayName: 'kulmb',
+      email: 'kulmb@example.com',
+      passwordHash: await hashSecret(ADMIN_PASSWORD),
+      failedLogins: 4,
+      lockedUntil: new Date(Date.now() + 60_000),
+    });
+
+    await SessionModel.create([
+      { userId: admin._id, kind: 'adult', expiresAt: futureDate() },
+      { userId: admin._id, kind: 'adult', expiresAt: futureDate() },
+    ]);
+
+    const result = await changeAccountPassword({
+      email: 'KULMB@example.com',
+      newPassword: 'new-password-456789',
+    });
+
+    expect(result.sessionsRevoked).toBe(2);
+
+    const updated = await UserModel.findById(admin._id).select('+passwordHash');
+    if (updated?.passwordHash === null || updated?.passwordHash === undefined) {
+      throw new Error('The updated password hash is missing');
+    }
+
+    expect(await verifySecret(updated.passwordHash, 'new-password-456789')).toBe(
+      true,
+    );
+    expect(await verifySecret(updated.passwordHash, ADMIN_PASSWORD)).toBe(false);
+    expect(updated.failedLogins).toBe(0);
+    expect(updated.lockedUntil).toBeNull();
+    expect(await SessionModel.countDocuments({ userId: admin._id })).toBe(0);
+    expect(
+      await AuditLogModel.countDocuments({
+        actorId: admin._id,
+        action: 'change_password',
+      }),
+    ).toBe(1);
+  });
+
+  it('rejects a role conflict, an unknown account and a short password', async () => {
+    await UserModel.create({
+      role: 'encadrant',
+      displayName: 'Coach',
+      email: 'coach@example.com',
+      passwordHash: 'hash',
+    });
+
+    await expect(
+      createAdminAccount({
+        email: 'coach@example.com',
+        password: ADMIN_PASSWORD,
+      }),
+    ).rejects.toThrow(/autre rôle/i);
+
+    await expect(
+      changeAccountPassword({
+        email: 'nobody@example.com',
+        newPassword: ADMIN_PASSWORD,
+      }),
+    ).rejects.toThrow(/Aucun compte/i);
+
+    await expect(
+      changeAccountPassword({
+        email: 'coach@example.com',
+        newPassword: 'short',
+      }),
+    ).rejects.toThrow(/12 caractères/i);
   });
 });
 

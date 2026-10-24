@@ -12,7 +12,9 @@
     "db:migrate": "migrate-mongo up",
     "db:migrate:status": "migrate-mongo status",
     "db:migrate:down": "migrate-mongo down",
-    "db:seed": "tsx src/scripts/seed.ts"
+    "db:seed": "tsx src/scripts/seed.ts",
+    "admin:create": "tsx src/scripts/createAdmin.ts",
+    "admin:password": "tsx src/scripts/setPassword.ts"
   },
   "engines": {
     "node": ">=20.19.0"

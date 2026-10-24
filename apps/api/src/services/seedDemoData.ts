@@ -7,7 +7,11 @@ import {
   type UserDocument,
 } from '../db/models/index.js';
 import { generateJoinCode } from './joinCode.js';
-import { hashSecret, pictureSecretFromPattern } from './secrets.js';
+import {
+  hashSecret,
+  MIN_PASSWORD_LENGTH,
+  pictureSecretFromPattern,
+} from './secrets.js';
 
 export const DEMO_GROUP_NAME = 'Équipe Camelot';
 
@@ -21,8 +25,6 @@ export const DEMO_STUDENTS = [
 export const DEMO_PICTURE_PATTERN = ['renard', 'pomme', 'ballon'] as const;
 
 export const DEMO_VOCABULARY = ['circuitFerme', 'fil'] as const;
-
-export const MIN_ADMIN_PASSWORD_LENGTH = 12;
 
 export interface SeedOptions {
   adminEmail: string;
@@ -55,9 +57,9 @@ export async function seedDemoData(
     throw new Error('ADMIN_EMAIL n’est pas une adresse e-mail valide.');
   }
 
-  if (options.adminPassword.length < MIN_ADMIN_PASSWORD_LENGTH) {
+  if (options.adminPassword.length < MIN_PASSWORD_LENGTH) {
     throw new Error(
-      `ADMIN_PASSWORD doit contenir au moins ${MIN_ADMIN_PASSWORD_LENGTH} caractères.`,
+      `ADMIN_PASSWORD doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`,
     );
   }
 
