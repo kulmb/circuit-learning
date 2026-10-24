@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Zap } from './Zap';
+import { ZAP_PANEL_STORAGE_KEY } from './zapVisibility';
 
 function renderZap(variant: 'default' | 'compact' | 'top', onReplay = vi.fn()) {
   render(
@@ -21,6 +22,10 @@ function renderZap(variant: 'default' | 'compact' | 'top', onReplay = vi.fn()) {
 }
 
 describe('Zap compact bubble', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -56,5 +61,40 @@ describe('Zap compact bubble', () => {
       vi.advanceTimersByTime(10000);
     });
     expect(screen.getByText('Bonjour !')).toBeInTheDocument();
+  });
+
+  it('hides the whole panel and reopens it from a small button', () => {
+    const onReplay = renderZap('default');
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: 'Cacher Zap' }),
+    );
+
+    expect(screen.queryByText('Bonjour !')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Cacher Zap' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Afficher Zap' }),
+    ).toBeInTheDocument();
+    expect(window.localStorage.getItem(ZAP_PANEL_STORAGE_KEY)).toBe('true');
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: 'Afficher Zap' }),
+    );
+
+    expect(screen.getByText('Bonjour !')).toBeInTheDocument();
+    expect(onReplay).toHaveBeenCalledTimes(1);
+    expect(window.localStorage.getItem(ZAP_PANEL_STORAGE_KEY)).toBe('false');
+  });
+
+  it('stays collapsed after a reload', () => {
+    window.localStorage.setItem(ZAP_PANEL_STORAGE_KEY, 'true');
+    renderZap('default');
+
+    expect(screen.queryByText('Bonjour !')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Afficher Zap' }),
+    ).toBeInTheDocument();
   });
 });

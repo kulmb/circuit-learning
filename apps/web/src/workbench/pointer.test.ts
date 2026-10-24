@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyTouchOffset,
+  buildStraightWirePath,
+  buildWireMidpoint,
   buildWirePath,
   clampGridPosition,
+  decidePaletteGesture,
   findNearestTerminal,
   gridToSvg,
   isDragGesture,
   isPointInsideBoard,
+  paletteScrollAxis,
   snapToGrid,
   svgToGrid,
   type TerminalCandidate,
@@ -25,6 +29,69 @@ describe('pointer gestures', () => {
 
   it('treats a movement longer than 8px as a drag', () => {
     expect(isDragGesture({ x: 0, y: 0 }, { x: 6, y: 6 })).toBe(true);
+  });
+});
+
+describe('palette gestures', () => {
+  it('finds the axis the palette can scroll on', () => {
+    expect(
+      paletteScrollAxis({
+        scrollWidth: 1000,
+        clientWidth: 800,
+        scrollHeight: 300,
+        clientHeight: 300,
+      }),
+    ).toBe('x');
+    expect(
+      paletteScrollAxis({
+        scrollWidth: 200,
+        clientWidth: 200,
+        scrollHeight: 600,
+        clientHeight: 300,
+      }),
+    ).toBe('y');
+    expect(
+      paletteScrollAxis({
+        scrollWidth: 200,
+        clientWidth: 200,
+        scrollHeight: 300,
+        clientHeight: 300,
+      }),
+    ).toBeNull();
+    expect(paletteScrollAxis(null)).toBeNull();
+  });
+
+  it('waits for a clear movement before choosing', () => {
+    expect(
+      decidePaletteGesture({ x: 0, y: 0 }, { x: 3, y: 4 }, 'x'),
+    ).toBe('pending');
+  });
+
+  it('browses a horizontal tray when the swipe follows it', () => {
+    expect(
+      decidePaletteGesture({ x: 0, y: 0 }, { x: -60, y: 8 }, 'x'),
+    ).toBe('scroll');
+  });
+
+  it('pulls a component out when the touch leaves the scroll axis', () => {
+    expect(
+      decidePaletteGesture({ x: 0, y: 0 }, { x: 10, y: -60 }, 'x'),
+    ).toBe('drag');
+  });
+
+  it('scrolls a vertical sidebar but drags horizontally', () => {
+    expect(
+      decidePaletteGesture({ x: 0, y: 0 }, { x: 5, y: 50 }, 'y'),
+    ).toBe('scroll');
+    expect(
+      decidePaletteGesture({ x: 0, y: 0 }, { x: 50, y: 5 }, 'y'),
+    ).toBe('drag');
+  });
+
+  it('always drags when the palette needs no scrolling', () => {
+    expect(
+      decidePaletteGesture({ x: 0, y: 0 }, { x: 60, y: 8 }, null),
+    ).toBe('drag');
   });
 });
 
@@ -83,6 +150,19 @@ describe('wire path', () => {
     const path = buildWirePath({ x: 0, y: 0 }, { x: 80, y: 0 }, 96, 0.75);
 
     expect(path).toBe('M 0 0 Q 40 60 80 0');
+  });
+
+  it('places the delete button on the curved midpoint', () => {
+    expect(buildWireMidpoint({ x: 0, y: 0 }, { x: 100, y: 0 })).toEqual({
+      x: 50,
+      y: 12.5,
+    });
+  });
+
+  it('draws the dashed preview as a straight segment', () => {
+    expect(buildStraightWirePath({ x: 0, y: 0 }, { x: 100, y: 40 })).toBe(
+      'M 0 0 L 100 40',
+    );
   });
 });
 

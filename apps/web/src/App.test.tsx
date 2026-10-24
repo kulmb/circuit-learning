@@ -1,14 +1,19 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { App } from './App';
-import { markPwaUpdateReady, resetPwaUpdate } from './pwa/update';
+import {
+  PWA_UPDATE_NOTICE_KEY,
+  resetPwaUpgradeNotice,
+} from './pwa/update';
+import { APP_VERSION_STORAGE_KEY } from './version';
 
 describe('App', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/');
     window.localStorage.clear();
-    resetPwaUpdate();
+    window.sessionStorage.clear();
+    resetPwaUpgradeNotice();
   });
 
   it('shows the title and the two main actions', () => {
@@ -17,6 +22,15 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Les Circuits de Zap' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /jouer/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /atelier libre/i })).toBeInTheDocument();
+  });
+
+  it('stores and displays the application version', () => {
+    render(<App />);
+
+    expect(screen.getByText('Version 0.1.0')).toBeInTheDocument();
+    expect(
+      window.localStorage.getItem(APP_VERSION_STORAGE_KEY),
+    ).toBe('0.1.0');
   });
 
   it('opens the level map and starts the first level', async () => {
@@ -90,29 +104,42 @@ describe('App', () => {
     ).toBeInTheDocument();
   });
 
-  it('offers a service-worker update only on the level map', async () => {
-    const apply = vi.fn();
-    markPwaUpdateReady(apply);
+  it('shows a successful update notice on every page', async () => {
+    window.sessionStorage.setItem(PWA_UPDATE_NOTICE_KEY, '1');
 
     render(<App />);
 
     expect(
-      screen.queryByText('Une nouvelle version est prête.'),
-    ).not.toBeInTheDocument();
-
-    fireEvent.pointerDown(screen.getByRole('button', { name: /jouer/i }));
-    fireEvent.pointerDown(
-      await screen.findByRole('button', { name: /jouer en invité/i }),
-    );
-
+      await screen.findByText('Mise à jour terminée !'),
+    ).toBeInTheDocument();
     expect(
-      await screen.findByText('Une nouvelle version est prête.'),
+      screen.getByText('Tu joues avec la dernière version.'),
     ).toBeInTheDocument();
 
     fireEvent.pointerDown(
-      screen.getByRole('button', { name: 'Mettre à jour' }),
+      screen.getByRole('button', { name: /espace adulte/i }),
     );
-    expect(apply).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByRole('heading', { name: 'Connexion adulte' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Mise à jour terminée !'),
+    ).toBeInTheDocument();
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: 'Fermer' }),
+    );
+    expect(
+      screen.queryByText('Mise à jour terminée !'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not show an update notice on a normal load', () => {
+    render(<App />);
+
+    expect(
+      screen.queryByText('Mise à jour terminée !'),
+    ).not.toBeInTheDocument();
   });
 
   it('loads the parent settings behind a small question', async () => {

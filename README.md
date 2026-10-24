@@ -620,10 +620,14 @@ Le front est une PWA générée par `vite-plugin-pwa` (Workbox, mode `generateSW
 - Les navigations SPA retombent sur `index.html` ; un niveau déjà précaché se
   lance hors ligne. La progression hors ligne continue d’utiliser la file
   `ApiProgressRepository` (ou `localStorage` en invité).
-- Une mise à jour ne s’applique jamais pendant une partie : le service worker
-  attend, et seule la carte des niveaux affiche « Une nouvelle version est
-  prête » avec le bouton « Mettre à jour ». Une vérification est aussi lancée
-  toutes les heures quand la page est visible.
+- Au chargement, si une nouvelle version est disponible, elle est activée
+  automatiquement et la page se recharge. Un bandeau « Mise à jour terminée ! »
+  s’affiche ensuite sur toutes les pages. Aucune vérification périodique n’est
+  lancée, pour ne jamais interrompre une partie ouverte.
+- La version applicative vient de `apps/web/package.json` (actuellement
+  `0.1.0`). Elle est écrite dans `localStorage` sous
+  `circuits-de-zap:app-version:v1`, affichée en haut à droite de l’accueil et
+  dans le pied de page de l’espace adulte.
 - Le service worker n’est enregistré qu’en build de production
   (`import.meta.env.PROD`) ; `devOptions` reste désactivé pour ne pas perturber
   le développement.

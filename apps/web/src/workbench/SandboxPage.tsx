@@ -1,6 +1,5 @@
 import {
   serializeCircuit,
-  type PlayerProgress,
   type SandboxCircuit,
   type SandboxCircuitInput,
 } from '@circuits/shared';
@@ -20,7 +19,6 @@ import {
   createSandboxStarter,
   nextSandboxName,
   sandboxFingerprint,
-  sandboxPaletteIsComplete,
   sandboxPaletteItems,
   type SandboxWorkMeta,
 } from './sandbox';
@@ -77,7 +75,6 @@ export function SandboxPage({
     (state) => state.clearSandboxCircuit,
   );
 
-  const [progress, setProgress] = useState<PlayerProgress | null>(null);
   const [works, setWorks] = useState<SandboxCircuit[]>([]);
   const [initializing, setInitializing] = useState(true);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -93,10 +90,7 @@ export function SandboxPage({
   const photoBusyRef = useRef(false);
   const openingRef = useRef(false);
 
-  const paletteItems = useMemo(
-    () => sandboxPaletteItems(progress),
-    [progress],
-  );
+  const paletteItems = useMemo(() => sandboxPaletteItems(), []);
   const currentName = sandboxWork?.name ?? nextSandboxName(works);
   const fingerprint = useMemo(
     () => sandboxFingerprint(circuit),
@@ -117,10 +111,7 @@ export function SandboxPage({
 
     void (async () => {
       try {
-        const [loadedWorks, loadedProgress] = await Promise.all([
-          repository.listSandbox().catch(() => []),
-          repository.getProgress().catch(() => null),
-        ]);
+        const loadedWorks = await repository.listSandbox().catch(() => []);
 
         if (!active) {
           return;
@@ -128,7 +119,6 @@ export function SandboxPage({
 
         const sorted = sortWorks(loadedWorks);
         setWorks(sorted);
-        setProgress(loadedProgress);
 
         const store = useWorkbenchStore.getState();
         const keepCurrent =
@@ -552,11 +542,6 @@ export function SandboxPage({
               ) : null}
             </section>
 
-            {!sandboxPaletteIsComplete(progress) ? (
-              <p className="sandbox-panel__unlock">
-                {fr.sandbox.unlockHint}
-              </p>
-            ) : null}
           </section>
         </div>
       ) : null}

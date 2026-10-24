@@ -100,9 +100,19 @@
 }
 
 .admin-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   width: min(1120px, 100%);
   margin: 0 auto;
   padding: 0 16px 32px;
+}
+
+.admin-version {
+  color: var(--admin-muted, #64748b);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .admin-page {

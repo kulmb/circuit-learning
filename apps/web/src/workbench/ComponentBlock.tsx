@@ -9,6 +9,7 @@ import {
   TERMINAL_HIT_RADIUS,
 } from './constants';
 import type { DisplayMode } from './displayMode';
+import { BODY_HIT_HALF_HEIGHT } from './hitTarget';
 import './components.css';
 
 export interface ComponentBlockProps {
@@ -49,9 +50,9 @@ export const ComponentBlock = memo(function ComponentBlock({
     >
       <rect
         x={-halfWidth}
-        y={-halfHeight}
+        y={-BODY_HIT_HALF_HEIGHT}
         width={COMPONENT_WIDTH}
-        height={COMPONENT_HEIGHT}
+        height={BODY_HIT_HALF_HEIGHT * 2}
         rx={18}
         fill="transparent"
         pointerEvents={ghost ? 'none' : 'all'}

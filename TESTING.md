@@ -160,8 +160,10 @@ le comportement.
    le Wi-Fi et lancer l’application : l’accueil, la carte et les niveaux déjà
    chargés doivent rester jouables.
 6. Vérifier que les polices et les sons déjà utilisés restent disponibles.
-7. Revenir en ligne : une mise à jour éventuelle ne doit être proposée que sur
-   la carte des niveaux, avec le bouton « Mettre à jour ».
+7. Relancer l’application avec le réseau : si une nouvelle version existe,
+   elle doit s’installer automatiquement au chargement, la page se recharger,
+   puis afficher « Mise à jour terminée ! » sur la page courante. Vérifier
+   qu’aucun rechargement ne se produit pendant une partie déjà ouverte.
 
 ### 5. Resynchronisation de la progression hors ligne
 

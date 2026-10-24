@@ -2,10 +2,7 @@ import {
   createComponent,
   createWire,
   simulateCircuit,
-  type LevelProgress,
-  type PlayerProgress,
 } from '@circuits/shared';
-import { CHAPTER_1_LEVELS } from '@circuits/shared/levels';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -14,51 +11,13 @@ import {
   nextSandboxName,
   sandboxCuriosityTips,
   sandboxFingerprint,
-  sandboxPaletteIsComplete,
   sandboxPaletteItems,
   sandboxPhotoFileName,
 } from './sandbox';
 
-function progressWith(completed: readonly string[]): PlayerProgress {
-  const levels: Record<string, LevelProgress> = {};
-
-  for (const level of CHAPTER_1_LEVELS) {
-    const isCompleted = completed.includes(level.id);
-    levels[level.id] = {
-      levelId: level.id,
-      status: isCompleted ? 'completed' : 'unlocked',
-      stars: isCompleted ? 3 : 0,
-      attempts: isCompleted ? 1 : 0,
-      hintsUsed: 0,
-      bestTimeMs: isCompleted ? 1000 : null,
-      firstCompletedAt: isCompleted ? 1000 : null,
-      lastPlayedAt: isCompleted ? 1000 : null,
-    };
-  }
-
-  return { levels, vocabulary: [] };
-}
-
 describe('sandbox palette', () => {
-  it('starts with the battery and the bulb only', () => {
-    expect(sandboxPaletteItems(null).map((item) => item.key)).toEqual([
-      'battery',
-      'bulb',
-    ]);
-  });
-
-  it('unlocks components when their level is completed', () => {
-    const palette = sandboxPaletteItems(
-      progressWith([
-        'light-03',
-        'light-04',
-        'light-symbols',
-        'light-08',
-        'light-09',
-      ]),
-    );
-
-    expect(palette.map((item) => item.key)).toEqual([
+  it('offers every workshop component, on every device', () => {
+    expect(sandboxPaletteItems().map((item) => item.key)).toEqual([
       'battery',
       'bulb',
       'switch',
@@ -68,24 +27,6 @@ describe('sandbox palette', () => {
       'metal',
       'gum',
     ]);
-    expect(sandboxPaletteIsComplete(progressWith([
-      'light-03',
-      'light-04',
-      'light-symbols',
-      'light-08',
-      'light-09',
-    ]))).toBe(true);
-  });
-
-  it('does not unlock a component from an unfinished level', () => {
-    const palette = sandboxPaletteItems(progressWith(['light-03']));
-
-    expect(palette.map((item) => item.key)).toEqual([
-      'battery',
-      'bulb',
-      'switch',
-    ]);
-    expect(sandboxPaletteIsComplete(progressWith(['light-03']))).toBe(false);
   });
 });
 
@@ -127,7 +68,7 @@ describe('sandbox curiosity', () => {
     ).toEqual(['sandbox.curiosity.empty']);
   });
 
-  it('only suggests components that are unlocked', () => {
+  it('only suggests components available in the workshop', () => {
     const circuit = {
       components: [
         createComponent('battery', {

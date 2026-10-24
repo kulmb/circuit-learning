@@ -22,6 +22,7 @@
 }
 
 .home {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -240,6 +241,27 @@
   text-underline-offset: 4px;
   cursor: pointer;
   touch-action: manipulation;
+}
+
+.home__version {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--color-ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
+[data-layout='compact'] .home__version {
+  top: 7px;
+  right: 9px;
+  font-size: 0.68rem;
 }
 
 .route-loading {

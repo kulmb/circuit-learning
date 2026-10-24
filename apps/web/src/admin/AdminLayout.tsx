@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import { useProgress } from '../progress/ProgressContext';
 import { navigate, usePathname } from '../router';
+import { APP_VERSION } from '../version';
 import { activate, AvatarPill, roleLabel } from './AdminShared';
 import { adminTexts } from './fr';
 
@@ -142,6 +143,7 @@ export function AdminLayout({
         >
           ← {adminTexts.backToGame}
         </button>
+        <span className="admin-version">Version {APP_VERSION}</span>
       </footer>
     </div>
   );

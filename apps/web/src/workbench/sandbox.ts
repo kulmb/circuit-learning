@@ -4,28 +4,16 @@ import {
   type Circuit,
   type CircuitDocument,
   type CircuitSimulation,
-  type PlayerProgress,
 } from '@circuits/shared';
 
 import { getText } from '../narration/fr';
 import { PALETTE_ITEMS, type PaletteItem } from './paletteItems';
 
 /**
- * The sandbox starts with the two components every child meets in level 1.
- * The other components appear once the matching level has been completed.
+ * The free workshop offers the same components on every device. The buzzer
+ * stays in the guided levels, where its sound has a purpose.
  */
-const SANDBOX_BASE_KEYS = ['battery', 'bulb'] as const;
-
-const SANDBOX_UNLOCK_RULES: readonly {
-  levelId: string;
-  keys: readonly string[];
-}[] = [
-  { levelId: 'light-03', keys: ['switch'] },
-  { levelId: 'light-04', keys: ['metal', 'gum'] },
-  { levelId: 'light-symbols', keys: ['resistor'] },
-  { levelId: 'light-08', keys: ['motor'] },
-  { levelId: 'light-09', keys: ['led'] },
-];
+const SANDBOX_HIDDEN_KEYS: ReadonlySet<string> = new Set(['buzzer']);
 
 export interface SandboxWorkMeta {
   id: string;
@@ -34,32 +22,10 @@ export interface SandboxWorkMeta {
   thumbnail?: string;
 }
 
-export function sandboxPaletteItems(
-  progress: PlayerProgress | null,
-): PaletteItem[] {
-  const unlocked = new Set<string>(SANDBOX_BASE_KEYS);
-
-  if (progress !== null) {
-    for (const rule of SANDBOX_UNLOCK_RULES) {
-      if (progress.levels[rule.levelId]?.status === 'completed') {
-        for (const key of rule.keys) {
-          unlocked.add(key);
-        }
-      }
-    }
-  }
-
-  return PALETTE_ITEMS.filter((item) => unlocked.has(item.key));
-}
-
-export function sandboxPaletteIsComplete(progress: PlayerProgress | null): boolean {
-  const keys = new Set(
-    sandboxPaletteItems(progress).map((item) => item.key),
-  );
-
+export function sandboxPaletteItems(): PaletteItem[] {
   return PALETTE_ITEMS.filter(
-    (item) => item.key !== 'wire' && item.key !== 'buzzer',
-  ).every((item) => keys.has(item.key));
+    (item) => !SANDBOX_HIDDEN_KEYS.has(item.key),
+  );
 }
 
 export function createSandboxStarter(): CircuitDocument {
@@ -103,8 +69,8 @@ export function nextSandboxName(
 }
 
 /**
- * Curiosity prompts only mention components the child has already unlocked.
- * The short circuit already gets an immediate warning from Zap, so it never
+ * Curiosity prompts only mention components available in the workshop. The
+ * short circuit already gets an immediate warning from Zap, so it never
  * produces an idle prompt on top of it.
  */
 export function sandboxCuriosityTips(

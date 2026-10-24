@@ -8,6 +8,11 @@ import {
 
 import { fr } from '../narration/fr';
 import type { ZapExpression } from '../narration/hints';
+import { Icon } from './icons';
+import {
+  readZapPanelCollapsed,
+  writeZapPanelCollapsed,
+} from './zapVisibility';
 import './Zap.css';
 
 export type ZapVariant = 'default' | 'compact' | 'top';
@@ -41,6 +46,11 @@ export function Zap({
 }: ZapProps) {
   const compact = variant === 'compact';
   const [compactBubbleVisible, setCompactBubbleVisible] = useState(true);
+  const [collapsed, setCollapsed] = useState<boolean>(() =>
+    readZapPanelCollapsed(),
+  );
+  const [unread, setUnread] = useState(false);
+  const lastSeenMessageRef = useRef(message);
   const hideTimerRef = useRef<number | null>(null);
 
   const clearHideTimer = useCallback(() => {
@@ -82,9 +92,41 @@ export function Zap({
 
   useEffect(() => clearHideTimer, [clearHideTimer]);
 
+  useEffect(() => {
+    if (!collapsed) {
+      lastSeenMessageRef.current = message;
+      setUnread(false);
+      return;
+    }
+
+    if (message !== '' && message !== lastSeenMessageRef.current) {
+      setUnread(true);
+    }
+  }, [collapsed, message]);
+
   function showCompactBubble(): void {
     setCompactBubbleVisible(true);
     scheduleHide();
+  }
+
+  function hidePanel(): void {
+    lastSeenMessageRef.current = message;
+    setUnread(false);
+    setCollapsed(true);
+    writeZapPanelCollapsed(true);
+    clearHideTimer();
+  }
+
+  function showPanel(): void {
+    lastSeenMessageRef.current = message;
+    setUnread(false);
+    setCollapsed(false);
+    writeZapPanelCollapsed(false);
+    onReplay();
+
+    if (compact) {
+      showCompactBubble();
+    }
   }
 
   function handleAvatar(): void {
@@ -106,6 +148,29 @@ export function Zap({
   const bubbleVisible = message !== '' && (!compact || compactBubbleVisible);
   const panelClass = `zap-panel${variant === 'default' ? '' : ` zap-panel--${variant}`}`;
   const bubbleClass = `zap-bubble${compact ? ' zap-bubble--overlay' : ''}`;
+
+  if (collapsed) {
+    return (
+      <div className={`${panelClass} zap-panel--collapsed`}>
+        <button
+          type="button"
+          className="zap-reopen"
+          onPointerDown={(event) => activate(event, showPanel)}
+          aria-label={fr.zap.show}
+        >
+          <ZapCharacter
+            expression={expression}
+            speaking={false}
+            className="zap-reopen__character"
+          />
+          <span className="zap-reopen__label">{fr.zap.help}</span>
+          {unread ? (
+            <span className="zap-reopen__dot" aria-hidden="true" />
+          ) : null}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={panelClass}>
@@ -155,6 +220,15 @@ export function Zap({
         aria-pressed={muted}
       >
         <SpeakerIcon muted={muted} />
+      </button>
+
+      <button
+        type="button"
+        className="zap-hide"
+        onPointerDown={(event) => activate(event, hidePanel)}
+        aria-label={fr.zap.hide}
+      >
+        <Icon name="close" />
       </button>
     </div>
   );

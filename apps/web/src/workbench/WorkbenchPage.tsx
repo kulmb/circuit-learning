@@ -19,6 +19,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
+import { Icon } from '../components/icons';
 import { Zap, ZapCharacter, type ZapVariant } from '../components/Zap';
 import {
   vibrateShortCircuit,
@@ -40,6 +41,7 @@ import { useNarration } from '../narration/useNarration';
 import { playBuzzerBeep, playSuccessFanfare, unlockAudio } from './audio';
 import { boardForLevel, CELL_SIZE } from './constants';
 import type { DisplayMode } from './displayMode';
+import { PaletteGlyph } from './PaletteGlyph';
 import { PALETTE_ITEMS, type PaletteItem } from './paletteItems';
 import {
   chooseSandboxCuriosity,
@@ -48,13 +50,17 @@ import {
 import {
   applyTouchOffset,
   clampGridPosition,
-  isDragGesture,
+  decidePaletteGesture,
   isPointInsideBoard,
+  paletteScrollAxis,
   snapToGrid,
   svgToGrid,
   TOUCH_OFFSET_PX,
+  type PaletteGesture,
   type Point,
+  type ScrollAxis,
 } from './pointer';
+import { componentOverlaps } from './trashTarget';
 import { useBoardViewport } from './useBoardViewport';
 import {
   boardScale,
@@ -89,7 +95,9 @@ interface PaletteDragState {
   clientY: number;
   startClient: Point;
   pointerType: string;
-  moved: boolean;
+  gesture: PaletteGesture;
+  scrollAxis: ScrollAxis | null;
+  scrollStart: number;
   placement: { position: Vec2; component: CircuitComponent } | null;
 }
 
@@ -146,6 +154,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
       : 'default';
   const reduceMotion = useReducedMotion() ?? false;
   const board = useMemo(() => boardForLevel(level?.board), [level]);
+  const paletteRef = useRef<HTMLElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [svgElement, setSvgElement] = useState<SVGSVGElement | null>(null);
   const attachSvg = useCallback((node: SVGSVGElement | null) => {
@@ -180,7 +189,10 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   const levelSession = useLevelSession(level ?? null);
 
   const status = getStatus(simulation);
-  const ghostPoint = paletteDrag !== null ? paletteGhostPoint(paletteDrag) : null;
+  const ghostPoint =
+    paletteDrag !== null && paletteDrag.gesture === 'drag'
+      ? paletteGhostPoint(paletteDrag)
+      : null;
   const modeLabel = getModeLabel(displayMode);
   const hasLitBulb = circuit.components.some(
     (component) =>
@@ -477,6 +489,27 @@ export const WorkbenchPage = memo(function WorkbenchPage({
     [],
   );
 
+  const isComponentOverTrash = useCallback(
+    (component: CircuitComponent, position: Vec2): boolean => {
+      const svg = svgRef.current;
+      const trash = trashRef.current;
+
+      if (svg === null || trash === null) {
+        return false;
+      }
+
+      return componentOverlaps(
+        component,
+        position,
+        measureElementRect(svg, board),
+        viewport.view,
+        board,
+        trash.getBoundingClientRect(),
+      );
+    },
+    [board, viewport.view],
+  );
+
   function computePlacement(
     clientX: number,
     clientY: number,
@@ -546,6 +579,16 @@ export const WorkbenchPage = memo(function WorkbenchPage({
     select(null);
     setPendingTerminal(null);
 
+    const palette = paletteRef.current;
+    const scrollAxis = paletteScrollAxis(palette);
+    const touchScroll = event.pointerType === 'touch' && scrollAxis !== null;
+    const scrollStart =
+      touchScroll && palette !== null && scrollAxis !== null
+        ? scrollAxis === 'x'
+          ? palette.scrollLeft
+          : palette.scrollTop
+        : 0;
+
     setPaletteDrag({
       item,
       pointerId: event.pointerId,
@@ -553,14 +596,36 @@ export const WorkbenchPage = memo(function WorkbenchPage({
       clientY: event.clientY,
       startClient: { x: event.clientX, y: event.clientY },
       pointerType: event.pointerType,
-      moved: false,
-      placement: computePlacement(
-        event.clientX,
-        event.clientY,
-        event.pointerType,
-        item,
-      ),
+      gesture: touchScroll ? 'pending' : 'drag',
+      scrollAxis: touchScroll ? scrollAxis : null,
+      scrollStart,
+      placement: touchScroll
+        ? null
+        : computePlacement(
+            event.clientX,
+            event.clientY,
+            event.pointerType,
+            item,
+          ),
     });
+  }
+
+  function scrollPalette(
+    drag: PaletteDragState,
+    clientX: number,
+    clientY: number,
+  ): void {
+    const palette = paletteRef.current;
+    if (palette === null || drag.scrollAxis === null) {
+      return;
+    }
+
+    if (drag.scrollAxis === 'x') {
+      palette.scrollLeft =
+        drag.scrollStart - (clientX - drag.startClient.x);
+    } else {
+      palette.scrollTop = drag.scrollStart - (clientY - drag.startClient.y);
+    }
   }
 
   function handlePalettePointerMove(
@@ -571,21 +636,46 @@ export const WorkbenchPage = memo(function WorkbenchPage({
       return;
     }
 
-    const moved =
-      drag.moved ||
-      isDragGesture(drag.startClient, { x: event.clientX, y: event.clientY });
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+    let gesture = drag.gesture;
+
+    if (gesture === 'pending') {
+      gesture = decidePaletteGesture(
+        drag.startClient,
+        { x: clientX, y: clientY },
+        drag.scrollAxis,
+      );
+
+      if (gesture === 'pending') {
+        setPaletteDrag({ ...drag, clientX, clientY });
+        return;
+      }
+    }
+
+    if (gesture === 'scroll') {
+      scrollPalette(drag, clientX, clientY);
+      setPaletteDrag({
+        ...drag,
+        clientX,
+        clientY,
+        gesture: 'scroll',
+      });
+      return;
+    }
+
     const placement = computePlacement(
-      event.clientX,
-      event.clientY,
+      clientX,
+      clientY,
       drag.pointerType,
       drag.item,
     );
 
     setPaletteDrag({
       ...drag,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      moved,
+      clientX,
+      clientY,
+      gesture: 'drag',
       placement,
     });
   }
@@ -599,6 +689,11 @@ export const WorkbenchPage = memo(function WorkbenchPage({
     }
 
     releasePointer(event.pointerId);
+
+    if (drag.gesture !== 'drag') {
+      setPaletteDrag(null);
+      return;
+    }
 
     if (drag.placement !== null) {
       addComponent(
@@ -650,7 +745,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
           className="workbench-icon-button rotate-device__back"
           onPointerDown={(event) => activateButton(event, onBack)}
         >
-          <span aria-hidden="true">←</span>
+          <Icon name="arrow-left" />
           <span>{fr.workbench.back}</span>
         </button>
 
@@ -685,7 +780,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
           className="workbench-icon-button"
           onPointerDown={(event) => activateButton(event, onBack)}
         >
-          <span aria-hidden="true">←</span>
+          <Icon name="arrow-left" />
           <span>{fr.workbench.back}</span>
         </button>
 
@@ -742,7 +837,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
             aria-label={fr.workbench.instructions}
             aria-expanded={instructionsOpen}
           >
-            <span aria-hidden="true">❓</span>
+            <Icon name="help" />
           </button>
         ) : null}
 
@@ -752,7 +847,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
           onPointerDown={(event) => activateButton(event, cycleDisplayMode)}
           aria-label={`${fr.workbench.displayMode} : ${modeLabel}`}
         >
-          <ViewIcon />
+          <Icon name="eye" />
           <span>{modeLabel}</span>
         </button>
 
@@ -763,7 +858,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
             onPointerDown={(event) => activateButton(event, undo)}
             disabled={history.length === 0}
           >
-            <span aria-hidden="true">↶</span>
+            <Icon name="undo" />
             <span>{fr.workbench.undo}</span>
           </button>
         )}
@@ -793,7 +888,11 @@ export const WorkbenchPage = memo(function WorkbenchPage({
       ) : null}
 
       <div className="workbench-layout">
-        <aside className="palette" aria-label={fr.workbench.paletteTitle}>
+        <aside
+          ref={paletteRef}
+          className="palette"
+          aria-label={fr.workbench.paletteTitle}
+        >
           <h2>{fr.workbench.paletteTitle}</h2>
           <div className="palette__items">
             {level !== undefined && paletteItems.length === 0 ? (
@@ -812,6 +911,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
                   type="button"
                   className={`palette-item${hintHighlight?.paletteKey === item.key ? ' is-hinted' : ''}`}
                   data-palette-key={item.key}
+                  aria-label={item.label}
                   onPointerDown={(event) => handlePalettePointerDown(event, item)}
                   onPointerMove={handlePalettePointerMove}
                   onPointerUp={handlePalettePointerUp}
@@ -821,10 +921,13 @@ export const WorkbenchPage = memo(function WorkbenchPage({
                 >
                   <span
                     className="palette-item__swatch"
-                    style={{ backgroundColor: item.color, color: item.textColor }}
+                    style={{
+                      backgroundColor: `${item.color}24`,
+                      borderColor: `${item.color}66`,
+                    }}
                     aria-hidden="true"
                   >
-                    {item.shortLabel}
+                    <PaletteGlyph item={item} displayMode={displayMode} />
                   </span>
                   <span className="palette-item__label">{item.label}</span>
                   {remaining !== null ? (
@@ -860,7 +963,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
               svgRef={attachSvg}
               acquirePointer={acquirePointer}
               releasePointer={releasePointer}
-              isOverTrash={isOverTrash}
+              isComponentOverTrash={isComponentOverTrash}
               onTrashHover={setTrashActive}
               onSelect={select}
               onSetPendingTerminal={setPendingTerminal}
@@ -884,7 +987,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
                   activateButton(event, viewport.resetView)
                 }
               >
-                <span aria-hidden="true">⤢</span>
+                <Icon name="maximize" />
                 <span>{fr.workbench.showAll}</span>
               </button>
             ) : null}
@@ -895,7 +998,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
                 className={`trash-zone${trashActive ? ' is-active' : ''}`}
                 aria-hidden="true"
               >
-                <TrashGlyph />
+                <Icon name="trash" className="trash-icon" />
                 <span>{fr.workbench.trash}</span>
               </div>
             )}
@@ -928,31 +1031,37 @@ export const WorkbenchPage = memo(function WorkbenchPage({
             disabled={history.length === 0}
             aria-label={fr.workbench.undo}
           >
-            <span aria-hidden="true">↶</span>
+            <Icon name="undo" />
           </button>
           <div
             ref={trashRef}
             className={`trash-zone trash-zone--rail${trashActive ? ' is-active' : ''}`}
             aria-hidden="true"
           >
-            <TrashGlyph />
+            <Icon name="trash" className="trash-icon" />
             <span>{fr.workbench.trash}</span>
           </div>
         </div>
       ) : null}
 
-      {paletteDrag !== null && ghostPoint !== null && paletteDrag.placement === null ? (
+      {paletteDrag !== null &&
+      paletteDrag.gesture === 'drag' &&
+      ghostPoint !== null &&
+      paletteDrag.placement === null ? (
         <div
           className="palette-ghost"
           aria-hidden="true"
           style={{
             left: ghostPoint.x,
             top: ghostPoint.y,
-            backgroundColor: paletteDrag.item.color,
-            color: paletteDrag.item.textColor,
+            borderColor: paletteDrag.item.color,
           }}
         >
-          {paletteDrag.item.shortLabel}
+          <PaletteGlyph
+            item={paletteDrag.item}
+            displayMode={displayMode}
+            className="palette-ghost__glyph"
+          />
         </div>
       ) : null}
 
@@ -961,8 +1070,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
           className="palette-ghost palette-ghost--returning"
           aria-hidden="true"
           style={{
-            backgroundColor: returningGhost.item.color,
-            color: returningGhost.item.textColor,
+            borderColor: returningGhost.item.color,
           }}
           initial={{
             left: returningGhost.from.x,
@@ -979,7 +1087,11 @@ export const WorkbenchPage = memo(function WorkbenchPage({
           transition={{ duration: reduceMotion ? 0 : 0.25, ease: 'easeOut' }}
           onAnimationComplete={() => setReturningGhost(null)}
         >
-          {returningGhost.item.shortLabel}
+          <PaletteGlyph
+            item={returningGhost.item}
+            displayMode={displayMode}
+            className="palette-ghost__glyph"
+          />
         </motion.div>
       ) : null}
 
@@ -1059,22 +1171,6 @@ function ToolboxIcon() {
   );
 }
 
-function ViewIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path
-        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="12" cy="12" r="2.6" fill="currentColor" />
-    </svg>
-  );
-}
-
 function getStatus(simulation: CircuitSimulation): Status {
   if (simulation.diagnostics.some((diagnostic) => diagnostic.code === 'simulation_error')) {
     return { text: fr.workbench.statusError, tone: 'danger' };
@@ -1102,19 +1198,4 @@ function getStatus(simulation: CircuitSimulation): Status {
   }
 
   return { text: fr.workbench.statusOpen, tone: 'neutral' };
-}
-
-function TrashGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="trash-icon">
-      <path
-        d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }

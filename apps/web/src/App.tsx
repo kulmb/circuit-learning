@@ -1,6 +1,7 @@
 import {
   lazy,
   Suspense,
+  useEffect,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
@@ -20,7 +21,9 @@ import {
   ProgressProvider,
   useProgress,
 } from './progress/ProgressContext';
+import { PwaUpdateNotice } from './pwa/PwaUpdateNotice';
 import { navigate, usePathname } from './router';
+import { APP_VERSION, rememberAppVersion } from './version';
 import { unlockAudio } from './workbench/audio';
 import './App.css';
 
@@ -31,6 +34,10 @@ const ParentSettingsPage = lazy(
 );
 
 export function App() {
+  useEffect(() => {
+    rememberAppVersion();
+  }, []);
+
   return (
     <LayoutProvider>
       <PerformanceProvider>
@@ -47,6 +54,7 @@ function PerformanceShell() {
     <MotionConfig reducedMotion={lowPerformance ? 'always' : 'user'}>
       <ProgressProvider>
         <RootRoutes />
+        <PwaUpdateNotice />
       </ProgressProvider>
     </MotionConfig>
   );
@@ -181,6 +189,9 @@ function AppContent() {
             {getText('home.parentSettings')}
           </button>
         </div>
+        <p className="home__version" aria-label={`Version ${APP_VERSION}`}>
+          Version {APP_VERSION}
+        </p>
       </main>
     </motion.div>
   );

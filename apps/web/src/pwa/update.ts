@@ -1,16 +1,60 @@
 import { useSyncExternalStore } from 'react';
 
-export interface PwaUpdateState {
-  ready: boolean;
-  apply: () => void;
+export const PWA_UPDATE_NOTICE_KEY =
+  'circuits-de-zap:pwa-update-complete:v1';
+
+function storage(): Storage | null {
+  try {
+    return typeof window === 'undefined' ? null : window.sessionStorage;
+  } catch {
+    return null;
+  }
 }
 
-const idleState: PwaUpdateState = {
-  ready: false,
-  apply: () => undefined,
-};
+/**
+ * Called just before the service worker activates and reloads the page. The
+ * flag survives that reload; the notice is consumed on the next boot only.
+ */
+export function markPwaUpgradePending(): void {
+  try {
+    storage()?.setItem(PWA_UPDATE_NOTICE_KEY, '1');
+  } catch {
+    // A blocked storage area must not block the update.
+  }
+}
 
-let state: PwaUpdateState = idleState;
+export function consumePwaUpgradeNotice(): boolean {
+  const area = storage();
+
+  if (area === null) {
+    return false;
+  }
+
+  try {
+    if (area.getItem(PWA_UPDATE_NOTICE_KEY) !== '1') {
+      return false;
+    }
+
+    area.removeItem(PWA_UPDATE_NOTICE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearPwaUpgradeNotice(): void {
+  try {
+    storage()?.removeItem(PWA_UPDATE_NOTICE_KEY);
+  } catch {
+    // Ignore.
+  }
+}
+
+interface NoticeState {
+  visible: boolean;
+}
+
+let noticeState: NoticeState = { visible: false };
 const listeners = new Set<() => void>();
 
 function emit(): void {
@@ -19,37 +63,39 @@ function emit(): void {
   }
 }
 
-export function markPwaUpdateReady(apply: () => void): void {
-  state = { ready: true, apply };
+export function showPwaUpgradeNotice(): void {
+  if (!noticeState.visible) {
+    noticeState = { visible: true };
+    emit();
+  }
+}
+
+export function hidePwaUpgradeNotice(): void {
+  if (noticeState.visible) {
+    noticeState = { visible: false };
+    emit();
+  }
+}
+
+export function resetPwaUpgradeNotice(): void {
+  clearPwaUpgradeNotice();
+  noticeState = { visible: false };
   emit();
 }
 
-export function resetPwaUpdate(): void {
-  state = idleState;
-  emit();
-}
-
-export function applyPwaUpdate(): void {
-  state.apply();
-}
-
-export function subscribePwaUpdate(listener: () => void): () => void {
+function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
-export function getPwaUpdateSnapshot(): PwaUpdateState {
-  return state;
+function snapshot(): NoticeState {
+  return noticeState;
 }
 
 /**
- * Subscribed only by the level map: a waiting service worker never interrupts
- * a level or the sandbox in progress.
+ * A successful install is shown on every page. The persisted flag is
+ * consumed once at boot, then the notice stays until the user closes it.
  */
-export function usePwaUpdate(): PwaUpdateState {
-  return useSyncExternalStore(
-    subscribePwaUpdate,
-    getPwaUpdateSnapshot,
-    getPwaUpdateSnapshot,
-  );
+export function usePwaUpgradeNotice(): NoticeState {
+  return useSyncExternalStore(subscribe, snapshot, snapshot);
 }

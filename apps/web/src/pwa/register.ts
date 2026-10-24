@@ -1,10 +1,12 @@
 import { registerSW } from 'virtual:pwa-register';
 
-import { markPwaUpdateReady } from './update';
+import { markPwaUpgradePending } from './update';
 
 /**
- * Registers the Workbox service worker. The update is never applied
- * automatically: the map page offers a large "Mettre à jour" button.
+ * Registers the Workbox service worker. When a new build is found on load,
+ * it is activated immediately; the persisted flag lets the next page show a
+ * short success notice on any screen. There is deliberately no periodic
+ * update check, so a running level or sandbox is never reloaded mid-play.
  */
 export function registerPwa(): void {
   if (
@@ -22,27 +24,16 @@ export function registerPwa(): void {
     updateServiceWorker = registerSW({
       immediate: true,
       onNeedRefresh() {
-        markPwaUpdateReady(() => {
-          if (updateServiceWorker === null) {
-            window.location.reload();
-            return;
-          }
+        markPwaUpgradePending();
 
-          void updateServiceWorker(true).catch(() => {
-            window.location.reload();
-          });
-        });
-      },
-      onRegisteredSW(_serviceWorkerUrl, registration) {
-        if (registration === undefined) {
+        if (updateServiceWorker === null) {
+          window.location.reload();
           return;
         }
 
-        window.setInterval(() => {
-          if (!document.hidden) {
-            void registration.update().catch(() => undefined);
-          }
-        }, 60 * 60 * 1000);
+        void updateServiceWorker(true).catch(() => {
+          window.location.reload();
+        });
       },
     });
   } catch {

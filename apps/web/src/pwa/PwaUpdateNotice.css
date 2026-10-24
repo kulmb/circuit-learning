@@ -1,0 +1,115 @@
+.pwa-update-notice {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(560px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border: 2px solid #86efac;
+  border-radius: 18px;
+  background: #f0fdf4;
+  color: #166534;
+  box-shadow: 0 12px 30px rgba(22, 101, 52, 0.18);
+  transform: translateX(-50%);
+}
+
+.pwa-update-notice__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.pwa-update-notice__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.pwa-update-notice__text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.pwa-update-notice__text strong {
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.pwa-update-notice__text span {
+  color: #3f6212;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pwa-update-notice__close {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 2px solid #bbf7d0;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #166534;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pwa-update-notice__close svg {
+  width: 22px;
+  height: 22px;
+}
+
+.pwa-update-notice__close:active {
+  transform: scale(0.96);
+}
+
+[data-layout='compact'] .pwa-update-notice {
+  top: max(6px, env(safe-area-inset-top));
+  width: calc(100vw - 16px);
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 14px;
+}
+
+[data-layout='compact'] .pwa-update-notice__icon {
+  width: 28px;
+  height: 28px;
+}
+
+[data-layout='compact'] .pwa-update-notice__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+[data-layout='compact'] .pwa-update-notice__text {
+  font-size: 0.8rem;
+}
+
+[data-layout='compact'] .pwa-update-notice__text strong {
+  font-size: 0.85rem;
+}
+
+[data-layout='compact'] .pwa-update-notice__text span {
+  font-size: 0.72rem;
+}
+
+[data-layout='compact'] .pwa-update-notice__close {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}

@@ -69,8 +69,6 @@ export const texts = {
   'sandbox.worksHint': 'Choisis une création pour la rouvrir.',
   'sandbox.worksError': 'Je n’ai pas réussi à lire mes créations.',
   'sandbox.openWork': 'Ouvrir',
-  'sandbox.unlockHint':
-    'Termine des niveaux pour débloquer d’autres composants.',
   'sandbox.defaultName': 'Mon circuit',
   'sandbox.photoTitle': 'Les Circuits de Zap',
   'sandbox.photoFooter': 'Créé avec Zap',
@@ -97,27 +95,19 @@ export const texts = {
   'display.overlay': 'Les deux',
 
   'component.battery.label': 'Pile',
-  'component.battery.short': '+ −',
   'component.bulb.label': 'Ampoule',
-  'component.bulb.short': 'Lampe',
   'component.switch.label': 'Interrupteur',
-  'component.switch.short': 'Inter.',
   'component.motor.label': 'Moteur',
-  'component.motor.short': 'Moteur',
   'component.buzzer.label': 'Sonnerie',
-  'component.buzzer.short': 'Son',
   'component.led.label': 'LED',
-  'component.led.short': 'LED',
   'component.resistor.label': 'Résistance',
-  'component.resistor.short': 'R',
   'component.wire.label': 'Fil',
-  'component.wire.short': '—',
   'component.metal.label': 'Métal',
-  'component.metal.short': 'Métal',
   'component.gum.label': 'Gomme',
-  'component.gum.short': 'Gomme',
 
   'zap.help': 'Aide',
+  'zap.hide': 'Cacher Zap',
+  'zap.show': 'Afficher Zap',
   'zap.hintAria': 'Demander un indice à Zap',
   'zap.replay': 'Réécouter',
   'zap.mute': 'Couper le son',
@@ -167,8 +157,9 @@ export const texts = {
   'map.sandbox': 'Atelier libre',
   'map.bye': 'Au revoir',
 
-  'pwa.updateReady': 'Une nouvelle version est prête.',
-  'pwa.update': 'Mettre à jour',
+  'pwa.updateDone': 'Mise à jour terminée !',
+  'pwa.updateDoneDetail': 'Tu joues avec la dernière version.',
+  'pwa.updateDoneClose': 'Fermer',
 
   'parentSettings.title': 'Réglages parents',
   'parentSettings.subtitle': 'Pour les adultes qui accompagnent l’enfant.',
@@ -490,54 +481,45 @@ export const fr = {
     worksHint: texts['sandbox.worksHint'],
     worksError: texts['sandbox.worksError'],
     openWork: texts['sandbox.openWork'],
-    unlockHint: texts['sandbox.unlockHint'],
     defaultName: texts['sandbox.defaultName'],
     loading: texts['sandbox.loading'],
   },
   components: {
     battery: {
       label: texts['component.battery.label'],
-      short: texts['component.battery.short'],
     },
     bulb: {
       label: texts['component.bulb.label'],
-      short: texts['component.bulb.short'],
     },
     switch: {
       label: texts['component.switch.label'],
-      short: texts['component.switch.short'],
     },
     motor: {
       label: texts['component.motor.label'],
-      short: texts['component.motor.short'],
     },
     buzzer: {
       label: texts['component.buzzer.label'],
-      short: texts['component.buzzer.short'],
     },
     led: {
       label: texts['component.led.label'],
-      short: texts['component.led.short'],
     },
     resistor: {
       label: texts['component.resistor.label'],
-      short: texts['component.resistor.short'],
     },
     wire: {
       label: texts['component.wire.label'],
-      short: texts['component.wire.short'],
     },
     metal: {
       label: texts['component.metal.label'],
-      short: texts['component.metal.short'],
     },
     gum: {
       label: texts['component.gum.label'],
-      short: texts['component.gum.short'],
     },
   },
   zap: {
     help: texts['zap.help'],
+    hide: texts['zap.hide'],
+    show: texts['zap.show'],
     hintAria: texts['zap.hintAria'],
     replay: texts['zap.replay'],
     mute: texts['zap.mute'],

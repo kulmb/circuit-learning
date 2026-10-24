@@ -17,6 +17,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
+import { IconPaths } from '../components/icons';
 import { fr } from '../narration/fr';
 import { unlockAudio } from './audio';
 import { useLayout } from '../layout/LayoutContext';
@@ -27,8 +28,11 @@ import {
   COMPONENT_WIDTH,
   type BoardDimensions,
 } from './constants';
+import { isInsideBodyHitZone } from './hitTarget';
 import {
   applyTouchOffset,
+  buildStraightWirePath,
+  buildWireMidpoint,
   buildWirePath,
   clamp,
   clampGridPosition,
@@ -57,7 +61,19 @@ import {
   zoomAt,
   type BoardView,
 } from './viewport';
+import {
+  buildWireObstacles,
+  markRouteOccupied,
+  polylineMidpoint,
+  roundedPolylinePath,
+  routeWire,
+  wireEndpoint,
+} from './wireRouting';
 import type { DisplayMode } from './displayMode';
+import {
+  toolbarButtonSize,
+  toolbarIconSize,
+} from './toolbarLayout';
 import type { Selection } from './workbenchStore';
 
 export interface WorkbenchSvgProps {
@@ -77,7 +93,10 @@ export interface WorkbenchSvgProps {
   svgRef: (node: SVGSVGElement | null) => void;
   acquirePointer: (pointerId: number) => boolean;
   releasePointer: (pointerId: number) => void;
-  isOverTrash: (clientX: number, clientY: number) => boolean;
+  isComponentOverTrash: (
+    component: CircuitComponent,
+    position: Vec2,
+  ) => boolean;
   onTrashHover: (active: boolean) => void;
   onSelect: (selection: Selection | null) => void;
   onSetPendingTerminal: (ref: TerminalRef | null) => void;
@@ -153,6 +172,107 @@ interface RenderedWire {
   from: Point;
   to: Point;
   path: string;
+  mid: Point;
+}
+
+function fallbackWireVisual(
+  wire: Circuit['wires'][number],
+  from: Point,
+  to: Point,
+): Pick<RenderedWire, 'path' | 'mid'> {
+  // A wire joining two terminals of the same component (a direct short)
+  // would otherwise run straight under the component body and stay
+  // invisible and impossible to select. Bow it wide enough to be seen.
+  const isLoop = wire.from.componentId === wire.to.componentId;
+  const curve = isLoop ? 96 : 36;
+  const control = isLoop ? 0.75 : 0.25;
+
+  return {
+    path: buildWirePath(from, to, curve, control),
+    mid: buildWireMidpoint(from, to, curve, control),
+  };
+}
+
+function terminalPointMap(
+  components: readonly CircuitComponent[],
+): Map<string, Point> {
+  const points = new Map<string, Point>();
+
+  for (const component of components) {
+    for (const terminal of component.terminals) {
+      const world = getTerminalWorldPosition(component, terminal.id);
+      points.set(
+        terminalKey({ componentId: component.id, terminalId: terminal.id }),
+        gridToSvg(world, CELL_SIZE),
+      );
+    }
+  }
+
+  return points;
+}
+
+/**
+ * Routes every wire from the settled component positions. While a component
+ * moves, this base result keeps the other wires exactly as they were; only
+ * the wires attached to the dragged component are recomputed.
+ */
+function renderAllWires(
+  wires: ReadonlyArray<Circuit['wires'][number]>,
+  components: readonly CircuitComponent[],
+  points: ReadonlyMap<string, Point>,
+  board: BoardDimensions,
+): RenderedWire[] {
+  const rendered: RenderedWire[] = [];
+  const componentsById = new Map(
+    components.map((component) => [component.id, component]),
+  );
+  const obstacles = buildWireObstacles(components);
+  const occupied = new Set<string>();
+
+  for (const wire of wires) {
+    const from = points.get(terminalKey(wire.from));
+    const to = points.get(terminalKey(wire.to));
+
+    if (from === undefined || to === undefined) {
+      continue;
+    }
+
+    const fallback = fallbackWireVisual(wire, from, to);
+    const fromComponent = componentsById.get(wire.from.componentId);
+    const toComponent = componentsById.get(wire.to.componentId);
+
+    if (fromComponent === undefined || toComponent === undefined) {
+      rendered.push({ wire, from, to, ...fallback });
+      continue;
+    }
+
+    const route = routeWire(
+      wireEndpoint(fromComponent, wire.from.terminalId, from),
+      wireEndpoint(toComponent, wire.to.terminalId, to),
+      {
+        boardWidth: board.width,
+        boardHeight: board.height,
+        obstacles,
+        occupied,
+      },
+    );
+
+    if (route.fallback) {
+      rendered.push({ wire, from, to, ...fallback });
+      continue;
+    }
+
+    markRouteOccupied(route.points, occupied);
+    rendered.push({
+      wire,
+      from,
+      to,
+      path: roundedPolylinePath(route.points),
+      mid: polylineMidpoint(route.points),
+    });
+  }
+
+  return rendered;
 }
 
 export const WorkbenchSvg = memo(function WorkbenchSvg({
@@ -172,7 +292,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
   svgRef,
   acquirePointer,
   releasePointer,
-  isOverTrash,
+  isComponentOverTrash,
   onTrashHover,
   onSelect,
   onSetPendingTerminal,
@@ -284,32 +404,67 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
     return points;
   }, [terminalEntries]);
 
+  const settledTerminalPoints = useMemo(
+    () => terminalPointMap(circuit.components),
+    [circuit.components],
+  );
+
+  const settledWires = useMemo(
+    () =>
+      renderAllWires(
+        circuit.wires,
+        circuit.components,
+        settledTerminalPoints,
+        board,
+      ),
+    [board, circuit.components, circuit.wires, settledTerminalPoints],
+  );
+
   const renderedWires = useMemo(() => {
-    const wires: RenderedWire[] = [];
-
-    for (const wire of circuit.wires) {
-      const from = terminalPoints.get(terminalKey(wire.from));
-      const to = terminalPoints.get(terminalKey(wire.to));
-
-      if (from === undefined || to === undefined) {
-        continue;
-      }
-
-      // A wire joining two terminals of the same component (a direct short)
-      // would otherwise run straight under the component body and stay
-      // invisible and impossible to select. Bow it wide enough to be seen.
-      const isLoop = wire.from.componentId === wire.to.componentId;
-
-      wires.push({
-        wire,
-        from,
-        to,
-        path: buildWirePath(from, to, isLoop ? 96 : 36, isLoop ? 0.75 : 0.25),
-      });
+    if (dragPreview === null) {
+      return settledWires;
     }
 
-    return wires;
-  }, [circuit.wires, terminalPoints]);
+    const draggedId = dragPreview.componentId;
+
+    return settledWires.map((rendered) => {
+      const connected =
+        rendered.wire.from.componentId === draggedId ||
+        rendered.wire.to.componentId === draggedId;
+
+      if (!connected) {
+        return rendered;
+      }
+
+      const from = terminalPoints.get(terminalKey(rendered.wire.from));
+      const to = terminalPoints.get(terminalKey(rendered.wire.to));
+
+      if (from === undefined || to === undefined) {
+        return rendered;
+      }
+
+      return {
+        ...rendered,
+        from,
+        to,
+        path: buildStraightWirePath(from, to),
+        mid: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 },
+      };
+    });
+  }, [dragPreview, settledWires, terminalPoints]);
+
+  const orderedWires = useMemo(() => {
+    if (selected?.kind !== 'wire') {
+      return renderedWires;
+    }
+
+    // Draw the selected wire last so its thicker stroke and white casing are
+    // never covered by a crossing wire.
+    return [
+      ...renderedWires.filter((item) => item.wire.id !== selected.id),
+      ...renderedWires.filter((item) => item.wire.id === selected.id),
+    ];
+  }, [renderedWires, selected]);
 
   const selectedComponent =
     selected?.kind === 'component'
@@ -522,17 +677,26 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
       const terminalId = terminalElement.getAttribute('data-terminal-id');
 
       if (componentId !== null && terminalId !== null) {
-        gestureRef.current = {
-          kind: 'terminal',
-          pointerId,
-          startClient,
-          pointerType,
-          dragged: false,
-          view: startView,
-          terminal: { componentId, terminalId },
-        };
-        onSelect(null);
-        return;
+        const component = circuit.components.find(
+          (item) => item.id === componentId,
+        );
+        const isBodyTap =
+          component !== undefined &&
+          isInsideBodyHitZone(component, startPoint);
+
+        if (!isBodyTap) {
+          gestureRef.current = {
+            kind: 'terminal',
+            pointerId,
+            startClient,
+            pointerType,
+            dragged: false,
+            view: startView,
+            terminal: { componentId, terminalId },
+          };
+          onSelect(null);
+          return;
+        }
       }
     }
 
@@ -674,9 +838,15 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
         y: adjustedPoint.y + gesture.grabOffset.y,
       };
       const gridPosition = svgToGrid(candidate, CELL_SIZE);
+      const dragged = circuit.components.find(
+        (item) => item.id === gesture.componentId,
+      );
 
       setDragPreview({ componentId: gesture.componentId, position: gridPosition });
-      updateTrashHover(isOverTrash(event.clientX, event.clientY));
+      updateTrashHover(
+        dragged !== undefined &&
+          isComponentOverTrash(dragged, gridPosition),
+      );
       return;
     }
 
@@ -735,35 +905,41 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
 
     if (gesture.kind === 'component') {
       if (wasDragged) {
-        if (isOverTrash(event.clientX, event.clientY)) {
-          onDeleteComponent(gesture.componentId);
-        } else {
-          const svgPoint = screenToBoard(
-            { x: event.clientX, y: event.clientY },
-            rect,
-            gesture.view,
-            board,
-          );
-          const adjustedPoint = applyTouchOffset(
-            svgPoint,
-            gesture.pointerType,
-            TOUCH_OFFSET_PX / scale,
-          );
-          const candidate = {
-            x: adjustedPoint.x + gesture.grabOffset.x,
-            y: adjustedPoint.y + gesture.grabOffset.y,
-          };
+        const svgPoint = screenToBoard(
+          { x: event.clientX, y: event.clientY },
+          rect,
+          gesture.view,
+          board,
+        );
+        const adjustedPoint = applyTouchOffset(
+          svgPoint,
+          gesture.pointerType,
+          TOUCH_OFFSET_PX / scale,
+        );
+        const candidate = {
+          x: adjustedPoint.x + gesture.grabOffset.x,
+          y: adjustedPoint.y + gesture.grabOffset.y,
+        };
+        const gridPosition = snapToGrid(svgToGrid(candidate, CELL_SIZE));
+        const clamped = clampGridPosition(
+          gridPosition,
+          board.columns,
+          board.rows,
+        );
+        const dragged = circuit.components.find(
+          (item) => item.id === gesture.componentId,
+        );
+        // Check the body where it is drawn, before grid snapping, so the
+        // trash reacts to the visible component and not to its landing cell.
+        const overTrash =
+          dragged !== undefined &&
+          isComponentOverTrash(dragged, gridPosition);
 
-          if (isPointInsideBoard(candidate, board.width, board.height)) {
-            const gridPosition = snapToGrid(svgToGrid(candidate, CELL_SIZE));
-            const clamped = clampGridPosition(
-              gridPosition,
-              board.columns,
-              board.rows,
-            );
-            onMoveComponent(gesture.componentId, clamped);
-            onSelect({ kind: 'component', id: gesture.componentId });
-          }
+        if (overTrash) {
+          onDeleteComponent(gesture.componentId);
+        } else if (isPointInsideBoard(candidate, board.width, board.height)) {
+          onMoveComponent(gesture.componentId, clamped);
+          onSelect({ kind: 'component', id: gesture.componentId });
         }
       } else {
         const component = circuit.components.find(
@@ -923,7 +1099,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
         strokeWidth={3}
       />
 
-      {renderedWires.map(({ wire, path }) => {
+      {orderedWires.map(({ wire, path }) => {
         const isSelected = selected?.kind === 'wire' && selected.id === wire.id;
         const current = simulation.wireCurrents[wire.id] ?? 0;
         const isShort =
@@ -984,7 +1160,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
 
       {wirePreview !== null && wirePreviewFromPoint !== undefined ? (
         <path
-          d={buildWirePath(wirePreviewFromPoint, wirePreview.toPoint)}
+          d={buildStraightWirePath(wirePreviewFromPoint, wirePreview.toPoint)}
           fill="none"
           stroke="#0f9d8c"
           strokeWidth={6}
@@ -1081,8 +1257,8 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
 
       {selectedWire !== undefined && dragPreview === null ? (
         <WireDeleteButton
-          x={(selectedWire.from.x + selectedWire.to.x) / 2}
-          y={(selectedWire.from.y + selectedWire.to.y) / 2}
+          x={selectedWire.mid.x}
+          y={selectedWire.mid.y}
           board={board}
           compact={isCompact}
           viewportScale={scale}
@@ -1135,6 +1311,16 @@ const WirePath = memo(function WirePath({
 }: WirePathProps) {
   return (
     <g data-wire-id={wireId}>
+      {/* A light casing keeps the wire readable over the grid and separates
+          crossing wires without hiding the component drawings. */}
+      <path
+        d={path}
+        fill="none"
+        stroke="#f7fbff"
+        strokeWidth={selected ? 18 : 15}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <path
         d={path}
         className={isShort ? 'wire--short' : undefined}
@@ -1142,6 +1328,7 @@ const WirePath = memo(function WirePath({
         stroke={selected ? '#1d4ed8' : '#355070'}
         strokeWidth={selected ? 11 : 8}
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
       {showCurrent ? (
         <path
@@ -1170,6 +1357,8 @@ const WirePath = memo(function WirePath({
         fill="none"
         stroke="transparent"
         strokeWidth={30}
+        strokeLinecap="round"
+        strokeLinejoin="round"
         pointerEvents="stroke"
       />
     </g>
@@ -1195,9 +1384,7 @@ function SelectionToolbar({
   onRotate,
   onDelete,
 }: SelectionToolbarProps) {
-  const buttonSize = compact
-    ? Math.max(72, Math.ceil(56 / Math.max(viewportScale, 0.1)))
-    : 72;
+  const buttonSize = toolbarButtonSize(compact, viewportScale);
   const visualScale = buttonSize / 72;
   const gap = 8 * visualScale;
   const padding = 6 * visualScale;
@@ -1226,6 +1413,7 @@ function SelectionToolbar({
         x={padding}
         y={padding}
         size={buttonSize}
+        viewportScale={viewportScale}
         label={fr.workbench.rotate}
         icon="rotate"
         onActivate={onRotate}
@@ -1234,6 +1422,7 @@ function SelectionToolbar({
         x={padding + buttonSize + gap}
         y={padding}
         size={buttonSize}
+        viewportScale={viewportScale}
         label={fr.workbench.delete}
         icon="trash"
         tone="danger"
@@ -1260,9 +1449,7 @@ function WireDeleteButton({
   viewportScale,
   onDelete,
 }: WireDeleteButtonProps) {
-  const size = compact
-    ? Math.max(72, Math.ceil(56 / Math.max(viewportScale, 0.1)))
-    : 72;
+  const size = toolbarButtonSize(compact, viewportScale);
 
   return (
     <g
@@ -1273,6 +1460,7 @@ function WireDeleteButton({
         x={0}
         y={0}
         size={size}
+        viewportScale={viewportScale}
         label={fr.workbench.delete}
         icon="trash"
         tone="danger"
@@ -1286,13 +1474,25 @@ interface ToolbarButtonProps {
   x: number;
   y: number;
   size: number;
+  viewportScale: number;
   label: string;
   icon: 'rotate' | 'trash';
   tone?: 'default' | 'danger';
   onActivate: () => void;
 }
 
-function ToolbarButton({ x, y, size, label, icon, tone = 'default', onActivate }: ToolbarButtonProps) {
+function ToolbarButton({
+  x,
+  y,
+  size,
+  viewportScale,
+  label,
+  icon,
+  tone = 'default',
+  onActivate,
+}: ToolbarButtonProps) {
+  const iconSize = toolbarIconSize(size, viewportScale);
+
   return (
     <g
       transform={`translate(${x} ${y})`}
@@ -1317,36 +1517,16 @@ function ToolbarButton({ x, y, size, label, icon, tone = 'default', onActivate }
         strokeWidth={2}
       />
       <g
-        transform={`translate(${size / 2} ${size / 2}) scale(${size / 72})`}
+        transform={`translate(${size / 2} ${size / 2}) scale(${iconSize / 24}) translate(-12 -12)`}
         fill="none"
         stroke={tone === 'danger' ? '#be123c' : '#24324a'}
-        strokeWidth={4}
+        strokeWidth={2.2}
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        {icon === 'rotate' ? <RotateIcon /> : <TrashIcon />}
+        <IconPaths name={icon} />
       </g>
     </g>
-  );
-}
-
-function RotateIcon() {
-  return (
-    <>
-      <path d="M 4 -14 A 14 14 0 1 1 -14 10" />
-      <path d="M -5 -14 L 4 -14 L 4 -5" />
-    </>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <>
-      <path d="M -14 -8 H 14" />
-      <path d="M -7 -8 V -14 H 7 V -8" />
-      <path d="M -10 -8 L -7 14 H 7 L 10 -8" />
-      <path d="M -2 -2 V 8 M 2 -2 V 8" />
-    </>
   );
 }
 
