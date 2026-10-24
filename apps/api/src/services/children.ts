@@ -1,10 +1,4 @@
-import { randomInt } from 'node:crypto';
-
-import {
-  PICTURE_PATTERN_IDS,
-  picturePatternLabel,
-  type PicturePatternId,
-} from '@circuits/shared';
+import type { PicturePatternId } from '@circuits/shared';
 import mongoose, { Types } from 'mongoose';
 
 import {
@@ -18,6 +12,10 @@ import {
 } from '../db/models/index.js';
 import { canManageStudent } from '../auth/access.js';
 import { ApiError, forbidden, notFound } from './errors.js';
+import {
+  picturePasswordLabels,
+  randomPicturePattern,
+} from './picturePasswords.js';
 import {
   hashSecret,
   pictureSecretFromPattern,
@@ -220,22 +218,6 @@ export interface PictureResetResult {
   labels: string[];
 }
 
-function randomPicturePattern(): PicturePatternId[] {
-  const pool = [...PICTURE_PATTERN_IDS];
-  const pattern: PicturePatternId[] = [];
-
-  while (pattern.length < 3) {
-    const index = randomInt(pool.length);
-    const [picture] = pool.splice(index, 1);
-
-    if (picture !== undefined) {
-      pattern.push(picture);
-    }
-  }
-
-  return pattern;
-}
-
 /**
  * A teacher resets a child's tap password. The new sequence is returned once
  * so it can be shown or printed; only its argon2id hash is stored.
@@ -283,6 +265,6 @@ export async function resetStudentPicturePassword(options: {
 
   return {
     pattern,
-    labels: pattern.map((picture) => picturePatternLabel(picture)),
+    labels: picturePasswordLabels(pattern),
   };
 }

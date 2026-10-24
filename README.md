@@ -132,6 +132,69 @@ enfants de cette tablette n'ont alors plus à saisir le code. `DELETE
 | `COOKIE_SECURE` | force l'attribut `Secure` (activé par défaut en production) |
 | `TRUST_PROXY` | lit `X-Forwarded-For` derrière Caddy, pour la limitation par IP |
 
+## Groupes, élèves et parents
+
+Les routes de gestion vivent sous `/api` et renvoient des DTO validés par zod.
+Elles exigent une session adulte ; un élève reçoit toujours `403`.
+
+### Groupes
+
+| Route | Rôle |
+|---|---|
+| `GET /api/groups` | liste les groupes accessibles (`?includeArchived=true`) |
+| `POST /api/groups` | crée un groupe et son code à six caractères |
+| `GET /api/groups/:id` | détail avec la liste des élèves |
+| `PATCH /api/groups/:id` | renomme (`name`) ou archive (`archived`) |
+| `POST /api/groups/:id/join-code` | régénère le code d’invitation |
+| `POST /api/groups/:id/students` | ajoute un élève (`displayName`, `avatarId`) |
+| `POST /api/groups/:id/students/bulk` | ajoute jusqu’à 40 prénoms d’un coup |
+
+Seul le créateur d’un groupe (ou un admin) peut le renommer, l’archiver ou
+changer son code. Un co-encadrant membre peut voir le groupe et y ajouter des
+élèves. Archiver un groupe déconnecte ses enfants et invalide le code ; les
+élèves et l’historique restent en base.
+
+### Élèves
+
+| Route | Rôle |
+|---|---|
+| `GET /api/students` | admin : tous ; encadrant : ses groupes ; parent : ses enfants |
+| `GET /api/students/:id` | détail autorisé |
+| `PATCH /api/students/:id/group` | déplace l’élève vers un autre groupe |
+| `GET /api/students/:id/export` | export JSON complet, en pièce jointe |
+| `DELETE /api/students/:id` | suppression définitive, `confirmName` obligatoire |
+| `GET/POST /api/students/:id/parents` | liste ou rattache un parent existant |
+| `DELETE /api/students/:id/parents/:parentId` | retire le lien parent |
+
+À la création, l’API génère une suite de trois images et la renvoie **une seule
+fois** avec son élève ; seule son empreinte argon2id est stockée. Le prénom et
+l’avatar sont les seules données demandées à l’adulte. Un déplacement révoque
+les sessions enfant de l’élève.
+
+Un parent peut être rattaché à plusieurs enfants : le lien d’invitation crée le
+compte pour un premier enfant, puis `POST /api/students/:id/parents` ajoute les
+autres avec son identifiant.
+
+### Administration
+
+| Route | Rôle |
+|---|---|
+| `GET /api/users` | tous les comptes, filtre `role`, pagination `limit`/`offset` |
+| `GET /api/users/:id` | détail d’un compte |
+| `PATCH /api/users/:id/status` | active ou désactive (`disabled`) |
+| `PATCH /api/users/:id/role` | change un rôle adulte |
+| `GET /api/audit-logs` | journal des actions sensibles, paginé |
+
+Un compte désactivé perd immédiatement ses sessions et ne peut plus se
+connecter. Un administrateur ne peut ni se désactiver ni changer son propre
+rôle, et il doit toujours rester un administrateur actif. Les rôles d’un élève
+ne se modifient pas depuis cette route : sa fiche se gère par son groupe.
+
+L’export et la suppression écrivent tous deux dans `auditlogs` ; la suppression
+passe par la transaction `deleteStudent` et le prénom doit être saisi à
+l’identique. Un parent peut exporter ou supprimer ses propres enfants, un
+encadrant seulement les élèves de ses groupes.
+
 ## Commandes
 
 ```bash

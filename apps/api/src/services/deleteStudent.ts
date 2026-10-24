@@ -1,6 +1,7 @@
 import mongoose, { Types } from 'mongoose';
 
 import {
+  AuditLogModel,
   GroupModel,
   InviteModel,
   LevelAttemptModel,
@@ -42,6 +43,11 @@ function toObjectId(value: string): Types.ObjectId {
   return new Types.ObjectId(value);
 }
 
+export interface DeleteStudentOptions {
+  /** When present, an audit entry is written in the same transaction. */
+  actorId?: Types.ObjectId | undefined;
+}
+
 /**
  * Permanently deletes a student and everything attached to them in one
  * transaction. Parent links and group memberships are pulled from the
@@ -49,6 +55,7 @@ function toObjectId(value: string): Types.ObjectId {
  */
 export async function deleteStudent(
   userId: string | Types.ObjectId,
+  options: DeleteStudentOptions = {},
 ): Promise<DeleteStudentResult> {
   const id = typeof userId === 'string' ? toObjectId(userId) : userId;
   const session = await mongoose.startSession();
@@ -91,6 +98,20 @@ export async function deleteStudent(
       ).session(session);
 
       await UserModel.deleteOne({ _id: id }).session(session);
+
+      if (options.actorId !== undefined) {
+        await AuditLogModel.create(
+          [
+            {
+              actorId: options.actorId,
+              action: 'delete_student',
+              targetType: 'user',
+              targetId: id,
+            },
+          ],
+          { session },
+        );
+      }
 
       return {
         groupsUpdated: groups.modifiedCount,

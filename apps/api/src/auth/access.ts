@@ -7,7 +7,7 @@ import {
   type GroupDocument,
   type UserDocument,
 } from '../db/models/index.js';
-import { notFound } from '../services/errors.js';
+import { forbidden, notFound } from '../services/errors.js';
 
 export async function canAccessGroup(
   user: UserDocument,
@@ -22,7 +22,7 @@ export async function canAccessGroup(
   return group !== null && userCanAccessGroup(user, group);
 }
 
-function userCanAccessGroup(
+export function userCanAccessGroup(
   user: UserDocument,
   group: GroupDocument,
 ): boolean {
@@ -52,6 +52,50 @@ function userCanAccessGroup(
   }
 
   return false;
+}
+
+/** Only the creator or an administrator can rename, archive or re-key a group. */
+export function userCanManageGroup(
+  user: UserDocument,
+  group: GroupDocument,
+): boolean {
+  return (
+    user.role === 'admin' ||
+    (user.role === 'encadrant' && group.createdBy.equals(user._id))
+  );
+}
+
+export async function requireGroupForUser(
+  user: UserDocument,
+  groupId: string,
+): Promise<GroupDocument> {
+  if (!OBJECT_ID_PATTERN.test(groupId)) {
+    throw notFound('Groupe introuvable.');
+  }
+
+  const group = await GroupModel.findById(groupId);
+
+  if (group === null) {
+    throw notFound('Groupe introuvable.');
+  }
+
+  if (!userCanAccessGroup(user, group)) {
+    throw forbidden('Tu n’as pas accès à ce groupe.');
+  }
+
+  return group;
+}
+
+export async function groupsForStudent(
+  studentId: string,
+): Promise<GroupDocument[]> {
+  if (!OBJECT_ID_PATTERN.test(studentId)) {
+    return [];
+  }
+
+  return GroupModel.find({
+    'members.userId': new Types.ObjectId(studentId),
+  });
 }
 
 /** A teacher may only touch a student who belongs to one of their groups. */
