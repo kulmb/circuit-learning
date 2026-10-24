@@ -248,3 +248,5 @@ curl -fsS https://circuit-learning.87543362.xyz/api/health
 - La police Nunito est auto-hébergée dans `apps/web/src/assets/fonts` (licence OFL) :
   aucune ressource n'est chargée depuis un CDN.
 - Les secrets et fichiers d'environnement ne sont jamais versionnés.
+- `argon2` est épinglé à 0.41.1 : les binaires précompilés de 0.45.x plantent au
+  chargement sur Node 20 / arm64. Vérifier ce point avant toute montée de version.
