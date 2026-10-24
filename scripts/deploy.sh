@@ -3,7 +3,7 @@ set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 target_dir="${WEB_DEPLOY_DIR:-/srv/circuits/web}"
-prod_branch="${PROD_BRANCH:-main}"
+prod_branch="${PROD_BRANCH:-master}"
 env_file="$root_dir/.env"
 
 cd "$root_dir"

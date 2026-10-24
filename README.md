@@ -657,7 +657,7 @@ L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
 - Les anciennes URL `kulmb.87543362.xyz/circuit/*` redirigent en 301 vers le
   nouveau domaine.
 - `scripts/deploy.sh` ne compile jamais l'arbre de travail courant : il
-  récupère la branche de production (`main`, surchargeable avec `PROD_BRANCH`),
+  récupère la branche de production (`master`, surchargeable avec `PROD_BRANCH`),
   l'extrait dans un dossier temporaire avec `git worktree`, y installe les
   dépendances et compile une version propre, reconstruit l'image API, publie
   le front, puis supprime le dossier temporaire — même en cas d'échec. La
