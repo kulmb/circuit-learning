@@ -1,0 +1,308 @@
+import { CircuitError } from './errors';
+import { assertId } from './ids';
+import type {
+  CircuitComponent,
+  ComponentType,
+  Rotation,
+  Terminal,
+  TerminalRef,
+  Vec2,
+  Wire,
+} from './types';
+
+export const COMPONENT_TYPES = [
+  'battery',
+  'bulb',
+  'switch',
+  'wire',
+  'motor',
+  'buzzer',
+  'led',
+  'resistor',
+  'material',
+] as const satisfies readonly ComponentType[];
+
+export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
+
+export const DEFAULT_BATTERY_VOLTAGE = 4.5;
+export const DEFAULT_BATTERY_INTERNAL_RESISTANCE = 0.5;
+export const DEFAULT_BULB_RESISTANCE = 10;
+export const DEFAULT_MOTOR_RESISTANCE = 8;
+export const DEFAULT_BUZZER_RESISTANCE = 15;
+export const DEFAULT_LED_RESISTANCE = 100;
+export const DEFAULT_LED_FORWARD_VOLTAGE = 0.6;
+export const DEFAULT_SWITCH_RESISTANCE = 0.01;
+export const DEFAULT_MATERIAL_RESISTANCE = 0.01;
+export const DEFAULT_RESISTOR_RESISTANCE = 10;
+export const SHORT_CIRCUIT_CURRENT = 5;
+
+export const NOMINAL_CURRENTS = {
+  bulb: 0.4,
+  motor: 0.4,
+  buzzer: 0.25,
+  led: 0.04,
+} as const;
+
+export const EXPECTED_TERMINAL_IDS: Record<ComponentType, readonly [string, string]> = {
+  battery: ['positive', 'negative'],
+  bulb: ['a', 'b'],
+  switch: ['a', 'b'],
+  wire: ['a', 'b'],
+  motor: ['a', 'b'],
+  buzzer: ['a', 'b'],
+  led: ['anode', 'cathode'],
+  resistor: ['a', 'b'],
+  material: ['a', 'b'],
+};
+
+function twoTerminals(): Terminal[] {
+  return [
+    { id: 'a', offset: { x: -0.6, y: 0 } },
+    { id: 'b', offset: { x: 0.6, y: 0 } },
+  ];
+}
+
+const TERMINAL_LAYOUTS: Record<ComponentType, readonly Terminal[]> = {
+  battery: [
+    { id: 'positive', label: '+', polarity: 'positive', offset: { x: 0.6, y: 0 } },
+    { id: 'negative', label: '−', polarity: 'negative', offset: { x: -0.6, y: 0 } },
+  ],
+  bulb: twoTerminals(),
+  switch: twoTerminals(),
+  wire: twoTerminals(),
+  motor: twoTerminals(),
+  buzzer: twoTerminals(),
+  led: [
+    { id: 'anode', label: 'A', polarity: 'anode', offset: { x: -0.6, y: 0 } },
+    { id: 'cathode', label: 'K', polarity: 'cathode', offset: { x: 0.6, y: 0 } },
+  ],
+  resistor: twoTerminals(),
+  material: twoTerminals(),
+};
+
+export interface CreateComponentOptions {
+  id: string;
+  position?: Vec2;
+  rotation?: Rotation;
+  closed?: boolean;
+  conductive?: boolean;
+  resistance?: number;
+  voltage?: number;
+  internalResistance?: number;
+  forwardVoltage?: number;
+}
+
+export function isComponentType(value: unknown): value is ComponentType {
+  return (
+    typeof value === 'string' && (COMPONENT_TYPES as readonly string[]).includes(value)
+  );
+}
+
+export function createComponent(
+  type: ComponentType,
+  options: CreateComponentOptions,
+): CircuitComponent {
+  const id = assertId(options.id, 'component id');
+  const position = options.position ? cloneVec2(options.position) : { x: 0, y: 0 };
+  const rotation = options.rotation ?? 0;
+
+  if (!ROTATIONS.includes(rotation)) {
+    throw new CircuitError('invalid_circuit', `Invalid rotation for component ${id}`);
+  }
+
+  const base = {
+    id,
+    position,
+    rotation,
+    terminals: TERMINAL_LAYOUTS[type].map(cloneTerminal),
+  };
+
+  switch (type) {
+    case 'battery':
+      return {
+        ...base,
+        type,
+        voltage: positive(options.voltage ?? DEFAULT_BATTERY_VOLTAGE, 'voltage'),
+        internalResistance: positive(
+          options.internalResistance ?? DEFAULT_BATTERY_INTERNAL_RESISTANCE,
+          'internal resistance',
+        ),
+      };
+    case 'bulb':
+      return {
+        ...base,
+        type,
+        resistance: positive(options.resistance ?? DEFAULT_BULB_RESISTANCE, 'resistance'),
+      };
+    case 'switch':
+      return {
+        ...base,
+        type,
+        closed: options.closed ?? false,
+        resistanceWhenClosed: positive(
+          options.resistance ?? DEFAULT_SWITCH_RESISTANCE,
+          'closed resistance',
+        ),
+      };
+    case 'wire':
+      return { ...base, type };
+    case 'motor':
+      return {
+        ...base,
+        type,
+        resistance: positive(options.resistance ?? DEFAULT_MOTOR_RESISTANCE, 'resistance'),
+      };
+    case 'buzzer':
+      return {
+        ...base,
+        type,
+        resistance: positive(options.resistance ?? DEFAULT_BUZZER_RESISTANCE, 'resistance'),
+      };
+    case 'led':
+      return {
+        ...base,
+        type,
+        resistance: positive(options.resistance ?? DEFAULT_LED_RESISTANCE, 'resistance'),
+        forwardVoltage: nonNegative(
+          options.forwardVoltage ?? DEFAULT_LED_FORWARD_VOLTAGE,
+          'forward voltage',
+        ),
+      };
+    case 'resistor':
+      return {
+        ...base,
+        type,
+        resistance: positive(
+          options.resistance ?? DEFAULT_RESISTOR_RESISTANCE,
+          'resistance',
+        ),
+      };
+    case 'material':
+      return {
+        ...base,
+        type,
+        conductive: options.conductive ?? false,
+        resistanceWhenConductive: positive(
+          options.resistance ?? DEFAULT_MATERIAL_RESISTANCE,
+          'conductive resistance',
+        ),
+      };
+  }
+}
+
+export function createWire(
+  id: string,
+  from: TerminalRef,
+  to: TerminalRef,
+  points?: Vec2[],
+): Wire {
+  const wire: Wire = {
+    id: assertId(id, 'wire id'),
+    from: cloneTerminalRef(from),
+    to: cloneTerminalRef(to),
+  };
+
+  if (points !== undefined) {
+    wire.points = points.map(cloneVec2);
+  }
+
+  return wire;
+}
+
+export function cloneComponent(component: CircuitComponent): CircuitComponent {
+  return {
+    ...component,
+    position: cloneVec2(component.position),
+    terminals: component.terminals.map(cloneTerminal),
+  } as CircuitComponent;
+}
+
+export function cloneWire(wire: Wire): Wire {
+  const clone: Wire = {
+    id: wire.id,
+    from: cloneTerminalRef(wire.from),
+    to: cloneTerminalRef(wire.to),
+  };
+
+  if (wire.points !== undefined) {
+    clone.points = wire.points.map(cloneVec2);
+  }
+
+  return clone;
+}
+
+export function getTerminalWorldPosition(
+  component: CircuitComponent,
+  terminalId: string,
+): Vec2 {
+  const terminal = component.terminals.find((item) => item.id === terminalId);
+  if (!terminal) {
+    throw new CircuitError(
+      'invalid_circuit',
+      `Component ${component.id} has no terminal ${terminalId}`,
+    );
+  }
+
+  const rotated = rotateOffset(terminal.offset, component.rotation);
+  return {
+    x: component.position.x + rotated.x,
+    y: component.position.y + rotated.y,
+  };
+}
+
+function rotateOffset(offset: Vec2, rotation: Rotation): Vec2 {
+  switch (rotation) {
+    case 0:
+      return { x: offset.x, y: offset.y };
+    case 90:
+      return { x: -offset.y, y: offset.x };
+    case 180:
+      return { x: -offset.x, y: -offset.y };
+    case 270:
+      return { x: offset.y, y: -offset.x };
+  }
+}
+
+function cloneTerminal(terminal: Terminal): Terminal {
+  const clone: Terminal = {
+    id: terminal.id,
+    offset: cloneVec2(terminal.offset),
+  };
+
+  if (terminal.label !== undefined) {
+    clone.label = terminal.label;
+  }
+  if (terminal.polarity !== undefined) {
+    clone.polarity = terminal.polarity;
+  }
+
+  return clone;
+}
+
+function cloneTerminalRef(ref: TerminalRef): TerminalRef {
+  return {
+    componentId: assertId(ref.componentId, 'terminal reference component id'),
+    terminalId: assertId(ref.terminalId, 'terminal reference terminal id'),
+  };
+}
+
+function cloneVec2(value: Vec2): Vec2 {
+  if (!Number.isFinite(value.x) || !Number.isFinite(value.y)) {
+    throw new CircuitError('invalid_circuit', 'Coordinates must be finite numbers');
+  }
+  return { x: value.x, y: value.y };
+}
+
+function positive(value: number, field: string): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new CircuitError('invalid_circuit', `${field} must be a positive number`);
+  }
+  return value;
+}
+
+function nonNegative(value: number, field: string): number {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new CircuitError('invalid_circuit', `${field} must be zero or positive`);
+  }
+  return value;
+}

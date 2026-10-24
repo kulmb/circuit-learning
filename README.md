@@ -38,6 +38,20 @@ pnpm build      # build de production de tous les paquets
 pnpm verify     # typecheck + tests + build
 ```
 
+## Moteur de circuit
+
+`@circuits/shared` expose un moteur pur TypeScript, sans React ni DOM :
+
+- `createComponent(type, options)` et `createWire(id, from, to)`
+- `simulateCircuit(circuit)` : courants, états qualitatifs (`off`, `dim`, `normal`,
+  `bright`) et diagnostics
+- `describeCircuit(circuit)` : court-circuit, circuit ouvert, interrupteur ouvert,
+  LED inversée, matériau isolant, terminal non connecté
+- `serializeCircuit(circuit)` / `deserializeCircuit(json)` : format JSON versionné
+
+Les tests couvrent le circuit simple, le série, le parallèle, les courts-circuits,
+les LED, les matériaux conducteurs/isolants et la sérialisation.
+
 ## Déploiement
 
 L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
