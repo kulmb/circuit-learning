@@ -1,9 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { App } from './App';
 
 describe('App', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/');
+    window.localStorage.clear();
+  });
+
   it('shows the title and the two main actions', () => {
     render(<App />);
 
@@ -16,6 +21,14 @@ describe('App', () => {
     render(<App />);
 
     fireEvent.pointerDown(screen.getByRole('button', { name: /jouer/i }));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Entre le code du groupe' }),
+    ).toBeInTheDocument();
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: /jouer en invité/i }),
+    );
 
     expect(
       await screen.findByRole('heading', { name: 'Chapitre 1 : La lumière' }),
@@ -35,5 +48,18 @@ describe('App', () => {
     expect(
       await screen.findByRole('heading', { name: 'Allume l’ampoule' }),
     ).toBeInTheDocument();
+  });
+
+  it('loads the adult space on its own route', async () => {
+    render(<App />);
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: /espace adulte/i }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Connexion adulte' }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/admin');
   });
 });

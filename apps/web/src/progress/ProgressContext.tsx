@@ -35,6 +35,7 @@ export interface ProgressContextValue {
   ready: boolean;
   isGuest: boolean;
   setSession: (session: AuthSessionResponse | null) => void;
+  logout: () => Promise<void>;
   mergePrompt: MergePromptState;
   mergeGuestProgress: () => Promise<void>;
   keepAccountOnly: () => void;
@@ -52,6 +53,7 @@ const ProgressContext = createContext<ProgressContextValue>({
   ready: true,
   isGuest: true,
   setSession: () => undefined,
+  logout: async () => undefined,
   mergePrompt: CLOSED_MERGE_PROMPT,
   mergeGuestProgress: async () => undefined,
   keepAccountOnly: () => undefined,
@@ -160,10 +162,7 @@ export function ProgressProvider({
           await response.json(),
         );
 
-        if (
-          parsed.success &&
-          parsed.data.user.role === 'eleve'
-        ) {
+        if (parsed.success) {
           applySession(parsed.data);
         }
       })
@@ -241,6 +240,26 @@ export function ProgressProvider({
     setMergePrompt(CLOSED_MERGE_PROMPT);
   }, [session]);
 
+  const logout = useCallback(async () => {
+    setSessionState(null);
+    setMergePrompt(CLOSED_MERGE_PROMPT);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        signal: controller.signal,
+      });
+    } catch {
+      // The local session is already cleared; the cookie expires on its own.
+    } finally {
+      clearTimeout(timeout);
+    }
+  }, []);
+
   const value = useMemo<ProgressContextValue>(
     () => ({
       repository,
@@ -248,6 +267,7 @@ export function ProgressProvider({
       ready,
       isGuest: session === null,
       setSession: applySession,
+      logout,
       mergePrompt,
       mergeGuestProgress,
       keepAccountOnly,
@@ -255,6 +275,7 @@ export function ProgressProvider({
     [
       applySession,
       keepAccountOnly,
+      logout,
       mergeGuestProgress,
       mergePrompt,
       ready,

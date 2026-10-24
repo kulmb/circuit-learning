@@ -9,18 +9,18 @@ import {
 
 /** Avatars offered when an adult creates a child account. */
 export const AVATARS = [
-  { id: 'renard', label: 'Renard' },
-  { id: 'panda', label: 'Panda' },
-  { id: 'fusee', label: 'Fusée' },
-  { id: 'chat', label: 'Chat' },
-  { id: 'chien', label: 'Chien' },
-  { id: 'lapin', label: 'Lapin' },
-  { id: 'hibou', label: 'Hibou' },
-  { id: 'dragon', label: 'Dragon' },
-  { id: 'licorne', label: 'Licorne' },
-  { id: 'robot', label: 'Robot' },
-  { id: 'pingouin', label: 'Pingouin' },
-  { id: 'souris', label: 'Souris' },
+  { id: 'renard', label: 'Renard', emoji: '🦊' },
+  { id: 'panda', label: 'Panda', emoji: '🐼' },
+  { id: 'fusee', label: 'Fusée', emoji: '🚀' },
+  { id: 'chat', label: 'Chat', emoji: '🐱' },
+  { id: 'chien', label: 'Chien', emoji: '🐶' },
+  { id: 'lapin', label: 'Lapin', emoji: '🐰' },
+  { id: 'hibou', label: 'Hibou', emoji: '🦉' },
+  { id: 'dragon', label: 'Dragon', emoji: '🐲' },
+  { id: 'licorne', label: 'Licorne', emoji: '🦄' },
+  { id: 'robot', label: 'Robot', emoji: '🤖' },
+  { id: 'pingouin', label: 'Pingouin', emoji: '🐧' },
+  { id: 'souris', label: 'Souris', emoji: '🐭' },
 ] as const;
 
 export type AvatarId = (typeof AVATARS)[number]['id'];
@@ -31,6 +31,14 @@ export const AVATAR_IDS = AVATARS.map((avatar) => avatar.id) as [
 ];
 
 export const avatarIdSchema = z.enum(AVATAR_IDS);
+
+export function avatarEmoji(id: string | null | undefined): string {
+  return AVATARS.find((avatar) => avatar.id === id)?.emoji ?? '🙂';
+}
+
+export function avatarLabel(id: string | null | undefined): string {
+  return AVATARS.find((avatar) => avatar.id === id)?.label ?? 'Avatar';
+}
 
 export const groupParamsSchema = z.object({ groupId: objectIdSchema });
 export const groupStudentParamsSchema = z.object({
@@ -308,6 +316,15 @@ export const auditLogsQuerySchema = z.object({
 
 export type AvatarIdValue = z.infer<typeof avatarIdSchema>;
 export type StudentSummary = z.infer<typeof studentSummarySchema>;
+export type ParentSummary = z.infer<typeof parentSummarySchema>;
 export type ManagedGroup = z.infer<typeof managedGroupSchema>;
+export type GroupDetail = z.infer<typeof groupDetailSchema>;
+export type CreatedStudentResponse = z.infer<
+  typeof createdStudentResponseSchema
+>;
+export type BulkCreatedStudentsResponse = z.infer<
+  typeof bulkCreatedStudentsResponseSchema
+>;
 export type AdminUser = z.infer<typeof adminUserSchema>;
+export type AuditLogEntry = z.infer<typeof auditLogSchema>;
 export type StudentExport = z.infer<typeof studentExportSchema>;

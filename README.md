@@ -195,6 +195,56 @@ passe par la transaction `deleteStudent` et le prénom doit être saisi à
 l’identique. Un parent peut exporter ou supprimer ses propres enfants, un
 encadrant seulement les élèves de ses groupes.
 
+## Connexion des enfants
+
+Le bouton « Jouer » ouvre la connexion enfant, sauf si une session enfant est
+déjà reconnue :
+
+1. le code du groupe se saisit sur un clavier à grands boutons (deux rangées
+   de seize touches en compact ; il ne contient ni `0`, ni `O`, ni `1`, ni `I`) ;
+2. l’enfant choisit son avatar et son prénom ;
+3. il touche trois images dans l’ordre. Chaque appui fait dire son nom à Zap.
+
+Sur un appareil fixé à un groupe, l’étape du code est sautée. Un bouton
+« Jouer en invité » reste disponible pour utiliser la progression locale.
+Cinq erreurs d’images bloquent l’élève dix minutes avec le message
+« Demande de l’aide à ton encadrant ».
+
+La carte des niveaux affiche l’avatar et le prénom de l’enfant, un bouton
+« Ma collection » (mots débloqués, chacun prononcé au toucher) et
+« Au revoir » pour fermer la session. La session est détectée au chargement
+via `GET /api/auth/me` ; après une connexion, l’écran appelle
+`ProgressProvider.setSession()` pour basculer immédiatement vers le dépôt API.
+
+## Espace adulte (`/admin`)
+
+Le back-office est chargé à la demande dans un chunk séparé (`AdminApp`), avec
+un style volontairement sobre, distinct du jeu. Les routes sont protégées côté
+client par le rôle de la session et côté serveur par les contrôles de l’API.
+
+| Rôle | Pages |
+|---|---|
+| admin | groupes, utilisateurs, journal d’audit, mon compte |
+| encadrant | ses groupes, mon compte |
+| parent | ses enfants, fiche enfant en lecture, mon compte |
+
+- `/invitation/:token` accepte une invitation ou un lien de réinitialisation et
+  permet de choisir un mot de passe (12 caractères minimum).
+- La fiche groupe permet de renommer, archiver, changer le code, ajouter un
+  élève seul ou par liste, afficher une seule fois les images initiales,
+  imprimer les cartes de connexion (avatar, prénom, code) et fixer/détacher
+  l’appareil.
+- La fiche élève permet d’exporter le JSON, de réinitialiser les images, de
+  générer et copier un lien d’invitation parent, de rattacher un parent existant
+  et de supprimer l’élève après saisie exacte de son prénom.
+- La page utilisateurs charge les comptes paginés, filtre par rôle, active ou
+  désactive un compte et change un rôle adulte. Le rôle élève reste géré par
+  les groupes. Elle crée aussi les liens d’invitation encadrant et les liens de
+  réinitialisation de mot de passe, à copier et transmettre.
+- « Mon compte » change le mot de passe sans demander l’ancien.
+- En compact, la navigation passe en barre d’onglets fixe en bas et les
+  tableaux deviennent des cartes.
+
 ## Commandes
 
 ```bash

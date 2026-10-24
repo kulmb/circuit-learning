@@ -1,42 +1,100 @@
 import { getLevelById } from '@circuits/shared';
-import { useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  lazy,
+  Suspense,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import { ZapCharacter } from './components/Zap';
 import { LayoutProvider } from './layout/LayoutContext';
+import { ChildLoginPage } from './levels/ChildLoginPage';
+import { CollectionPage } from './levels/CollectionPage';
 import { LevelMapPage } from './levels/LevelMapPage';
 import { MaterialsLevelPage } from './levels/MaterialsLevelPage';
 import { SymbolMatchingPage } from './levels/SymbolMatchingPage';
-import { fr } from './narration/fr';
+import { fr, getText } from './narration/fr';
 import { unlockNarration } from './narration/narrationService';
 import { GuestMergeDialog } from './progress/GuestMergeDialog';
-import { ProgressProvider } from './progress/ProgressContext';
+import {
+  ProgressProvider,
+  useProgress,
+} from './progress/ProgressContext';
+import { navigate, usePathname } from './router';
 import { WorkbenchPage } from './workbench/WorkbenchPage';
 import './App.css';
 
-type Screen = 'home' | 'map' | 'play' | 'sandbox';
+const AdminApp = lazy(() => import('./admin/AdminApp'));
+
+type Screen = 'home' | 'login' | 'map' | 'play' | 'sandbox' | 'collection';
 
 export function App() {
   return (
     <LayoutProvider>
       <ProgressProvider>
-        <AppContent />
-        <GuestMergeDialog />
+        <RootRoutes />
       </ProgressProvider>
     </LayoutProvider>
+  );
+}
+
+function RootRoutes() {
+  const path = usePathname();
+  const adminRoute =
+    path === '/admin' ||
+    path.startsWith('/admin/') ||
+    path.startsWith('/invitation/');
+
+  if (adminRoute) {
+    return (
+      <Suspense
+        fallback={
+          <main className="route-loading" aria-busy="true">
+            <div className="route-loading__spinner" aria-hidden="true" />
+          </main>
+        }
+      >
+        <AdminApp />
+      </Suspense>
+    );
+  }
+
+  return (
+    <>
+      <AppContent />
+      <GuestMergeDialog />
+    </>
   );
 }
 
 function AppContent() {
   const [screen, setScreen] = useState<Screen>('home');
   const [levelId, setLevelId] = useState<string | null>(null);
+  const { session } = useProgress();
   const reduceMotion = useReducedMotion() ?? false;
   const level = levelId === null ? undefined : getLevelById(levelId);
+  const child = session?.user.role === 'eleve' ? session.user : null;
+
+  if (screen === 'login') {
+    return (
+      <ChildLoginPage
+        onCancel={() => setScreen('home')}
+        onGuest={() => setScreen('map')}
+        onSuccess={() => setScreen('map')}
+      />
+    );
+  }
+
+  if (screen === 'collection') {
+    return <CollectionPage onBack={() => setScreen('map')} />;
+  }
 
   if (screen === 'map') {
     return (
       <LevelMapPage
         onBack={() => setScreen('home')}
+        onCollection={() => setScreen('collection')}
         onSelectLevel={(selectedLevelId) => {
           setLevelId(selectedLevelId);
           setScreen('play');
@@ -50,6 +108,7 @@ function AppContent() {
       return (
         <LevelMapPage
           onBack={() => setScreen('home')}
+          onCollection={() => setScreen('collection')}
           onSelectLevel={(selectedLevelId) => {
             setLevelId(selectedLevelId);
             setScreen('play');
@@ -121,7 +180,7 @@ function AppContent() {
               onPointerDown={(event) =>
                 activate(event, () => {
                   unlockNarration();
-                  setScreen('map');
+                  setScreen(child === null ? 'login' : 'map');
                 })
               }
             >
@@ -137,6 +196,16 @@ function AppContent() {
               <span>{fr.home.sandbox}</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            className="home__adult"
+            onPointerDown={(event) =>
+              activate(event, () => navigate('/admin'))
+            }
+          >
+            {getText('home.adultSpace')}
+          </button>
         </main>
       ) : (
         <main className="placeholder">

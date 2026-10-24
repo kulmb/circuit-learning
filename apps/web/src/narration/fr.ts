@@ -10,6 +10,7 @@ export const texts = {
   'home.sandbox': 'Atelier libre',
   'home.sandboxPlaceholder': 'L’atelier libre arrive bientôt !',
   'home.back': 'Retour',
+  'home.adultSpace': 'Espace adulte',
 
   'workbench.title': 'Plan de travail',
   'workbench.hint': 'Relie les composants avec des fils.',
@@ -108,6 +109,44 @@ export const texts = {
   'map.final': 'Chapitre terminé !',
   'map.guestNotice':
     'Tu joues en invité. Ta progression ne sera pas gardée.',
+  'map.collection': 'Ma collection',
+  'map.bye': 'Au revoir',
+
+  'login.title': 'Qui joue ?',
+  'login.groupTitle': 'Entre le code du groupe',
+  'login.groupHint': 'Demande le code à ton encadrant.',
+  'login.groupError':
+    'Ce code ne marche pas. Vérifie avec ton encadrant.',
+  'login.delete': 'Effacer',
+  'login.guest': 'Jouer en invité',
+  'login.adult': 'Espace adulte',
+  'login.chooseAvatar': 'Choisis ton avatar',
+  'login.pictureTitle': 'Touche tes trois images',
+  'login.pictureHint': 'Dans le bon ordre.',
+  'login.back': 'Retour',
+  'login.pinned': 'Cet appareil est déjà fixé à ce groupe.',
+  'login.wrong': 'Ce n’est pas le bon dessin. Essaie encore.',
+  'login.locked': 'Demande de l’aide à ton encadrant.',
+  'login.connectionError':
+    'Oups, je n’arrive pas à te connecter. Réessaie.',
+  'login.retry': 'Recommencer',
+
+  'collection.title': 'Ma collection',
+  'collection.subtitle': 'Les mots que tu as appris.',
+  'collection.empty': 'Joue des niveaux pour gagner des mots !',
+  'collection.listen': 'Écouter',
+  'collection.back': 'Carte des niveaux',
+  'collection.wordAria': 'Écouter le mot',
+
+  'picture.renard': 'Le renard',
+  'picture.panda': 'Le panda',
+  'picture.grenouille': 'La grenouille',
+  'picture.pomme': 'La pomme',
+  'picture.banane': 'La banane',
+  'picture.fraise': 'La fraise',
+  'picture.ballon': 'Le ballon',
+  'picture.voiture': 'La voiture',
+  'picture.etoile': 'L’étoile',
 
   'progress.saveError':
     'Oups, je n’arrive pas à sauvegarder. On réessaie plus tard !',

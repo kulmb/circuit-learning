@@ -70,6 +70,66 @@
   flex: 0 0 auto;
 }
 
+.level-map__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(860px, 100%);
+  margin: 12px auto 0;
+}
+
+.level-map__collection,
+.level-map__bye {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 2px solid rgba(36, 50, 74, 0.12);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.level-map__collection svg {
+  width: 22px;
+  height: 22px;
+}
+
+.level-map__child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 6px 8px 6px 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.level-map__avatar {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.level-map__name {
+  max-width: 140px;
+  overflow: hidden;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.level-map__bye {
+  min-height: 40px;
+  border-color: rgba(184, 60, 10, 0.2);
+  color: var(--color-primary-deep);
+}
+
 .level-map__guest {
   width: min(860px, 100%);
   margin: 12px auto 0;
@@ -360,4 +420,18 @@
   width: 48px;
   height: 48px;
   flex-basis: 48px;
+}
+
+[data-layout='compact'] .level-map__toolbar {
+  flex-wrap: wrap;
+}
+
+[data-layout='compact'] .level-map__child {
+  width: 100%;
+  margin-left: 0;
+}
+
+[data-layout='compact'] .level-map__name {
+  flex: 1;
+  max-width: none;
 }

@@ -43,6 +43,7 @@ export function picturePatternLabel(id: PicturePatternId): string {
 export const USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{2,31}$/;
 
 /** Group codes avoid 0/O and 1/I so they can be read aloud. */
+export const JOIN_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const JOIN_CODE_PATTERN = /^[A-HJ-NP-Z2-9]{6}$/;
 
 export const OBJECT_ID_PATTERN = /^[a-f0-9]{24}$/i;

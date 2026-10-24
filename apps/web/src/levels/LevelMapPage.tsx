@@ -1,6 +1,7 @@
 import {
   CHAPTER_1_LEVELS,
   CHAPTER_1_TITLE_ID,
+  avatarEmoji,
   type LevelDefinition,
   type LevelProgress,
   type PlayerProgress,
@@ -18,11 +19,17 @@ import './LevelMapPage.css';
 export interface LevelMapPageProps {
   onBack: () => void;
   onSelectLevel: (levelId: string) => void;
+  onCollection: () => void;
 }
 
-export function LevelMapPage({ onBack, onSelectLevel }: LevelMapPageProps) {
+export function LevelMapPage({
+  onBack,
+  onSelectLevel,
+  onCollection,
+}: LevelMapPageProps) {
   const [progress, setProgress] = useState<PlayerProgress | null>(null);
-  const { repository, isGuest, ready } = useProgress();
+  const { repository, isGuest, ready, session, logout } = useProgress();
+  const child = session?.user.role === 'eleve' ? session.user : null;
 
   useEffect(() => {
     if (!ready) {
@@ -74,6 +81,37 @@ export function LevelMapPage({ onBack, onSelectLevel }: LevelMapPageProps) {
           className="level-map__zap"
         />
       </header>
+
+      <div className="level-map__toolbar">
+        <button
+          type="button"
+          className="level-map__collection"
+          onPointerDown={(event) => activate(event, onCollection)}
+        >
+          <CollectionIcon />
+          <span>{getText('map.collection')}</span>
+        </button>
+
+        {child !== null ? (
+          <div className="level-map__child">
+            <span className="level-map__avatar" aria-hidden="true">
+              {avatarEmoji(child.avatarId)}
+            </span>
+            <span className="level-map__name">{child.displayName}</span>
+            <button
+              type="button"
+              className="level-map__bye"
+              onPointerDown={(event) =>
+                activate(event, () => {
+                  void logout().then(onBack);
+                })
+              }
+            >
+              {getText('map.bye')}
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       {isGuest && ready ? (
         <p className="level-map__guest" role="status">
@@ -201,6 +239,26 @@ function PlayIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M8 5.5v13l11-6.5z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CollectionIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M5 4.5h11a3 3 0 0 1 3 3v12H8a3 3 0 0 1-3-3z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 8.5h7M8 12h7M8 15.5h4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
