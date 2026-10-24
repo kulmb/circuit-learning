@@ -1,6 +1,15 @@
 type AudioContextConstructor = new () => AudioContext;
 
 let audioContext: AudioContext | null = null;
+let muted = false;
+
+export function setAudioMuted(next: boolean): void {
+  muted = next;
+}
+
+export function isAudioMuted(): boolean {
+  return muted;
+}
 
 export function unlockAudio(): void {
   const AudioContextClass = getAudioContextConstructor();
@@ -22,7 +31,7 @@ export function unlockAudio(): void {
 }
 
 export function playBuzzerBeep(): void {
-  if (audioContext === null) {
+  if (muted || audioContext === null) {
     return;
   }
 

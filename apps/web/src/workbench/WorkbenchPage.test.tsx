@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { getText } from '../narration/fr';
 import { WorkbenchPage } from './WorkbenchPage';
 import { useWorkbenchStore } from './workbenchStore';
 
@@ -123,6 +124,66 @@ describe('workbench interactions', () => {
     expect(useWorkbenchStore.getState().displayMode).toBe('symbol');
     expect(
       screen.getByRole('button', { name: /affichage : symboles/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('gives three progressively precise hints and highlights the issue', () => {
+    render(<WorkbenchPage onBack={() => undefined} />);
+    getSvg();
+
+    const zapButton = screen.getByRole('button', {
+      name: /demander un indice/i,
+    });
+
+    fireEvent.pointerDown(zapButton);
+    expect(screen.getByText(getText('zap.hint.open.1'))).toBeInTheDocument();
+
+    fireEvent.pointerDown(zapButton);
+    expect(screen.getByText(getText('zap.hint.open.2'))).toBeInTheDocument();
+
+    fireEvent.pointerDown(zapButton);
+    expect(screen.getByText(getText('zap.hint.open.3'))).toBeInTheDocument();
+    expect(
+      document.querySelectorAll('.hint-terminal').length,
+    ).toBeGreaterThan(0);
+    expect(
+      document.querySelectorAll('.component-hint').length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('warns with Zap when the battery is shorted', () => {
+    render(<WorkbenchPage onBack={() => undefined} />);
+    getSvg();
+
+    act(() => {
+      useWorkbenchStore.getState().addWire(
+        { componentId: 'battery-1', terminalId: 'positive' },
+        { componentId: 'battery-1', terminalId: 'negative' },
+      );
+    });
+
+    expect(screen.getByText(getText('zap.short'))).toBeInTheDocument();
+  });
+
+  it('toggles the global mute and exposes replay', () => {
+    render(<WorkbenchPage onBack={() => undefined} />);
+
+    expect(
+      screen.getByRole('button', { name: /réécouter/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: /couper le son/i }),
+    );
+    expect(
+      screen.getByRole('button', { name: /activer le son/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: /activer le son/i }),
+    );
+    expect(
+      screen.getByRole('button', { name: /couper le son/i }),
     ).toBeInTheDocument();
   });
 

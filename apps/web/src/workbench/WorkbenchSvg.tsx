@@ -48,6 +48,7 @@ import {
   type Point,
   type TerminalCandidate,
 } from './pointer';
+import type { HintHighlight } from '../narration/hints';
 import type { DisplayMode } from './displayMode';
 import type { Selection } from './workbenchStore';
 
@@ -57,6 +58,7 @@ export interface WorkbenchSvgProps {
   selected: Selection | null;
   pendingTerminal: TerminalRef | null;
   displayMode: DisplayMode;
+  hintHighlight: HintHighlight | null;
   previewComponent: CircuitComponent | null;
   svgRef: RefObject<SVGSVGElement>;
   acquirePointer: (pointerId: number) => boolean;
@@ -126,6 +128,7 @@ export function WorkbenchSvg({
   selected,
   pendingTerminal,
   displayMode,
+  hintHighlight,
   previewComponent,
   svgRef,
   acquirePointer,
@@ -617,6 +620,7 @@ export function WorkbenchSvg({
           simulation.shortCircuit &&
           (shortWireIds.size === 0 || shortWireIds.has(wire.id));
         const showCurrent = !simulation.shortCircuit && Math.abs(current) > 0.015;
+        const isHinted = hintHighlight?.wireIds.includes(wire.id) ?? false;
         const duration = clamp(
           1.6 - Math.min(Math.abs(current), 1.2) * 1.1,
           0.5,
@@ -643,6 +647,18 @@ export function WorkbenchSvg({
                 }}
               />
             ) : null}
+            {isHinted ? (
+              <path
+                d={path}
+                className="wire--hint"
+                fill="none"
+                stroke="#f97316"
+                strokeWidth={14}
+                strokeDasharray="10 9"
+                strokeLinecap="round"
+                pointerEvents="none"
+              />
+            ) : null}
             <path
               d={path}
               fill="none"
@@ -666,6 +682,7 @@ export function WorkbenchSvg({
           }
           displayMode={displayMode}
           short={simulation.shortCircuit}
+          hinted={hintHighlight?.componentIds.includes(component.id) ?? false}
         />
       ))}
 
@@ -676,6 +693,7 @@ export function WorkbenchSvg({
           selected={false}
           displayMode={displayMode}
           short={false}
+          hinted={false}
           ghost
         />
       ) : null}
@@ -726,6 +744,41 @@ export function WorkbenchSvg({
           pointerEvents="none"
         />
       ) : null}
+
+      {hintHighlight !== null
+        ? hintHighlight.terminalRefs.map((ref) => {
+            const point = terminalPoints.get(terminalKey(ref));
+            if (point === undefined) {
+              return null;
+            }
+
+            return (
+              <g
+                key={`hint-${terminalKey(ref)}`}
+                className="hint-terminal"
+                pointerEvents="none"
+              >
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={26}
+                  fill="none"
+                  stroke="#f97316"
+                  strokeWidth={5}
+                />
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={34}
+                  fill="none"
+                  stroke="#f97316"
+                  strokeWidth={2}
+                  opacity={0.55}
+                />
+              </g>
+            );
+          })
+        : null}
 
       {selected !== null && selectedComponent !== undefined && dragPreview === null ? (
         <SelectionToolbar

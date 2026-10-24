@@ -158,7 +158,7 @@
   flex: 0 0 auto;
 }
 
-.zap-bubble {
+.home-bubble {
   position: relative;
   padding: clamp(1rem, 3vw, 1.4rem) clamp(1.25rem, 4vw, 1.75rem);
   background: #fff;
@@ -167,7 +167,7 @@
   box-shadow: 0 10px 24px rgba(36, 50, 74, 0.1);
 }
 
-.zap-bubble::before {
+.home-bubble::before {
   position: absolute;
   top: -14px;
   left: 50%;
@@ -180,7 +180,7 @@
   transform: translateX(-50%) rotate(45deg);
 }
 
-.zap-bubble p {
+.home-bubble p {
   margin: 0;
   font-size: clamp(1.1rem, 3vw, 1.35rem);
   font-weight: 800;

@@ -15,6 +15,7 @@ export interface ComponentBlockProps {
   selected: boolean;
   displayMode: DisplayMode;
   short: boolean;
+  hinted: boolean;
   ghost?: boolean;
 }
 
@@ -24,6 +25,7 @@ export function ComponentBlock({
   selected,
   displayMode,
   short,
+  hinted,
   ghost = false,
 }: ComponentBlockProps) {
   const centerX = component.position.x * CELL_SIZE;
@@ -70,6 +72,22 @@ export function ComponentBlock({
           stroke={selected ? '#1d4ed8' : '#94a3b8'}
           strokeWidth={selected ? 4 : 2}
           strokeDasharray={ghost ? '8 8' : undefined}
+          pointerEvents="none"
+        />
+      ) : null}
+
+      {hinted ? (
+        <rect
+          className="component-hint"
+          x={-halfWidth}
+          y={-halfHeight}
+          width={COMPONENT_WIDTH}
+          height={COMPONENT_HEIGHT}
+          rx={18}
+          fill="none"
+          stroke="#f97316"
+          strokeWidth={5}
+          strokeDasharray="10 7"
           pointerEvents="none"
         />
       ) : null}

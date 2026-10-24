@@ -12,7 +12,17 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
+import { Zap } from '../components/Zap';
 import { fr } from '../narration/fr';
+import {
+  buildHintPlan,
+  hintExpression,
+  type HintCode,
+  type HintHighlight,
+  type ZapExpression,
+} from '../narration/hints';
+import { unlockNarration } from '../narration/narrationService';
+import { useNarration } from '../narration/useNarration';
 import { playBuzzerBeep, unlockAudio } from './audio';
 import {
   BOARD_HEIGHT,
@@ -86,18 +96,31 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
     undo,
   } = useWorkbenchStore();
 
+  const narration = useNarration();
   const reduceMotion = useReducedMotion() ?? false;
   const svgRef = useRef<SVGSVGElement>(null);
   const trashRef = useRef<HTMLDivElement>(null);
   const activePointerRef = useRef<number | null>(null);
   const previousBuzzingRef = useRef<Set<string>>(new Set());
+  const lastFeedbackRef = useRef('');
   const [paletteDrag, setPaletteDrag] = useState<PaletteDragState | null>(null);
   const [returningGhost, setReturningGhost] = useState<ReturningGhost | null>(null);
   const [trashActive, setTrashActive] = useState(false);
+  const [expression, setExpression] = useState<ZapExpression>('content');
+  const [hintState, setHintState] = useState<{
+    code: HintCode;
+    level: number;
+  } | null>(null);
+  const [hintHighlight, setHintHighlight] = useState<HintHighlight | null>(null);
 
   const status = getStatus(simulation);
   const ghostPoint = paletteDrag !== null ? paletteGhostPoint(paletteDrag) : null;
   const modeLabel = getModeLabel(displayMode);
+  const hasLitBulb = circuit.components.some(
+    (component) =>
+      component.type === 'bulb' &&
+      simulation.states[component.id]?.state !== 'off',
+  );
   const buzzingKey = circuit.components
     .filter(
       (component) =>
@@ -124,6 +147,62 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
       playBuzzerBeep();
     }
   }, [buzzingKey]);
+
+  useEffect(() => {
+    narration.say('zap.welcome');
+  }, [narration.say]);
+
+  useEffect(() => {
+    if (simulation.shortCircuit) {
+      if (lastFeedbackRef.current !== 'short') {
+        lastFeedbackRef.current = 'short';
+        setExpression('alert');
+        narration.say('zap.short');
+      }
+      return;
+    }
+
+    if (simulation.ok) {
+      if (lastFeedbackRef.current !== 'ok') {
+        lastFeedbackRef.current = 'ok';
+        setExpression('content');
+        narration.say(hasLitBulb ? 'zap.successBulb' : 'zap.successGeneric');
+      }
+      return;
+    }
+
+    lastFeedbackRef.current = '';
+  }, [hasLitBulb, narration.say, simulation.ok, simulation.shortCircuit]);
+
+  useEffect(() => {
+    setHintState(null);
+    setHintHighlight(null);
+  }, [circuit]);
+
+  function requestHint(): void {
+    unlockNarration();
+    unlockAudio();
+
+    const plan = buildHintPlan(simulation, circuit);
+
+    if (plan.code === 'success') {
+      setHintState(null);
+      setHintHighlight(null);
+      setExpression('content');
+      narration.say(plan.texts[0] ?? 'zap.successGeneric');
+      return;
+    }
+
+    const level =
+      hintState?.code === plan.code ? Math.min(hintState.level + 1, 3) : 1;
+
+    setHintState({ code: plan.code, level });
+    setExpression(hintExpression(plan, level));
+    setHintHighlight(level === 3 ? plan.highlight : null);
+    narration.say(
+      plan.texts[level - 1] ?? plan.texts[0] ?? 'zap.hint.open.1',
+    );
+  }
 
   function acquirePointer(pointerId: number): boolean {
     if (activePointerRef.current !== null) {
@@ -354,7 +433,7 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
               <button
                 key={item.key}
                 type="button"
-                className="palette-item"
+                className={`palette-item${hintHighlight?.paletteKey === item.key ? ' is-hinted' : ''}`}
                 data-palette-key={item.key}
                 onPointerDown={(event) => handlePalettePointerDown(event, item)}
                 onPointerMove={handlePalettePointerMove}
@@ -383,6 +462,7 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
               selected={selected}
               pendingTerminal={pendingTerminal}
               displayMode={displayMode}
+              hintHighlight={hintHighlight}
               previewComponent={paletteDrag?.placement?.component ?? null}
               svgRef={svgRef}
               acquirePointer={acquirePointer}
@@ -407,13 +487,19 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
               <TrashGlyph />
               <span>{fr.workbench.trash}</span>
             </div>
+
+            <Zap
+              expression={expression}
+              message={narration.text}
+              speaking={narration.speaking}
+              muted={narration.muted}
+              onHint={requestHint}
+              onReplay={narration.replay}
+              onToggleMute={narration.toggleMute}
+            />
           </div>
 
-          <div
-            className={`workbench-status workbench-status--${status.tone}`}
-            role="status"
-            aria-live="polite"
-          >
+          <div className={`workbench-status workbench-status--${status.tone}`}>
             <span className="workbench-status__dot" aria-hidden="true" />
             <span>{status.text}</span>
           </div>

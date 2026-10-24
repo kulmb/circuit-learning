@@ -70,6 +70,26 @@ Le bouton « Jouer » ouvre le plan de travail :
 Le moteur recalcule le circuit après chaque modification ; pendant un déplacement,
 seul l'aperçu visuel bouge.
 
+## Narration et Zap
+
+Tous les textes français sont dans `apps/web/src/narration/fr.ts`, indexés par un
+identifiant (`zap.hint.open.1`, `workbench.statusClosed`, etc.).
+
+- La voix utilise la Web Speech API en `fr-FR`, avec une préférence pour les voix
+  Google, Amélie et Thomas, un débit de 0,9 et une hauteur légèrement plus aiguë.
+  La liste `voiceschanged` est écoutée pour iOS.
+- Si un enregistrement existe, `/audio/{textId}.mp3` est préféré à la synthèse.
+  Pour l'activer, déposer le MP3 dans `apps/web/public/audio/` et ajouter son
+  identifiant dans `apps/web/public/audio/manifest.json`.
+- Sans voix française, la bulle de texte reste visible.
+- Le premier appui sur « Jouer » débloque l'audio (son silencieux + `speak('')`).
+- Zap est dans le coin du plan de travail : appuyer sur le robot donne un indice
+  de plus en plus précis. Le troisième indice surligne les bornes ou le composant
+  concerné. Le bouton 🔊 permet de réécouter, et le bouton haut-parleur coupe
+  tout le son.
+- La page qui passe en arrière-plan arrête la narration ; elle ne reprend pas
+  automatiquement.
+
 ## Déploiement
 
 L'application est publiée sous `https://circuit-learning.87543362.xyz/`.

@@ -324,6 +324,63 @@
   }
 }
 
+.wire--hint {
+  animation: wire-hint-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes wire-hint-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.hint-terminal {
+  animation: hint-terminal-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes hint-terminal-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.component-hint {
+  animation: component-hint-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes component-hint-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.palette-item.is-hinted {
+  border-color: #f97316;
+  animation: palette-hint-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes palette-hint-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(249, 115, 22, 0.3);
+  }
+}
+
 .workbench-mode-button {
   min-width: 118px;
 }
