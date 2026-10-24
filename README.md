@@ -656,6 +656,12 @@ L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
   `worker-src 'self'` et `manifest-src 'self'`.
 - Les anciennes URL `kulmb.87543362.xyz/circuit/*` redirigent en 301 vers le
   nouveau domaine.
+- `scripts/deploy.sh` ne compile jamais l'arbre de travail courant : il
+  récupère la branche de production (`master`, surchargeable avec `PROD_BRANCH`),
+  l'extrait dans un dossier temporaire avec `git worktree`, y installe les
+  dépendances et compile une version propre, reconstruit l'image API, publie
+  le front, puis supprime le dossier temporaire — même en cas d'échec. La
+  branche de production doit donc être à jour sur `origin` avant le déploiement.
 
 ```bash
 # Une seule fois : créer le dossier servi par Caddy
@@ -681,6 +687,38 @@ Vérification :
 
 ```bash
 curl -fsS https://circuit-learning.87543362.xyz/api/health
+```
+
+### Déploiement de développement
+
+Le domaine `https://circuit-learning-dev.87543362.xyz/` publie la version en
+cours de développement, totalement isolée de la production :
+
+- front dans `/srv/circuits/web-dev` (servi par Caddy) ;
+- API dédiée sur `127.0.0.1:3200`, image `circuits-api:dev` ;
+- MongoDB dédié sur `127.0.0.1:27019`, volume `mongo-dev-host-data` ;
+- bloc Caddy fourni dans `deploy/caddy/circuit-learning-dev.caddy`, avec
+  `X-Robots-Tag: noindex, nofollow` pour ne pas indexer l'environnement de test.
+
+```bash
+# Une seule fois : dossier servi par Caddy, puis secret du fichier .env.dev
+sudo install -d -o "$(id -un)" -g "$(id -gn)" -m 755 /srv/circuits/web-dev
+cp .env.dev.example .env.dev
+printf 'COOKIE_SECRET=%s\n' "$(openssl rand -base64 48)" >> .env.dev
+
+# Déployer : migrations, API puis front
+./scripts/deploy-dev.sh
+
+# Créer un administrateur de test (une seule fois)
+MONGODB_URI='mongodb://127.0.0.1:27019/circuits?directConnection=true' \
+ADMIN_USERNAME='...' ADMIN_PASSWORD='...' ADMIN_NAME='...' \
+  pnpm --filter @circuits/api admin:create
+```
+
+Vérification :
+
+```bash
+curl -fsS https://circuit-learning-dev.87543362.xyz/api/health
 ```
 
 ## Notes

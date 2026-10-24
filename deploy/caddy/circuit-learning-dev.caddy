@@ -1,0 +1,38 @@
+# Bloc de site pour circuit-learning-dev.87543362.xyz (déploiement de développement).
+# Le front est servi depuis /srv/circuits/web-dev, l'API sous /api sur le port 3200.
+
+circuit-learning-dev.87543362.xyz {
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3200
+	}
+
+	handle {
+		root * /srv/circuits/web-dev
+		try_files {path} /index.html
+		file_server
+
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+
+		@html path / /index.html
+		header @html Cache-Control "no-cache"
+
+		@pwa path /sw.js /workbox-*.js
+		header @pwa Cache-Control "no-cache"
+
+		@pwaManifest path /manifest.webmanifest
+		header @pwaManifest {
+			Cache-Control "no-cache"
+			Content-Type "application/manifest+json"
+		}
+
+		header {
+			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "strict-origin-when-cross-origin"
+			X-Frame-Options "DENY"
+			# Environnement de test : ne pas indexer.
+			X-Robots-Tag "noindex, nofollow"
+		}
+	}
+}
