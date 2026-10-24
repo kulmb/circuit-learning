@@ -1,0 +1,57 @@
+:root {
+  color-scheme: light;
+  --color-ink: #24324a;
+  --color-ink-soft: #50617a;
+  --color-surface: #fffdf8;
+  --color-primary: #f97316;
+  --color-primary-deep: #b83c0a;
+  --color-secondary: #0f9d8c;
+  --color-secondary-deep: #086b60;
+  --color-focus: #1d4ed8;
+  --shadow-soft: 0 18px 40px rgba(36, 50, 74, 0.14);
+  --font-family: 'Nunito Variable', 'Nunito', ui-rounded, system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font-family);
+  color: var(--color-ink);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 214, 102, 0.55) 0, transparent 42%),
+    radial-gradient(circle at 88% 16%, rgba(126, 217, 255, 0.55) 0, transparent 46%),
+    linear-gradient(160deg, #eaf8ff 0%, #fff9ec 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font: inherit;
+}
+
+button:focus-visible {
+  outline: 4px solid var(--color-focus);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
