@@ -62,6 +62,10 @@ levelAttemptSchema.index(
   { name: 'levelattempts_group_level' },
 );
 levelAttemptSchema.index(
+  { groupId: 1, startedAt: -1 },
+  { name: 'levelattempts_group_started' },
+);
+levelAttemptSchema.index(
   { userId: 1, clientId: 1 },
   {
     name: 'levelattempts_user_client_unique',

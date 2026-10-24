@@ -24,6 +24,7 @@ import {
   PicturePasswordList,
 } from './AdminShared';
 import { adminTexts } from './fr';
+import { StudentProgressSections } from './StudentProgressSections';
 
 export function StudentDetailPage({ studentId }: { studentId: string }) {
   const { session } = useProgress();
@@ -366,6 +367,8 @@ export function StudentDetailPage({ studentId }: { studentId: string }) {
           ) : null}
         </section>
       ) : null}
+
+      <StudentProgressSections studentId={studentId} />
 
       {teacher ? (
         <section className="admin-card admin-danger-zone">

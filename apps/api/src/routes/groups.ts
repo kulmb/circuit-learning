@@ -4,6 +4,7 @@ import {
   createGroupRequestSchema,
   createStudentRequestSchema,
   createdStudentResponseSchema,
+  groupDashboardResponseSchema,
   groupDetailResponseSchema,
   groupParamsSchema,
   groupResponseSchema,
@@ -16,6 +17,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { authOf, createGuards } from '../auth/guards.js';
 import { requireGroupForUser } from '../auth/access.js';
 import type { CookieSettings } from '../services/cookies.js';
+import { buildGroupDashboard } from '../services/dashboard.js';
 import {
   createGroup,
   listGroupsFor,
@@ -74,6 +76,19 @@ export const groupRoutes: FastifyPluginAsync<GroupRoutesOptions> = async (
         { group: toManagedGroup(group, authOf(request).user) },
         201,
       );
+    },
+  );
+
+  app.get(
+    '/api/groups/:groupId/dashboard',
+    { preHandler: teacherOnly },
+    async (request, reply) => {
+      const params = groupParamsSchema.parse(request.params);
+      const actor = authOf(request).user;
+      const group = await requireGroupForUser(actor, params.groupId);
+      const dashboard = await buildGroupDashboard(group);
+
+      sendDto(reply, groupDashboardResponseSchema, dashboard);
     },
   );
 

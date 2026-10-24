@@ -8,6 +8,7 @@ import { AdminLoginPage } from './AdminLoginPage';
 import { AdminLoading, activate } from './AdminShared';
 import { AuditLogsPage } from './AuditLogsPage';
 import { adminTexts } from './fr';
+import { GroupDashboardPage } from './GroupDashboardPage';
 import { GroupDetailPage } from './GroupDetailPage';
 import { GroupsPage } from './GroupsPage';
 import { InvitePage } from './InvitePage';
@@ -41,6 +42,10 @@ export default function AdminApp({ path: pathOverride }: AdminAppProps = {}) {
 
   const role = session.user.role;
   const teacher = role === 'admin' || role === 'encadrant';
+  const groupDashboardMatch = matchPath(
+    '/admin/groups/:groupId/dashboard',
+    path,
+  );
   const groupMatch = matchPath('/admin/groups/:groupId', path);
   const studentMatch = matchPath('/admin/students/:studentId', path);
 
@@ -48,6 +53,12 @@ export default function AdminApp({ path: pathOverride }: AdminAppProps = {}) {
 
   if (path === '/admin' || path === '/admin/') {
     content = teacher ? <GroupsPage /> : <ParentHomePage />;
+  } else if (groupDashboardMatch !== null) {
+    content = teacher ? (
+      <GroupDashboardPage groupId={groupDashboardMatch['groupId'] ?? ''} />
+    ) : (
+      <DeniedPage />
+    );
   } else if (groupMatch !== null) {
     content = teacher ? (
       <GroupDetailPage groupId={groupMatch['groupId'] ?? ''} />

@@ -26,6 +26,28 @@ if (typeof window.PointerEvent === 'undefined') {
   });
 }
 
+if (typeof window.ResizeObserver === 'undefined') {
+  class ResizeObserverPolyfill {
+    observe(): void {
+      return undefined;
+    }
+
+    unobserve(): void {
+      return undefined;
+    }
+
+    disconnect(): void {
+      return undefined;
+    }
+  }
+
+  Object.defineProperty(window, 'ResizeObserver', {
+    configurable: true,
+    writable: true,
+    value: ResizeObserverPolyfill,
+  });
+}
+
 if (!window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,

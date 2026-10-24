@@ -245,6 +245,40 @@ client par le rôle de la session et côté serveur par les contrôles de l’AP
 - En compact, la navigation passe en barre d’onglets fixe en bas et les
   tableaux deviennent des cartes.
 
+## Tableaux de progression
+
+Les adultes disposent de deux niveaux de lecture, calculés côté serveur :
+
+- `GET /api/groups/:groupId/dashboard` (admin ou encadrant du groupe) renvoie
+  la matrice élèves × niveaux, les statistiques par niveau (taux de réussite,
+  essais moyens, indices moyens), les difficultés les plus fréquentes et le
+  nombre d’élèves actifs sur sept jours.
+- `GET /api/students/:studentId/dashboard` (admin, encadrant du groupe ou
+  parent lié) renvoie les 25 dernières tentatives, les huit concepts maîtrisés
+  (vocabulaire), et les créations de l’atelier libre avec leur vignette.
+
+Les erreurs sont regroupées par niveau et par code, en comptant des **élèves
+distincts** : « 7 élèves ont fait un court-circuit au niveau 7 ». Le serveur
+utilise des pipelines MongoDB `$match → $group → $project`, avec des `hint()`
+sur les index :
+
+| Requête | Index |
+|---|---|
+| progression des élèves | `levelprogress_user_level_unique` |
+| difficultés et activité du groupe | `levelattempts_group_started` |
+| chronologie d’un élève | `levelattempts_user_started` |
+| créations de l’atelier | `sandbox_user_updated` |
+
+Le test d’intégration `dashboard.test.ts` exécute `explain('executionStats')`
+sur ces agrégations et vérifie que le plan contient `IXSCAN` et le bon index.
+
+Dans l’interface, le tableau de bord de groupe affiche un graphique Recharts
+(`ResponsiveContainer`) du taux de réussite par niveau, les statistiques et la
+matrice. En compact, la matrice devient une carte dépliable par élève. Les
+fiches élève et la page parent reprennent la chronologie, les concepts et les
+vignettes, avec un vocabulaire plus simple pour les parents et sans comparaison
+entre enfants.
+
 ## Commandes
 
 ```bash
@@ -430,8 +464,9 @@ Les migrations vivent dans `apps/api/migrations` (configuration
 `apps/api/migrate-mongo-config.js`). La première crée les index de base, la
 seconde l'index unique des identifiants adultes, la troisième l'index unique
 de l'empreinte des sessions, la quatrième les index des identifiants clients
-des tentatives et des ateliers ; l'API appelle aussi `syncIndexes()` au
-démarrage, les deux chemins étant idempotents.
+des tentatives et des ateliers, la cinquième les index des tableaux de
+progression ; l'API appelle aussi `syncIndexes()` au démarrage, les deux
+chemins étant idempotents.
 
 Les sessions ne stockent jamais le jeton du cookie : `tokenHash` contient son
 SHA-256 et un index unique partiel empêche deux sessions de partager un jeton.

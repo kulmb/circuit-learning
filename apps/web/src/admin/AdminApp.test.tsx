@@ -41,6 +41,82 @@ function jsonResponse(body: unknown, status = 200): Response {
   } as Response;
 }
 
+
+function studentDashboardPayload() {
+  return {
+    levels: [
+      {
+        levelId: 'light-01',
+        status: 'completed',
+        stars: 3,
+        attempts: 2,
+        hintsUsed: 0,
+        bestTimeMs: 5000,
+        lastPlayedAt: '2026-10-23T10:00:00.000Z',
+      },
+    ],
+    timeline: [
+      {
+        id: 'aaaaaaaaaaaaaaaaaaaaaaaa',
+        levelId: 'light-01',
+        success: true,
+        hintsUsed: 0,
+        durationMs: 5000,
+        errorsDetected: [],
+        startedAt: '2026-10-23T10:00:00.000Z',
+        endedAt: '2026-10-23T10:01:00.000Z',
+      },
+    ],
+    concepts: [{ id: 'circuit_ferme', mastered: true }],
+    sandbox: [],
+  };
+}
+
+function groupDashboardPayload() {
+  return {
+    group: { id: GROUP_ID, name: 'CE2 A', joinCode: 'ABC234' },
+    totalStudents: 1,
+    activeStudents: 1,
+    students: [
+      {
+        id: 'cccccccccccccccccccccccc',
+        displayName: 'Lina',
+        avatarId: 'renard',
+        levels: [
+          {
+            levelId: 'light-01',
+            status: 'completed',
+            stars: 3,
+            attempts: 2,
+            hintsUsed: 0,
+            bestTimeMs: 5000,
+            lastPlayedAt: '2026-10-23T10:00:00.000Z',
+          },
+        ],
+      },
+    ],
+    levels: [
+      {
+        levelId: 'light-01',
+        totalStudents: 1,
+        completed: 1,
+        started: 1,
+        completionRate: 1,
+        averageAttempts: 2,
+        averageHints: 0,
+      },
+    ],
+    difficulties: [
+      {
+        levelId: 'light-01',
+        code: 'open_circuit',
+        students: 1,
+        attempts: 2,
+      },
+    ],
+  };
+}
+
 function renderAdmin(path: string, session: AuthSessionResponse | null = adminSession) {
   return render(
     <ProgressProvider autoLoad={false} initialSession={session}>
@@ -190,8 +266,14 @@ describe('AdminApp', () => {
   it('shows a parent the student sheet without teacher actions', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () =>
-        jsonResponse({
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url.includes('/dashboard')) {
+          return jsonResponse(studentDashboardPayload());
+        }
+
+        return jsonResponse({
           student: {
             id: 'cccccccccccccccccccccccc',
             displayName: 'Lina',
@@ -200,8 +282,8 @@ describe('AdminApp', () => {
             pictureLocked: false,
             groups: [{ id: GROUP_ID, name: 'CE2 A', archived: false }],
           },
-        }),
-      ),
+        });
+      }),
     );
 
     renderAdmin('/admin/students/cccccccccccccccccccccccc', parentSession);
@@ -220,11 +302,34 @@ describe('AdminApp', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('shows the group progress dashboard', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(groupDashboardPayload())),
+    );
+
+    renderAdmin(`/admin/groups/${GROUP_ID}/dashboard`);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Tableau de progression' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('Lina').length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/1 élève a fait un circuit ouvert/),
+    ).toBeInTheDocument();
+  });
+
   it('shows a parent their own children page and refuses admin pages', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () =>
-        jsonResponse({
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url.includes('/dashboard')) {
+          return jsonResponse(studentDashboardPayload());
+        }
+
+        return jsonResponse({
           students: [
             {
               id: 'cccccccccccccccccccccccc',
@@ -237,8 +342,8 @@ describe('AdminApp', () => {
               ],
             },
           ],
-        }),
-      ),
+        });
+      }),
     );
 
     const { unmount } = renderAdmin('/admin', parentSession);

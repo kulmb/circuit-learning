@@ -5,6 +5,7 @@ import {
   okResponseSchema,
   parentResponseSchema,
   parentsResponseSchema,
+  studentDashboardResponseSchema,
   studentExportSchema,
   studentParentParamsSchema,
   studentParamsSchema,
@@ -17,6 +18,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { AuditLogModel } from '../db/models/index.js';
 import { authOf, createGuards } from '../auth/guards.js';
 import type { CookieSettings } from '../services/cookies.js';
+import { buildStudentDashboard } from '../services/dashboard.js';
 import { deleteStudent } from '../services/deleteStudent.js';
 import { sendDto } from '../http/respond.js';
 import {
@@ -74,6 +76,21 @@ export const studentRoutes: FastifyPluginAsync<StudentRoutesOptions> = async (
       sendDto(reply, studentResponseSchema, {
         student: toStudentWithGroups(entry),
       });
+    },
+  );
+
+  app.get(
+    '/api/students/:studentId/dashboard',
+    { preHandler: reader },
+    async (request, reply) => {
+      const params = studentParamsSchema.parse(request.params);
+      const entry = await getStudentFor(
+        authOf(request).user,
+        params.studentId,
+      );
+      const dashboard = await buildStudentDashboard(entry.student);
+
+      sendDto(reply, studentDashboardResponseSchema, dashboard);
     },
   );
 

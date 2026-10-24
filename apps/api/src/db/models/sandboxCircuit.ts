@@ -77,6 +77,10 @@ sandboxCircuitSchema.index(
     partialFilterExpression: { clientId: { $type: 'string' } },
   },
 );
+sandboxCircuitSchema.index(
+  { userId: 1, updatedAt: -1 },
+  { name: 'sandbox_user_updated' },
+);
 
 export const SandboxCircuitModel: Model<SandboxCircuit> =
   (mongoose.models['SandboxCircuit'] as Model<SandboxCircuit> | undefined) ??

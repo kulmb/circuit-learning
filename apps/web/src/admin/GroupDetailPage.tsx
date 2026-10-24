@@ -299,6 +299,17 @@ export function GroupDetailPage({ groupId }: { groupId: string }) {
           <div className="admin-actions admin-actions--spread">
             <button
               type="button"
+              className="admin-button admin-button--primary"
+              onPointerDown={(event) =>
+                activate(event, () =>
+                  navigate(`/admin/groups/${groupId}/dashboard`),
+                )
+              }
+            >
+              {adminTexts.dashboard.open}
+            </button>
+            <button
+              type="button"
               className={`admin-button ${group.archived ? 'admin-button--primary' : 'admin-button--danger'}`}
               disabled={busy}
               onPointerDown={(event) => activate(event, () => void toggleArchive())}
