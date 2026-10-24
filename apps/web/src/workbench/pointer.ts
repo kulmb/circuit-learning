@@ -110,34 +110,6 @@ export function svgToGrid(point: Point, cellSize: number): Point {
   return { x: point.x / cellSize, y: point.y / cellSize };
 }
 
-export function clientToSvgPoint(
-  svg: SVGSVGElement,
-  clientX: number,
-  clientY: number,
-): Point | null {
-  const matrix = svg.getScreenCTM();
-  if (!matrix) {
-    return null;
-  }
-
-  const point = svg.createSVGPoint();
-  point.x = clientX;
-  point.y = clientY;
-  const transformed = point.matrixTransform(matrix.inverse());
-
-  return { x: transformed.x, y: transformed.y };
-}
-
-export function getSvgScale(svg: SVGSVGElement): number {
-  const matrix = svg.getScreenCTM();
-  if (!matrix) {
-    return 1;
-  }
-
-  const scale = Math.abs(matrix.a);
-  return scale > 0 ? scale : 1;
-}
-
 function format(value: number): number {
   return Number(value.toFixed(2));
 }

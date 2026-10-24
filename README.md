@@ -71,6 +71,23 @@ travail :
 Le moteur recalcule le circuit après chaque modification ; pendant un déplacement,
 seul l'aperçu visuel bouge.
 
+## Zoom et déplacement
+
+La taille logique du plan vient du niveau (`board.columns` × `board.rows`) et le
+`viewBox` du SVG est calculé pour que tout le niveau tienne à l'écran, quelle que
+soit la taille disponible. Toutes les conversions écran → coordonnées du plan
+vivent dans `apps/web/src/workbench/viewport.ts` (avec tests) : glisser un
+composant, créer un fil et déposer depuis la palette restent précis après un
+zoom, un déplacement ou une rotation d'écran.
+
+- Quand une borne ferait moins de 44 px à l'écran, le mode « déplaçable »
+  s'active : deux doigts zooment (0,75× à 2,5×) et un doigt sur le fond déplace
+  le plan.
+- Sur ordinateur, la molette zoome autour du pointeur.
+- Le bouton « ⤢ Tout voir » en bas à droite ramène le plan entier.
+- Un changement de taille ou une rotation ne touche pas au circuit : seul le
+  cadrage est recalculé.
+
 ## Narration et Zap
 
 Tous les textes français sont dans `apps/web/src/narration/fr.ts`, indexés par un

@@ -5,6 +5,7 @@ import {
   CELL_SIZE,
   COMPONENT_HEIGHT,
   COMPONENT_WIDTH,
+  TERMINAL_HIT_RADIUS,
 } from './constants';
 import type { DisplayMode } from './displayMode';
 import './components.css';
@@ -123,7 +124,7 @@ export function ComponentBlock({
             <circle
               cx={terminalX}
               cy={terminalY}
-              r={32}
+              r={TERMINAL_HIT_RADIUS}
               fill="transparent"
               pointerEvents={ghost ? 'none' : 'all'}
             />

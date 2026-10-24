@@ -239,8 +239,10 @@
   display: none;
 }
 
+/* The overlay must never steal a tap meant for the board. In compact mode the
+   bubble is temporary: Zap's avatar replays it once it has faded out. */
 .zap-bubble--overlay .zap-bubble__replay {
-  pointer-events: auto;
+  display: none;
 }
 
 /* Tablet portrait: Zap sits in the upper-left corner, bubble to its right. */

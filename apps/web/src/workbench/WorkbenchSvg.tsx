@@ -8,12 +8,12 @@ import {
   type Vec2,
 } from '@circuits/shared';
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
-  type RefObject,
 } from 'react';
 
 import { fr } from '../narration/fr';
@@ -21,23 +21,19 @@ import { unlockAudio } from './audio';
 import { useLayout } from '../layout/LayoutContext';
 import { ComponentBlock } from './ComponentBlock';
 import {
-  BOARD_HEIGHT,
-  BOARD_WIDTH,
   CELL_SIZE,
   COMPONENT_HEIGHT,
   COMPONENT_WIDTH,
-  GRID_COLUMNS,
-  GRID_ROWS,
+  type BoardDimensions,
 } from './constants';
 import {
   applyTouchOffset,
   buildWirePath,
   clamp,
   clampGridPosition,
-  clientToSvgPoint,
   COMPACT_SNAP_RADIUS_PX,
+  distance,
   findNearestTerminal,
-  getSvgScale,
   gridToSvg,
   isDragGesture,
   isPointInsideBoard,
@@ -49,6 +45,17 @@ import {
   type TerminalCandidate,
 } from './pointer';
 import type { HintHighlight } from '../narration/hints';
+import {
+  boardScale,
+  formatViewBox,
+  measureElementRect,
+  screenToBoard,
+  viewBoxFor,
+  viewForAnchor,
+  wheelZoomFactor,
+  zoomAt,
+  type BoardView,
+} from './viewport';
 import type { DisplayMode } from './displayMode';
 import type { Selection } from './workbenchStore';
 
@@ -61,7 +68,11 @@ export interface WorkbenchSvgProps {
   hintHighlight: HintHighlight | null;
   lockedComponentIds: string[];
   previewComponent: CircuitComponent | null;
-  svgRef: RefObject<SVGSVGElement>;
+  board: BoardDimensions;
+  view: BoardView;
+  pannable: boolean;
+  setView: (update: BoardView | ((current: BoardView) => BoardView)) => void;
+  svgRef: (node: SVGSVGElement | null) => void;
   acquirePointer: (pointerId: number) => boolean;
   releasePointer: (pointerId: number) => void;
   isOverTrash: (clientX: number, clientY: number) => boolean;
@@ -81,6 +92,8 @@ interface BaseGesture {
   startClient: Point;
   pointerType: string;
   dragged: boolean;
+  /** View captured when the gesture starts, so zooming never skews it. */
+  view: BoardView;
 }
 
 interface ComponentGesture extends BaseGesture {
@@ -103,7 +116,24 @@ interface BlankGesture extends BaseGesture {
   kind: 'blank';
 }
 
-type BoardGesture = ComponentGesture | TerminalGesture | WireGesture | BlankGesture;
+interface PanGesture extends BaseGesture {
+  kind: 'pan';
+  anchorBoard: Point;
+}
+
+type BoardGesture =
+  | ComponentGesture
+  | TerminalGesture
+  | WireGesture
+  | BlankGesture
+  | PanGesture;
+
+interface PinchGesture {
+  startView: BoardView;
+  anchorBoard: Point;
+  startDistance: number;
+  lastView: BoardView;
+}
 
 interface DragPreview {
   componentId: string;
@@ -132,6 +162,10 @@ export function WorkbenchSvg({
   hintHighlight,
   lockedComponentIds,
   previewComponent,
+  board,
+  view,
+  pannable,
+  setView,
   svgRef,
   acquirePointer,
   releasePointer,
@@ -148,14 +182,66 @@ export function WorkbenchSvg({
 }: WorkbenchSvgProps) {
   const isCompact = useLayout().size === 'compact';
   const gestureRef = useRef<BoardGesture | null>(null);
+  const pinchRef = useRef<PinchGesture | null>(null);
+  const pointerPositionsRef = useRef<Map<number, Point>>(new Map());
+  const acquiredPointerRef = useRef<number | null>(null);
+  const viewRef = useRef(view);
   const pendingRef = useRef<TerminalRef | null>(pendingTerminal);
   const trashHoverRef = useRef(false);
+  const localSvgRef = useRef<SVGSVGElement | null>(null);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const [wirePreview, setWirePreview] = useState<WirePreview | null>(null);
+
+  const panEnabled = pannable || view.zoom > 1.0001;
+
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
 
   useEffect(() => {
     pendingRef.current = pendingTerminal;
   }, [pendingTerminal]);
+
+  const attachNode = useCallback(
+    (node: SVGSVGElement | null) => {
+      localSvgRef.current = node;
+      svgRef(node);
+    },
+    [svgRef],
+  );
+
+  useEffect(() => {
+    const svg = localSvgRef.current;
+
+    if (svg === null) {
+      return;
+    }
+
+    function handleWheel(event: WheelEvent): void {
+      event.preventDefault();
+
+      if (gestureRef.current !== null || pinchRef.current !== null || svg === null) {
+        return;
+      }
+
+      const factor = wheelZoomFactor(event.deltaY, event.deltaMode);
+      const client = { x: event.clientX, y: event.clientY };
+      const rect = measureElementRect(svg, board);
+
+      setView((current) =>
+        zoomAt(
+          current,
+          current.zoom * factor,
+          screenToBoard(client, rect, current, board),
+          board,
+        ),
+      );
+    }
+
+    svg.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => svg.removeEventListener('wheel', handleWheel);
+  }, [board, setView]);
 
   const displayComponents = useMemo(() => {
     if (dragPreview === null) {
@@ -249,6 +335,123 @@ export function WorkbenchSvg({
     }
   }
 
+  function releaseAcquiredPointerIfDone(): void {
+    if (pointerPositionsRef.current.size > 0) {
+      return;
+    }
+
+    const acquired = acquiredPointerRef.current;
+
+    if (acquired === null) {
+      return;
+    }
+
+    acquiredPointerRef.current = null;
+    releasePointer(acquired);
+  }
+
+  function beginPinch(): void {
+    const entries = Array.from(pointerPositionsRef.current.entries());
+    const first = entries[0];
+    const second = entries[1];
+
+    if (first === undefined || second === undefined) {
+      return;
+    }
+
+    const svg = localSvgRef.current;
+    const rect =
+      svg === null
+        ? { left: 0, top: 0, width: board.width, height: board.height }
+        : measureElementRect(svg, board);
+    const midpoint = {
+      x: (first[1].x + second[1].x) / 2,
+      y: (first[1].y + second[1].y) / 2,
+    };
+    const currentView = viewRef.current;
+
+    // A pinch always wins over the single-finger gesture it interrupted.
+    gestureRef.current = null;
+    setDragPreview(null);
+    setWirePreview(null);
+    updateTrashHover(false);
+    onSetPendingTerminal(null);
+
+    pinchRef.current = {
+      startView: currentView,
+      anchorBoard: screenToBoard(midpoint, rect, currentView, board),
+      startDistance: Math.max(distance(first[1], second[1]), 1),
+      lastView: currentView,
+    };
+  }
+
+  function updatePinch(): void {
+    const pinch = pinchRef.current;
+    const svg = localSvgRef.current;
+
+    if (pinch === null || svg === null) {
+      return;
+    }
+
+    const entries = Array.from(pointerPositionsRef.current.values());
+    const first = entries[0];
+    const second = entries[1];
+
+    if (first === undefined || second === undefined) {
+      return;
+    }
+
+    const midpoint = {
+      x: (first.x + second.x) / 2,
+      y: (first.y + second.y) / 2,
+    };
+    const ratio =
+      Math.max(distance(first, second), 1) / pinch.startDistance;
+    const zoom = pinch.startView.zoom * ratio;
+    const rect = measureElementRect(svg, board);
+    const next = viewForAnchor(
+      pinch.anchorBoard,
+      midpoint,
+      zoom,
+      rect,
+      board,
+    );
+
+    pinch.lastView = next;
+    setView(next);
+  }
+
+  function endPinch(): void {
+    const pinch = pinchRef.current;
+    pinchRef.current = null;
+
+    if (pinch === null) {
+      return;
+    }
+
+    const remaining = Array.from(pointerPositionsRef.current.entries())[0];
+    const svg = localSvgRef.current;
+
+    if (remaining === undefined || svg === null) {
+      gestureRef.current = null;
+      return;
+    }
+
+    const [pointerId, client] = remaining;
+    const rect = measureElementRect(svg, board);
+
+    // Lifting one finger of a pinch hands over to one-finger panning.
+    gestureRef.current = {
+      kind: 'pan',
+      pointerId,
+      startClient: client,
+      pointerType: 'touch',
+      dragged: false,
+      view: pinch.lastView,
+      anchorBoard: screenToBoard(client, rect, pinch.lastView, board),
+    };
+  }
+
   function handlePointerDown(event: ReactPointerEvent<SVGSVGElement>): void {
     if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
@@ -256,23 +459,58 @@ export function WorkbenchSvg({
 
     unlockAudio();
 
-    if (gestureRef.current !== null || !acquirePointer(event.pointerId)) {
+    const pointerId = event.pointerId;
+    const positions = pointerPositionsRef.current;
+
+    if (positions.has(pointerId)) {
+      return;
+    }
+
+    const client = { x: event.clientX, y: event.clientY };
+
+    // The second finger starts a pinch and cancels the gesture in progress.
+    if (positions.size > 0) {
+      if (event.pointerType !== 'touch' || positions.size >= 2) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (!capturePointer(event.currentTarget, pointerId)) {
+        return;
+      }
+
+      positions.set(pointerId, client);
+      beginPinch();
+      return;
+    }
+
+    if (!acquirePointer(pointerId)) {
       return;
     }
 
     event.preventDefault();
 
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      releasePointer(event.pointerId);
+    if (!capturePointer(event.currentTarget, pointerId)) {
+      releasePointer(pointerId);
       return;
     }
 
-    const startClient = { x: event.clientX, y: event.clientY };
+    acquiredPointerRef.current = pointerId;
+    positions.set(pointerId, client);
+
+    const startClient = client;
+    const startView = viewRef.current;
+    const startPoint = screenToBoard(
+      startClient,
+      measureElementRect(event.currentTarget, board),
+      startView,
+      board,
+    );
     const pointerType = event.pointerType;
     const element = event.target instanceof Element ? event.target : null;
-    const terminalElement = element?.closest('[data-terminal-component]') ?? null;
+    const terminalElement =
+      element?.closest('[data-terminal-component]') ?? null;
     const componentElement = element?.closest('[data-component-id]') ?? null;
     const wireElement = element?.closest('[data-wire-id]') ?? null;
 
@@ -283,10 +521,11 @@ export function WorkbenchSvg({
       if (componentId !== null && terminalId !== null) {
         gestureRef.current = {
           kind: 'terminal',
-          pointerId: event.pointerId,
+          pointerId,
           startClient,
           pointerType,
           dragged: false,
+          view: startView,
           terminal: { componentId, terminalId },
         };
         onSelect(null);
@@ -296,27 +535,25 @@ export function WorkbenchSvg({
 
     if (componentElement !== null) {
       const componentId = componentElement.getAttribute('data-component-id');
-      const component = circuit.components.find((item) => item.id === componentId);
+      const component = circuit.components.find(
+        (item) => item.id === componentId,
+      );
 
       if (component !== undefined) {
-        const svgPoint = clientToSvgPoint(
-          event.currentTarget,
-          event.clientX,
-          event.clientY,
-        );
         const center = gridToSvg(component.position, CELL_SIZE);
-        const grabOffset = svgPoint
-          ? { x: center.x - svgPoint.x, y: center.y - svgPoint.y }
-          : { x: 0, y: 0 };
 
         gestureRef.current = {
           kind: 'component',
-          pointerId: event.pointerId,
+          pointerId,
           startClient,
           pointerType,
           dragged: false,
+          view: startView,
           componentId: component.id,
-          grabOffset,
+          grabOffset: {
+            x: center.x - startPoint.x,
+            y: center.y - startPoint.y,
+          },
         };
         onSetPendingTerminal(null);
         return;
@@ -329,10 +566,11 @@ export function WorkbenchSvg({
       if (wireId !== null) {
         gestureRef.current = {
           kind: 'wire',
-          pointerId: event.pointerId,
+          pointerId,
           startClient,
           pointerType,
           dragged: false,
+          view: startView,
           wireId,
         };
         onSelect({ kind: 'wire', id: wireId });
@@ -341,27 +579,51 @@ export function WorkbenchSvg({
       }
     }
 
-    gestureRef.current = {
-      kind: 'blank',
-      pointerId: event.pointerId,
-      startClient,
-      pointerType,
-      dragged: false,
-    };
+    gestureRef.current = panEnabled
+      ? {
+          kind: 'pan',
+          pointerId,
+          startClient,
+          pointerType,
+          dragged: false,
+          view: startView,
+          anchorBoard: startPoint,
+        }
+      : {
+          kind: 'blank',
+          pointerId,
+          startClient,
+          pointerType,
+          dragged: false,
+          view: startView,
+        };
     onSelect(null);
     onSetPendingTerminal(null);
   }
 
   function handlePointerMove(event: ReactPointerEvent<SVGSVGElement>): void {
+    const positions = pointerPositionsRef.current;
+
+    if (!positions.has(event.pointerId)) {
+      return;
+    }
+
+    const client = { x: event.clientX, y: event.clientY };
+    positions.set(event.pointerId, client);
+
+    if (pinchRef.current !== null) {
+      updatePinch();
+      return;
+    }
+
     const gesture = gestureRef.current;
 
     if (gesture === null || event.pointerId !== gesture.pointerId) {
       return;
     }
 
-    const currentClient = { x: event.clientX, y: event.clientY };
     const dragged =
-      gesture.dragged || isDragGesture(gesture.startClient, currentClient);
+      gesture.dragged || isDragGesture(gesture.startClient, client);
 
     if (dragged && !gesture.dragged) {
       gesture.dragged = true;
@@ -375,15 +637,29 @@ export function WorkbenchSvg({
     }
 
     const svg = event.currentTarget;
-    const svgPoint = clientToSvgPoint(svg, event.clientX, event.clientY);
+    const rect = measureElementRect(svg, board);
+    const scale = boardScale(rect, gesture.view, board);
+    const touchOffset = TOUCH_OFFSET_PX / scale;
 
-    if (svgPoint === null) {
+    if (gesture.kind === 'pan') {
+      const next = viewForAnchor(
+        gesture.anchorBoard,
+        client,
+        gesture.view.zoom,
+        rect,
+        board,
+      );
+
+      setView(next);
       return;
     }
 
-    const scale = getSvgScale(svg);
-    const touchOffset = TOUCH_OFFSET_PX / scale;
-    const adjustedPoint = applyTouchOffset(svgPoint, gesture.pointerType, touchOffset);
+    const svgPoint = screenToBoard(client, rect, gesture.view, board);
+    const adjustedPoint = applyTouchOffset(
+      svgPoint,
+      gesture.pointerType,
+      touchOffset,
+    );
 
     if (gesture.kind === 'component') {
       if (lockedComponentIds.includes(gesture.componentId)) {
@@ -422,52 +698,68 @@ export function WorkbenchSvg({
   }
 
   function handlePointerUp(event: ReactPointerEvent<SVGSVGElement>): void {
+    const pointerId = event.pointerId;
+    const positions = pointerPositionsRef.current;
+
+    if (!positions.has(pointerId)) {
+      return;
+    }
+
+    // Drop the tracked pointer before releasing capture: a synchronous
+    // lostpointercapture must not cancel the gesture we are finalizing.
+    positions.delete(pointerId);
+    releaseCapture(event.currentTarget, pointerId);
+
+    if (pinchRef.current !== null) {
+      endPinch();
+      releaseAcquiredPointerIfDone();
+      return;
+    }
+
     const gesture = gestureRef.current;
 
-    if (gesture === null || event.pointerId !== gesture.pointerId) {
+    if (gesture === null || gesture.pointerId !== pointerId) {
+      releaseAcquiredPointerIfDone();
       return;
     }
 
     gestureRef.current = null;
-    releaseCapture(event.currentTarget, event.pointerId);
-    releasePointer(event.pointerId);
     updateTrashHover(false);
 
     const wasDragged = gesture.dragged;
+    const rect = measureElementRect(event.currentTarget, board);
+    const scale = boardScale(rect, gesture.view, board);
 
     if (gesture.kind === 'component') {
       if (wasDragged) {
         if (isOverTrash(event.clientX, event.clientY)) {
           onDeleteComponent(gesture.componentId);
         } else {
-          const svgPoint = clientToSvgPoint(
-            event.currentTarget,
-            event.clientX,
-            event.clientY,
+          const svgPoint = screenToBoard(
+            { x: event.clientX, y: event.clientY },
+            rect,
+            gesture.view,
+            board,
           );
+          const adjustedPoint = applyTouchOffset(
+            svgPoint,
+            gesture.pointerType,
+            TOUCH_OFFSET_PX / scale,
+          );
+          const candidate = {
+            x: adjustedPoint.x + gesture.grabOffset.x,
+            y: adjustedPoint.y + gesture.grabOffset.y,
+          };
 
-          if (svgPoint !== null) {
-            const scale = getSvgScale(event.currentTarget);
-            const adjustedPoint = applyTouchOffset(
-              svgPoint,
-              gesture.pointerType,
-              TOUCH_OFFSET_PX / scale,
+          if (isPointInsideBoard(candidate, board.width, board.height)) {
+            const gridPosition = snapToGrid(svgToGrid(candidate, CELL_SIZE));
+            const clamped = clampGridPosition(
+              gridPosition,
+              board.columns,
+              board.rows,
             );
-            const candidate = {
-              x: adjustedPoint.x + gesture.grabOffset.x,
-              y: adjustedPoint.y + gesture.grabOffset.y,
-            };
-
-            if (isPointInsideBoard(candidate, BOARD_WIDTH, BOARD_HEIGHT)) {
-              const gridPosition = snapToGrid(svgToGrid(candidate, CELL_SIZE));
-              const clamped = clampGridPosition(
-                gridPosition,
-                GRID_COLUMNS,
-                GRID_ROWS,
-              );
-              onMoveComponent(gesture.componentId, clamped);
-              onSelect({ kind: 'component', id: gesture.componentId });
-            }
+            onMoveComponent(gesture.componentId, clamped);
+            onSelect({ kind: 'component', id: gesture.componentId });
           }
         }
       } else {
@@ -481,112 +773,111 @@ export function WorkbenchSvg({
       }
 
       setDragPreview(null);
+      releaseAcquiredPointerIfDone();
       return;
     }
 
     if (gesture.kind === 'terminal') {
       if (wasDragged) {
-        const svgPoint = clientToSvgPoint(
-          event.currentTarget,
-          event.clientX,
-          event.clientY,
+        const svgPoint = screenToBoard(
+          { x: event.clientX, y: event.clientY },
+          rect,
+          gesture.view,
+          board,
+        );
+        const adjustedPoint = applyTouchOffset(
+          svgPoint,
+          gesture.pointerType,
+          TOUCH_OFFSET_PX / scale,
+        );
+        const snapRadiusPx = isCompact ? COMPACT_SNAP_RADIUS_PX : SNAP_RADIUS_PX;
+        const candidates = terminalEntries.filter(
+          (entry) =>
+            !(
+              entry.ref.componentId === gesture.terminal.componentId &&
+              entry.ref.terminalId === gesture.terminal.terminalId
+            ),
+        );
+        const nearest = findNearestTerminal(
+          adjustedPoint,
+          candidates,
+          snapRadiusPx / scale,
         );
 
-        if (svgPoint !== null) {
-          const scale = getSvgScale(event.currentTarget);
-          const adjustedPoint = applyTouchOffset(
-            svgPoint,
-            gesture.pointerType,
-            TOUCH_OFFSET_PX / scale,
-          );
-          const snapRadiusPx = isCompact ? COMPACT_SNAP_RADIUS_PX : SNAP_RADIUS_PX;
-          const candidates = terminalEntries.filter(
-            (entry) =>
-              !(
-                entry.ref.componentId === gesture.terminal.componentId &&
-                entry.ref.terminalId === gesture.terminal.terminalId
-              ),
-          );
-          const nearest = findNearestTerminal(
-            adjustedPoint,
-            candidates,
-            snapRadiusPx / scale,
-          );
-
-          if (nearest !== null) {
-            onAddWire(gesture.terminal, nearest.ref);
-          }
+        if (nearest !== null) {
+          onAddWire(gesture.terminal, nearest.ref);
         }
-
-        onSetPendingTerminal(null);
-        setWirePreview(null);
-        return;
-      }
-
-      const pending = pendingRef.current;
-
-      if (pending === null) {
-        onSetPendingTerminal(gesture.terminal);
-      } else if (
-        pending.componentId === gesture.terminal.componentId &&
-        pending.terminalId === gesture.terminal.terminalId
-      ) {
-        onSetPendingTerminal(null);
       } else {
-        onAddWire(pending, gesture.terminal);
-        onSetPendingTerminal(null);
+        const pending = pendingRef.current;
+
+        if (pending === null) {
+          onSetPendingTerminal(gesture.terminal);
+        } else if (
+          pending.componentId === gesture.terminal.componentId &&
+          pending.terminalId === gesture.terminal.terminalId
+        ) {
+          onSetPendingTerminal(null);
+        } else {
+          onAddWire(pending, gesture.terminal);
+          onSetPendingTerminal(null);
+        }
       }
 
+      setWirePreview(null);
+      releaseAcquiredPointerIfDone();
       return;
     }
 
     if (gesture.kind === 'wire' && !wasDragged) {
       onSelect({ kind: 'wire', id: gesture.wireId });
-      return;
     }
 
     if (gesture.kind === 'blank' && !wasDragged) {
       onSelect(null);
       onSetPendingTerminal(null);
     }
+
+    releaseAcquiredPointerIfDone();
   }
 
   function handlePointerCancel(event: ReactPointerEvent<SVGSVGElement>): void {
-    const gesture = gestureRef.current;
-
-    if (gesture === null || event.pointerId !== gesture.pointerId) {
+    if (!pointerPositionsRef.current.has(event.pointerId)) {
       return;
     }
 
-    gestureRef.current = null;
+    pointerPositionsRef.current.delete(event.pointerId);
     releaseCapture(event.currentTarget, event.pointerId);
-    releasePointer(event.pointerId);
-    updateTrashHover(false);
+    pinchRef.current = null;
+    gestureRef.current = null;
     setDragPreview(null);
     setWirePreview(null);
+    updateTrashHover(false);
     onSetPendingTerminal(null);
+    releaseAcquiredPointerIfDone();
   }
 
-  function handleLostPointerCapture(event: ReactPointerEvent<SVGSVGElement>): void {
-    const gesture = gestureRef.current;
-
-    if (gesture === null || event.pointerId !== gesture.pointerId) {
+  function handleLostPointerCapture(
+    event: ReactPointerEvent<SVGSVGElement>,
+  ): void {
+    if (!pointerPositionsRef.current.has(event.pointerId)) {
       return;
     }
 
+    pointerPositionsRef.current.delete(event.pointerId);
+    pinchRef.current = null;
     gestureRef.current = null;
-    releasePointer(event.pointerId);
-    updateTrashHover(false);
     setDragPreview(null);
     setWirePreview(null);
+    updateTrashHover(false);
     onSetPendingTerminal(null);
+    releaseAcquiredPointerIfDone();
   }
 
   return (
     <svg
-      ref={svgRef}
+      ref={attachNode}
       className="workbench-svg"
-      viewBox={`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`}
+      viewBox={formatViewBox(viewBoxFor(view, board))}
       preserveAspectRatio="xMidYMid meet"
       role="application"
       aria-label={fr.workbench.title}
@@ -613,16 +904,16 @@ export function WorkbenchSvg({
         </pattern>
       </defs>
 
-      <rect width={BOARD_WIDTH} height={BOARD_HEIGHT} rx={18} fill="#f7fbff" />
+      <rect width={board.width} height={board.height} rx={18} fill="#f7fbff" />
       <rect
-        width={BOARD_WIDTH}
-        height={BOARD_HEIGHT}
+        width={board.width}
+        height={board.height}
         rx={18}
         fill="url(#workbench-grid)"
       />
       <rect
-        width={BOARD_WIDTH}
-        height={BOARD_HEIGHT}
+        width={board.width}
+        height={board.height}
         rx={18}
         fill="none"
         stroke="#c7d8e8"
@@ -805,6 +1096,7 @@ export function WorkbenchSvg({
         <SelectionToolbar
           component={selectedComponent}
           components={circuit.components}
+          board={board}
           onRotate={() => onRotateComponent(selectedComponent.id)}
           onDelete={onDeleteSelection}
         />
@@ -814,14 +1106,15 @@ export function WorkbenchSvg({
         <WireDeleteButton
           x={(selectedWire.from.x + selectedWire.to.x) / 2}
           y={(selectedWire.from.y + selectedWire.to.y) / 2}
+          board={board}
           onDelete={onDeleteSelection}
         />
       ) : null}
 
       {circuit.components.length === 0 ? (
         <text
-          x={BOARD_WIDTH / 2}
-          y={BOARD_HEIGHT / 2}
+          x={board.width / 2}
+          y={board.height / 2}
           textAnchor="middle"
           dominantBaseline="central"
           fill="#7b8aa3"
@@ -839,6 +1132,7 @@ export function WorkbenchSvg({
 interface SelectionToolbarProps {
   component: CircuitComponent;
   components: CircuitComponent[];
+  board: BoardDimensions;
   onRotate: () => void;
   onDelete: () => void;
 }
@@ -846,6 +1140,7 @@ interface SelectionToolbarProps {
 function SelectionToolbar({
   component,
   components,
+  board,
   onRotate,
   onDelete,
 }: SelectionToolbarProps) {
@@ -854,7 +1149,13 @@ function SelectionToolbar({
   const padding = 6;
   const width = padding * 2 + buttonSize * 2 + gap;
   const height = padding * 2 + buttonSize;
-  const { left, top } = chooseToolbarPosition(component, components, width, height);
+  const { left, top } = chooseToolbarPosition(
+    component,
+    components,
+    width,
+    height,
+    board,
+  );
 
   return (
     <g transform={`translate(${left} ${top})`} data-toolbar="true">
@@ -891,15 +1192,16 @@ function SelectionToolbar({
 interface WireDeleteButtonProps {
   x: number;
   y: number;
+  board: BoardDimensions;
   onDelete: () => void;
 }
 
-function WireDeleteButton({ x, y, onDelete }: WireDeleteButtonProps) {
+function WireDeleteButton({ x, y, board, onDelete }: WireDeleteButtonProps) {
   const size = 72;
 
   return (
     <g
-      transform={`translate(${clampToolbarPosition(x - size / 2, size, BOARD_WIDTH)} ${clampToolbarPosition(y - size / 2, size, BOARD_HEIGHT)})`}
+      transform={`translate(${clampToolbarPosition(x - size / 2, size, board.width)} ${clampToolbarPosition(y - size / 2, size, board.height)})`}
       data-toolbar="true"
     >
       <ToolbarButton
@@ -983,6 +1285,15 @@ function TrashIcon() {
   );
 }
 
+function capturePointer(svg: SVGSVGElement, pointerId: number): boolean {
+  try {
+    svg.setPointerCapture(pointerId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function releaseCapture(svg: SVGSVGElement, pointerId: number): void {
   try {
     if (svg.hasPointerCapture(pointerId)) {
@@ -1005,6 +1316,7 @@ function chooseToolbarPosition(
   components: CircuitComponent[],
   width: number,
   height: number,
+  board: BoardDimensions,
 ): { left: number; top: number } {
   const toolbarGap = 40;
   const obstaclePadding = 36;
@@ -1019,8 +1331,8 @@ function chooseToolbarPosition(
     { left: centerX - width / 2, top: centerY - halfHeight - toolbarGap - height },
     { left: centerX - width / 2, top: centerY + halfHeight + toolbarGap },
   ].map((candidate) => ({
-    left: clamp(candidate.left, 8, BOARD_WIDTH - width - 8),
-    top: clamp(candidate.top, 8, BOARD_HEIGHT - height - 8),
+    left: clamp(candidate.left, 8, board.width - width - 8),
+    top: clamp(candidate.top, 8, board.height - height - 8),
   }));
 
   const obstacles: Rect[] = components.map((item) => {

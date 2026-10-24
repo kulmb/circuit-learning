@@ -1,6 +1,6 @@
 import { getLevelById } from '@circuits/shared';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LayoutContext } from '../layout/LayoutContext';
 import type { LayoutMode } from '../layout/layoutMode';
@@ -10,15 +10,6 @@ import { useWorkbenchStore } from './workbenchStore';
 
 function mockSvg(svg: SVGSVGElement): void {
   Object.assign(svg, {
-    getScreenCTM: () => ({ a: 1, d: 1, inverse: () => ({}) }),
-    createSVGPoint: () => {
-      const point = {
-        x: 0,
-        y: 0,
-        matrixTransform: () => ({ x: point.x, y: point.y }),
-      };
-      return point;
-    },
     setPointerCapture: () => undefined,
     releasePointerCapture: () => undefined,
     hasPointerCapture: () => false,
@@ -68,6 +59,10 @@ describe('workbench interactions', () => {
   beforeEach(() => {
     useWorkbenchStore.getState().resetWorkbench();
     window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('creates a wire by tapping two terminals', () => {
@@ -288,6 +283,43 @@ describe('workbench interactions', () => {
     expect(switchComponent?.type === 'switch' ? switchComponent.closed : null).toBe(
       true,
     );
+  });
+
+  it('fits tiny screens, zooms with the wheel and restores the full board', async () => {
+    vi.spyOn(
+      SVGSVGElement.prototype,
+      'getBoundingClientRect',
+    ).mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      width: 320,
+      height: 200,
+      right: 320,
+      bottom: 200,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    render(<WorkbenchPage onBack={() => undefined} />);
+    const svg = getSvg();
+    const showAll = await screen.findByRole('button', {
+      name: getText('workbench.showAll'),
+    });
+
+    expect(screen.getByText(getText('workbench.zoomHint'))).toBeInTheDocument();
+    expect(svg.getAttribute('viewBox')).toBe('0 0 768 512');
+
+    fireEvent.wheel(svg, { deltaY: -300, clientX: 160, clientY: 100 });
+
+    expect(svg.getAttribute('viewBox')).not.toBe('0 0 768 512');
+    expect(
+      screen.queryByText(getText('workbench.zoomHint')),
+    ).not.toBeInTheDocument();
+
+    fireEvent.pointerDown(showAll);
+
+    expect(svg.getAttribute('viewBox')).toBe('0 0 768 512');
   });
 });
 

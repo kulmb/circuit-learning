@@ -9,10 +9,12 @@ import {
 } from '@circuits/shared';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
@@ -31,20 +33,12 @@ import {
 import { unlockNarration } from '../narration/narrationService';
 import { useNarration } from '../narration/useNarration';
 import { playBuzzerBeep, playSuccessFanfare, unlockAudio } from './audio';
-import {
-  BOARD_HEIGHT,
-  BOARD_WIDTH,
-  CELL_SIZE,
-  GRID_COLUMNS,
-  GRID_ROWS,
-} from './constants';
+import { boardForLevel, CELL_SIZE } from './constants';
 import type { DisplayMode } from './displayMode';
 import { PALETTE_ITEMS, type PaletteItem } from './paletteItems';
 import {
   applyTouchOffset,
   clampGridPosition,
-  clientToSvgPoint,
-  getSvgScale,
   isDragGesture,
   isPointInsideBoard,
   snapToGrid,
@@ -52,6 +46,12 @@ import {
   TOUCH_OFFSET_PX,
   type Point,
 } from './pointer';
+import { useBoardViewport } from './useBoardViewport';
+import {
+  boardScale,
+  measureElementRect,
+  screenToBoard,
+} from './viewport';
 import { WorkbenchSvg } from './WorkbenchSvg';
 import { useWorkbenchStore } from './workbenchStore';
 import './Workbench.css';
@@ -124,7 +124,20 @@ export function WorkbenchPage({
       ? 'top'
       : 'default';
   const reduceMotion = useReducedMotion() ?? false;
-  const svgRef = useRef<SVGSVGElement>(null);
+  const board = useMemo(() => boardForLevel(level?.board), [level]);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [svgElement, setSvgElement] = useState<SVGSVGElement | null>(null);
+  const attachSvg = useCallback((node: SVGSVGElement | null) => {
+    svgRef.current = node;
+    setSvgElement(node);
+  }, []);
+  const viewport = useBoardViewport(svgElement, board);
+  const showZoomControls = viewport.pannable || !viewport.isDefault;
+  const showZoomHint = viewport.pannable && viewport.isDefault;
+  const boardStyle = {
+    '--board-ratio': board.width / board.height,
+    '--board-aspect': `${board.width} / ${board.height}`,
+  } as CSSProperties;
   const trashRef = useRef<HTMLDivElement>(null);
   const activePointerRef = useRef<number | null>(null);
   const previousBuzzingRef = useRef<Set<string>>(new Set());
@@ -363,24 +376,26 @@ export function WorkbenchPage({
       return null;
     }
 
-    const svgPoint = clientToSvgPoint(svg, clientX, clientY);
-    if (!svgPoint) {
-      return null;
-    }
-
-    const scale = getSvgScale(svg);
+    const rect = measureElementRect(svg, board);
+    const svgPoint = screenToBoard(
+      { x: clientX, y: clientY },
+      rect,
+      viewport.view,
+      board,
+    );
+    const scale = boardScale(rect, viewport.view, board);
     const adjustedPoint = applyTouchOffset(
       svgPoint,
       pointerType,
       TOUCH_OFFSET_PX / scale,
     );
 
-    if (!isPointInsideBoard(adjustedPoint, BOARD_WIDTH, BOARD_HEIGHT)) {
+    if (!isPointInsideBoard(adjustedPoint, board.width, board.height)) {
       return null;
     }
 
     const gridPoint = snapToGrid(svgToGrid(adjustedPoint, CELL_SIZE));
-    const position = clampGridPosition(gridPoint, GRID_COLUMNS, GRID_ROWS);
+    const position = clampGridPosition(gridPoint, board.columns, board.rows);
     const component = createComponent(item.type, {
       id: 'palette-preview',
       position,
@@ -684,7 +699,10 @@ export function WorkbenchPage({
         </aside>
 
         <div className="workbench-board-wrap">
-          <div className="workbench-board">
+          <div
+            className={`workbench-board${showZoomControls ? ' has-zoom-controls' : ''}`}
+            style={boardStyle}
+          >
             <WorkbenchSvg
               circuit={circuit}
               simulation={simulation}
@@ -694,7 +712,11 @@ export function WorkbenchPage({
               hintHighlight={hintHighlight}
               lockedComponentIds={lockedComponentIds}
               previewComponent={paletteDrag?.placement?.component ?? null}
-              svgRef={svgRef}
+              board={board}
+              view={viewport.view}
+              pannable={viewport.pannable}
+              setView={viewport.setView}
+              svgRef={attachSvg}
               acquirePointer={acquirePointer}
               releasePointer={releasePointer}
               isOverTrash={isOverTrash}
@@ -708,6 +730,23 @@ export function WorkbenchPage({
               onToggleSwitch={toggleSwitch}
               onAddWire={addWire}
             />
+
+            {showZoomHint ? (
+              <p className="workbench-zoom-hint">{fr.workbench.zoomHint}</p>
+            ) : null}
+
+            {showZoomControls ? (
+              <button
+                type="button"
+                className="workbench-zoom-reset"
+                onPointerDown={(event) =>
+                  activateButton(event, viewport.resetView)
+                }
+              >
+                <span aria-hidden="true">⤢</span>
+                <span>{fr.workbench.showAll}</span>
+              </button>
+            ) : null}
 
             {isCompact ? null : (
               <div
