@@ -258,50 +258,48 @@
   cursor: grabbing;
 }
 
-@media (max-width: 699px) {
-  .materials-page {
-    gap: 10px;
-    padding:
-      max(8px, env(safe-area-inset-top))
-      max(8px, env(safe-area-inset-right))
-      max(16px, env(safe-area-inset-bottom))
-      max(8px, env(safe-area-inset-left));
-  }
+[data-layout='compact'] .materials-page {
+  gap: 10px;
+  padding:
+    max(8px, env(safe-area-inset-top))
+    max(8px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom))
+    max(8px, env(safe-area-inset-left));
+}
 
-  .materials-circuit {
-    padding: 10px;
-  }
+[data-layout='compact'] .materials-circuit {
+  padding: 10px;
+}
 
-  .mini-battery {
-    width: 88px;
-  }
+[data-layout='compact'] .mini-battery {
+  width: 88px;
+}
 
-  .mini-bulb {
-    width: 78px;
-  }
+[data-layout='compact'] .mini-bulb {
+  width: 78px;
+}
 
-  .materials-slot {
-    width: 112px;
-    min-height: 76px;
-  }
+[data-layout='compact'] .materials-slot {
+  width: 112px;
+  min-height: 76px;
+}
 
-  .material-card {
-    min-width: 86px;
-    min-height: 76px;
-    font-size: 0.7rem;
-  }
+[data-layout='compact'] .material-card {
+  min-width: 86px;
+  min-height: 76px;
+  font-size: 0.7rem;
+}
 
-  .material-card--compact {
-    min-width: 70px;
-    min-height: 60px;
-    font-size: 0.64rem;
-  }
+[data-layout='compact'] .material-card--compact {
+  min-width: 70px;
+  min-height: 60px;
+  font-size: 0.64rem;
+}
 
-  .materials-bins {
-    grid-template-columns: 1fr;
-  }
+[data-layout='compact'] .materials-bins {
+  grid-template-columns: 1fr;
+}
 
-  .material-bin {
-    min-height: 124px;
-  }
+[data-layout='compact'] .material-bin {
+  min-height: 124px;
 }

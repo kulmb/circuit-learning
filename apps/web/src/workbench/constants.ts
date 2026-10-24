@@ -8,5 +8,3 @@ export const COMPONENT_HALF_WIDTH = 0.7;
 export const COMPONENT_HALF_HEIGHT = 0.4;
 export const COMPONENT_WIDTH = COMPONENT_HALF_WIDTH * 2 * CELL_SIZE;
 export const COMPONENT_HEIGHT = COMPONENT_HALF_HEIGHT * 2 * CELL_SIZE;
-
-export const COMPACT_QUERY = '(max-width: 699px), (max-height: 499px)';

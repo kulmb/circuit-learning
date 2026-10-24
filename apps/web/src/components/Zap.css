@@ -169,24 +169,125 @@
   }
 }
 
-@media (max-width: 699px), (max-height: 499px) {
-  .zap-avatar {
-    width: 76px;
-    height: 84px;
-  }
+[data-layout='compact'] .zap-avatar {
+  width: 76px;
+  height: 84px;
+}
 
-  .zap-avatar__character {
-    width: 76px;
-    height: 76px;
-  }
+[data-layout='compact'] .zap-avatar__character {
+  width: 76px;
+  height: 76px;
+}
 
-  .zap-avatar__help {
-    font-size: 0.65rem;
-    padding: 2px 6px;
-  }
+[data-layout='compact'] .zap-avatar__help {
+  padding: 2px 6px;
+  font-size: 0.65rem;
+}
 
-  .zap-bubble {
-    width: min(300px, calc(100vw - 40px));
-    padding: 12px 14px;
-  }
+[data-layout='compact'] .zap-bubble {
+  width: min(300px, calc(100vw - 40px));
+  padding: 12px 14px;
+}
+
+/* Compact phones: tiny avatar, bubble as a temporary top overlay. */
+.zap-panel--compact {
+  position: fixed;
+  left: max(8px, env(safe-area-inset-left));
+  bottom: calc(max(8px, env(safe-area-inset-bottom)) + 66px);
+  z-index: 30;
+  gap: 4px;
+}
+
+.zap-panel--compact .zap-avatar {
+  width: 56px;
+  height: 60px;
+}
+
+.zap-panel--compact .zap-avatar__character {
+  width: 56px;
+  height: 56px;
+}
+
+.zap-panel--compact .zap-avatar__help {
+  display: none;
+}
+
+.zap-panel--compact .zap-mute {
+  width: 44px;
+  height: 44px;
+}
+
+.zap-panel--compact .zap-mute svg {
+  width: 22px;
+  height: 22px;
+}
+
+.zap-bubble--overlay {
+  position: fixed;
+  top: max(66px, calc(env(safe-area-inset-top) + 58px));
+  left: 50%;
+  bottom: auto;
+  z-index: 45;
+  width: min(560px, calc(100vw - 16px));
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.zap-bubble--overlay::after {
+  display: none;
+}
+
+.zap-bubble--overlay .zap-bubble__replay {
+  pointer-events: auto;
+}
+
+/* Tablet portrait: Zap sits in the upper-left corner, bubble to its right. */
+.zap-panel--top {
+  position: fixed;
+  top: max(92px, calc(env(safe-area-inset-top) + 84px));
+  bottom: auto;
+  left: max(8px, env(safe-area-inset-left));
+  z-index: 30;
+  align-items: flex-start;
+}
+
+.zap-panel--top .zap-avatar {
+  width: 64px;
+  height: 68px;
+}
+
+.zap-panel--top .zap-avatar__character {
+  width: 64px;
+  height: 64px;
+}
+
+.zap-panel--top .zap-avatar__help {
+  padding: 2px 6px;
+  font-size: 0.6rem;
+}
+
+.zap-panel--top .zap-mute {
+  width: 44px;
+  height: 44px;
+}
+
+.zap-panel--top .zap-mute svg {
+  width: 22px;
+  height: 22px;
+}
+
+.zap-panel--top .zap-bubble {
+  top: 0;
+  bottom: auto;
+  left: calc(100% + 10px);
+  width: min(360px, calc(100vw - 140px));
+}
+
+.zap-panel--top .zap-bubble::after {
+  top: 26px;
+  bottom: auto;
+  left: -14px;
+  transform: rotate(135deg);
 }

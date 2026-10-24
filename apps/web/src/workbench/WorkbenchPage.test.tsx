@@ -2,6 +2,8 @@ import { getLevelById } from '@circuits/shared';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { LayoutContext } from '../layout/LayoutContext';
+import type { LayoutMode } from '../layout/layoutMode';
 import { getText, getVocabulary } from '../narration/fr';
 import { WorkbenchPage } from './WorkbenchPage';
 import { useWorkbenchStore } from './workbenchStore';
@@ -286,5 +288,73 @@ describe('workbench interactions', () => {
     expect(switchComponent?.type === 'switch' ? switchComponent.closed : null).toBe(
       true,
     );
+  });
+});
+
+describe('workbench responsive layout', () => {
+  const compactLandscape: LayoutMode = {
+    size: 'compact',
+    orientation: 'landscape',
+    width: 740,
+    height: 360,
+  };
+  const compactPortrait: LayoutMode = {
+    size: 'compact',
+    orientation: 'portrait',
+    width: 390,
+    height: 844,
+  };
+
+  it('moves undo and trash into a rail and folds instructions away', () => {
+    const level = getLevelById('light-01');
+    if (!level) throw new Error('Level missing');
+
+    render(
+      <LayoutContext.Provider value={compactLandscape}>
+        <WorkbenchPage level={level} onBack={() => undefined} />
+      </LayoutContext.Provider>,
+    );
+    getSvg();
+
+    expect(
+      screen.getByRole('button', { name: getText('workbench.instructions') }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('button', { name: getText('workbench.undo') }),
+    ).toHaveLength(1);
+    expect(document.querySelectorAll('.workbench-toolrail')).toHaveLength(1);
+    expect(document.querySelectorAll('.trash-zone')).toHaveLength(1);
+    expect(document.querySelectorAll('.workbench-svg')).toHaveLength(1);
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: getText('workbench.instructions') }),
+    );
+    expect(screen.getByText(getText(level.goalTextId))).toBeInTheDocument();
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: getText('workbench.close') }),
+    );
+    expect(
+      screen.queryByText(getText(level.goalTextId)),
+    ).not.toBeInTheDocument();
+  });
+
+  it('asks the child to rotate a phone held upright', () => {
+    const level = getLevelById('light-01');
+    if (!level) throw new Error('Level missing');
+
+    render(
+      <LayoutContext.Provider value={compactPortrait}>
+        <WorkbenchPage level={level} onBack={() => undefined} />
+      </LayoutContext.Provider>,
+    );
+
+    expect(
+      screen.getByText(getText('workbench.rotateDevice')),
+    ).toBeInTheDocument();
+    expect(document.querySelector('.workbench-svg')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: getText('workbench.back') }),
+    ).toBeInTheDocument();
   });
 });

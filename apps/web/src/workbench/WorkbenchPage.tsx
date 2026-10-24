@@ -16,7 +16,8 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
-import { Zap } from '../components/Zap';
+import { Zap, ZapCharacter, type ZapVariant } from '../components/Zap';
+import { useLayout } from '../layout/LayoutContext';
 import { LevelSuccessOverlay } from '../levels/LevelSuccessOverlay';
 import { useLevelSession } from '../levels/useLevelSession';
 import { fr, getText } from '../narration/fr';
@@ -113,6 +114,15 @@ export function WorkbenchPage({
   } = useWorkbenchStore();
 
   const narration = useNarration();
+  const layout = useLayout();
+  const isCompact = layout.size === 'compact';
+  const isMediumPortrait =
+    layout.size === 'medium' && layout.orientation === 'portrait';
+  const zapVariant: ZapVariant = isCompact
+    ? 'compact'
+    : isMediumPortrait
+      ? 'top'
+      : 'default';
   const reduceMotion = useReducedMotion() ?? false;
   const svgRef = useRef<SVGSVGElement>(null);
   const trashRef = useRef<HTMLDivElement>(null);
@@ -130,6 +140,7 @@ export function WorkbenchPage({
   const [hintHighlight, setHintHighlight] = useState<HintHighlight | null>(null);
   const [levelHintIndex, setLevelHintIndex] = useState(0);
   const [completionStars, setCompletionStars] = useState<number | null>(null);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   const completedRef = useRef(false);
   const levelSession = useLevelSession(level ?? null);
 
@@ -501,6 +512,39 @@ export function WorkbenchPage({
     setPaletteDrag(null);
   }
 
+  if (isCompact && layout.orientation === 'portrait') {
+    return (
+      <div
+        className="rotate-device"
+        onContextMenu={(event) => event.preventDefault()}
+      >
+        <button
+          type="button"
+          className="workbench-icon-button rotate-device__back"
+          onPointerDown={(event) => activateButton(event, onBack)}
+        >
+          <span aria-hidden="true">←</span>
+          <span>{fr.workbench.back}</span>
+        </button>
+
+        <div className="rotate-device__card">
+          <ZapCharacter
+            expression="content"
+            speaking={false}
+            className="rotate-device__zap"
+          />
+          <div className="rotate-device__phone" aria-hidden="true">
+            <span className="rotate-device__screen" />
+          </div>
+          <p className="rotate-device__text">{fr.workbench.rotateDevice}</p>
+          <p className="rotate-device__hint">
+            {fr.workbench.rotateDeviceHint}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="workbench-page"
@@ -522,12 +566,30 @@ export function WorkbenchPage({
               ? fr.workbench.title
               : getText(level.titleTextId)}
           </h1>
-          <p>
-            {level === undefined
-              ? fr.workbench.hint
-              : getText(level.goalTextId)}
-          </p>
+          {isCompact ? null : (
+            <p>
+              {level === undefined
+                ? fr.workbench.hint
+                : getText(level.goalTextId)}
+            </p>
+          )}
         </div>
+
+        {isCompact ? (
+          <button
+            type="button"
+            className="workbench-icon-button workbench-help-button"
+            onPointerDown={(event) =>
+              activateButton(event, () =>
+                setInstructionsOpen((open) => !open),
+              )
+            }
+            aria-label={fr.workbench.instructions}
+            aria-expanded={instructionsOpen}
+          >
+            <span aria-hidden="true">❓</span>
+          </button>
+        ) : null}
 
         <button
           type="button"
@@ -539,16 +601,41 @@ export function WorkbenchPage({
           <span>{modeLabel}</span>
         </button>
 
-        <button
-          type="button"
-          className="workbench-icon-button"
-          onPointerDown={(event) => activateButton(event, undo)}
-          disabled={history.length === 0}
-        >
-          <span aria-hidden="true">↶</span>
-          <span>{fr.workbench.undo}</span>
-        </button>
+        {isCompact ? null : (
+          <button
+            type="button"
+            className="workbench-icon-button"
+            onPointerDown={(event) => activateButton(event, undo)}
+            disabled={history.length === 0}
+          >
+            <span aria-hidden="true">↶</span>
+            <span>{fr.workbench.undo}</span>
+          </button>
+        )}
       </header>
+
+      {isCompact && instructionsOpen ? (
+        <div
+          className="workbench-instructions"
+          role="dialog"
+          aria-label={fr.workbench.instructions}
+        >
+          <p>
+            {level === undefined
+              ? fr.workbench.hint
+              : getText(level.goalTextId)}
+          </p>
+          <button
+            type="button"
+            className="workbench-instructions__close"
+            onPointerDown={(event) =>
+              activateButton(event, () => setInstructionsOpen(false))
+            }
+          >
+            {fr.workbench.close}
+          </button>
+        </div>
+      ) : null}
 
       <div className="workbench-layout">
         <aside className="palette" aria-label={fr.workbench.paletteTitle}>
@@ -622,16 +709,19 @@ export function WorkbenchPage({
               onAddWire={addWire}
             />
 
-            <div
-              ref={trashRef}
-              className={`trash-zone${trashActive ? ' is-active' : ''}`}
-              aria-hidden="true"
-            >
-              <TrashGlyph />
-              <span>{fr.workbench.trash}</span>
-            </div>
+            {isCompact ? null : (
+              <div
+                ref={trashRef}
+                className={`trash-zone${trashActive ? ' is-active' : ''}`}
+                aria-hidden="true"
+              >
+                <TrashGlyph />
+                <span>{fr.workbench.trash}</span>
+              </div>
+            )}
 
             <Zap
+              variant={zapVariant}
               expression={expression}
               message={narration.text}
               speaking={narration.speaking}
@@ -648,6 +738,28 @@ export function WorkbenchPage({
           </div>
         </div>
       </div>
+
+      {isCompact ? (
+        <div className="workbench-toolrail">
+          <button
+            type="button"
+            className="workbench-icon-button workbench-toolrail__button"
+            onPointerDown={(event) => activateButton(event, undo)}
+            disabled={history.length === 0}
+            aria-label={fr.workbench.undo}
+          >
+            <span aria-hidden="true">↶</span>
+          </button>
+          <div
+            ref={trashRef}
+            className={`trash-zone trash-zone--rail${trashActive ? ' is-active' : ''}`}
+            aria-hidden="true"
+          >
+            <TrashGlyph />
+            <span>{fr.workbench.trash}</span>
+          </div>
+        </div>
+      ) : null}
 
       {paletteDrag !== null && ghostPoint !== null && paletteDrag.placement === null ? (
         <div

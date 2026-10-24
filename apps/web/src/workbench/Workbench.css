@@ -1,4 +1,5 @@
 .workbench-page {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: clamp(8px, 1.5dvh, 16px);
@@ -445,115 +446,332 @@
   opacity: 1;
 }
 
-@media (max-width: 820px), (max-height: 560px) {
-  .workbench-page {
-    gap: 6px;
-    padding:
-      max(8px, env(safe-area-inset-top))
-      max(8px, env(safe-area-inset-right))
-      max(8px, env(safe-area-inset-bottom))
-      max(8px, env(safe-area-inset-left));
+/* ---------- Medium: tablet and small screens ---------- */
+
+[data-layout='medium'] .palette {
+  flex-basis: 180px;
+  width: 180px;
+}
+
+[data-layout='medium'] .workbench-icon-button {
+  min-height: 56px;
+}
+
+[data-layout='medium'] .palette-item {
+  min-height: 88px;
+}
+
+/* Tablet in portrait: palette becomes a bottom tray, Zap moves top-left. */
+[data-layout='medium'][data-orientation='portrait'] .workbench-layout {
+  flex-direction: column-reverse;
+}
+
+[data-layout='medium'][data-orientation='portrait'] .palette {
+  flex: 0 0 auto;
+  width: auto;
+  max-height: 116px;
+  padding: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+[data-layout='medium'][data-orientation='portrait'] .palette h2 {
+  display: none;
+}
+
+[data-layout='medium'][data-orientation='portrait'] .palette__items {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+[data-layout='medium'][data-orientation='portrait'] .palette-item {
+  flex: 0 0 auto;
+  flex-direction: row;
+  width: auto;
+  min-width: 116px;
+  min-height: 64px;
+  padding: 6px 10px;
+  text-align: left;
+  touch-action: pan-x;
+}
+
+[data-layout='medium'][data-orientation='portrait'] .palette-item__swatch {
+  width: 40px;
+  height: 40px;
+}
+
+[data-layout='medium'][data-orientation='portrait'] .workbench-board-wrap {
+  justify-content: center;
+}
+
+[data-layout='medium'][data-orientation='portrait'] .workbench-board {
+  flex: 0 1 auto;
+  width: min(100%, calc((100dvh - 330px) * 1.5));
+  aspect-ratio: 3 / 2;
+  max-height: 100%;
+}
+
+/* ---------- Compact: phones in landscape ---------- */
+
+[data-layout='compact'] .workbench-page {
+  gap: 4px;
+  padding:
+    max(6px, env(safe-area-inset-top))
+    max(6px, env(safe-area-inset-right))
+    max(6px, env(safe-area-inset-bottom))
+    max(6px, env(safe-area-inset-left));
+}
+
+[data-layout='compact'] .workbench-header {
+  gap: 6px;
+}
+
+[data-layout='compact'] .workbench-header__title h1 {
+  font-size: 1.15rem;
+}
+
+[data-layout='compact'] .workbench-header__title p {
+  display: none;
+}
+
+[data-layout='compact'] .workbench-icon-button {
+  min-height: 56px;
+  padding: 0 10px;
+  font-size: 0.9rem;
+}
+
+[data-layout='compact'] .workbench-layout {
+  flex-direction: column-reverse;
+}
+
+[data-layout='compact'] .workbench-board-wrap {
+  justify-content: center;
+}
+
+[data-layout='compact'] .workbench-board {
+  flex: 0 1 auto;
+  width: min(100%, calc((100dvh - 160px) * 1.5));
+  aspect-ratio: 3 / 2;
+  max-height: 100%;
+}
+
+[data-layout='compact'] .palette {
+  flex: 0 0 auto;
+  width: auto;
+  max-height: 76px;
+  padding: 6px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 18px;
+}
+
+[data-layout='compact'] .palette h2 {
+  display: none;
+}
+
+[data-layout='compact'] .palette__items {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+}
+
+[data-layout='compact'] .palette-item {
+  flex: 0 0 auto;
+  flex-direction: column;
+  width: auto;
+  min-width: 64px;
+  min-height: 60px;
+  padding: 5px 7px;
+  touch-action: pan-x;
+}
+
+[data-layout='compact'] .palette-item__swatch {
+  width: 44px;
+  height: 44px;
+  font-size: 0.7rem;
+}
+
+[data-layout='compact'] .palette-item__label {
+  display: none;
+}
+
+/* The status bar would fight with Zap for the tiny phone screen. Zap's
+   bubble and the lit components already carry the feedback. */
+[data-layout='compact'] .workbench-status {
+  display: none;
+}
+
+[data-layout='compact'] .workbench-mode-button {
+  min-width: 56px;
+  padding: 0;
+}
+
+[data-layout='compact'] .workbench-mode-button span:last-child {
+  display: none;
+}
+
+/* Undo + trash share one rail on the right edge. */
+.workbench-toolrail {
+  position: fixed;
+  top: 50%;
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: translateY(-50%);
+}
+
+.workbench-toolrail__button {
+  width: 56px;
+  min-height: 56px;
+  padding: 0;
+  font-size: 1.35rem;
+}
+
+[data-layout='compact'] .trash-zone--rail {
+  position: static;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 4px;
+  font-size: 0.62rem;
+}
+
+[data-layout='compact'] .trash-zone--rail .trash-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Collapsed level instructions on phones. */
+.workbench-help-button {
+  min-width: 56px;
+  padding: 0;
+  font-size: 1.2rem;
+}
+
+.workbench-instructions {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  z-index: 40;
+  width: min(440px, calc(100vw - 24px));
+  padding: 12px 14px;
+  border: 2px solid rgba(36, 50, 74, 0.12);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: var(--shadow-soft);
+  transform: translateX(-50%);
+}
+
+.workbench-instructions p {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.workbench-instructions__close {
+  display: block;
+  min-height: 48px;
+  margin: 0 auto;
+  padding: 0 18px;
+  border: 2px solid rgba(36, 50, 74, 0.12);
+  border-radius: 14px;
+  background: #f8fafc;
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* ---------- Phone held upright ---------- */
+
+.rotate-device {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding:
+    max(12px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  color: var(--color-ink);
+  text-align: center;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 214, 102, 0.35) 0, transparent 40%),
+    radial-gradient(circle at 88% 16%, rgba(126, 217, 255, 0.4) 0, transparent 44%),
+    linear-gradient(160deg, #eaf8ff 0%, #fff9ec 100%);
+}
+
+.rotate-device__back {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+}
+
+.rotate-device__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 26px 22px;
+  border-radius: 28px;
+  background: rgba(255, 253, 248, 0.92);
+  box-shadow: var(--shadow-soft);
+}
+
+.rotate-device__zap {
+  width: 84px;
+  height: auto;
+}
+
+.rotate-device__phone {
+  width: 58px;
+  height: 100px;
+  padding: 6px;
+  border: 4px solid var(--color-ink);
+  border-radius: 14px;
+  animation: rotate-device-tip 2.4s ease-in-out infinite;
+}
+
+.rotate-device__screen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #b8f0ea, #ffd166);
+}
+
+@keyframes rotate-device-tip {
+  0%,
+  15% {
+    transform: rotate(0deg);
   }
 
-  .workbench-layout {
-    flex-direction: column-reverse;
-  }
-
-  .workbench-header__title p {
-    display: none;
-  }
-
-  .workbench-header__title h1 {
-    font-size: 1.25rem;
-  }
-
-  .workbench-board-wrap {
-    justify-content: center;
-  }
-
-  .workbench-board {
-    flex: 0 1 auto;
-    width: min(100%, calc((100dvh - 230px) * 1.5));
-    aspect-ratio: 3 / 2;
-    max-height: 100%;
-  }
-
-  .palette {
-    flex: 0 0 auto;
-    width: auto;
-    max-height: 108px;
-    padding: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .palette h2 {
-    display: none;
-  }
-
-  .palette__items {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-  }
-
-  .palette-item {
-    flex: 0 0 auto;
-    flex-direction: row;
-    width: auto;
-    min-width: 104px;
-    min-height: 56px;
-    padding: 6px 8px;
-    text-align: left;
-    touch-action: pan-x;
-  }
-
-  .palette-item__swatch {
-    width: 36px;
-    height: 36px;
-    font-size: 0.62rem;
-  }
-
-  .palette-item__label {
-    font-size: 0.78rem;
-  }
-
-  .workbench-status {
-    min-height: 40px;
-    padding: 6px 12px;
-    font-size: 0.9rem;
-  }
-
-  .trash-zone {
-    right: 10px;
-    bottom: 10px;
+  55%,
+  100% {
+    transform: rotate(90deg);
   }
 }
 
-@media (max-width: 699px), (max-height: 499px) {
-  .workbench-icon-button {
-    min-height: 56px;
-    padding: 0 10px;
-    font-size: 0.9rem;
-  }
-
-  .palette-item {
-    min-height: 56px;
-  }
-
-  .trash-zone {
-    min-width: 56px;
-    min-height: 56px;
-  }
+.rotate-device__text {
+  margin: 0;
+  font-size: clamp(1.4rem, 7vw, 1.9rem);
+  font-weight: 900;
+  line-height: 1.1;
 }
 
-@media (max-width: 600px) {
-  .workbench-mode-button {
-    min-width: 56px;
-    padding: 0;
-  }
-
-  .workbench-mode-button span:last-child {
-    display: none;
-  }
+.rotate-device__hint {
+  max-width: 26ch;
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
 }

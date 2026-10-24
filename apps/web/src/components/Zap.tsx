@@ -1,8 +1,16 @@
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 
 import { fr } from '../narration/fr';
 import type { ZapExpression } from '../narration/hints';
 import './Zap.css';
+
+export type ZapVariant = 'default' | 'compact' | 'top';
 
 export interface ZapProps {
   expression: ZapExpression;
@@ -12,7 +20,14 @@ export interface ZapProps {
   onHint: () => void;
   onReplay: () => void;
   onToggleMute: () => void;
+  /**
+   * compact: small avatar, bubble shown as a top overlay that hides after 3 s.
+   * top: small avatar pinned to the upper-left, bubble to its right.
+   */
+  variant?: ZapVariant;
 }
+
+const COMPACT_BUBBLE_MS = 3000;
 
 export function Zap({
   expression,
@@ -22,16 +37,92 @@ export function Zap({
   onHint,
   onReplay,
   onToggleMute,
+  variant = 'default',
 }: ZapProps) {
+  const compact = variant === 'compact';
+  const [compactBubbleVisible, setCompactBubbleVisible] = useState(true);
+  const hideTimerRef = useRef<number | null>(null);
+
+  const clearHideTimer = useCallback(() => {
+    if (hideTimerRef.current !== null) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleHide = useCallback(() => {
+    if (!compact) {
+      return;
+    }
+
+    clearHideTimer();
+    hideTimerRef.current = window.setTimeout(() => {
+      hideTimerRef.current = null;
+      setCompactBubbleVisible(false);
+    }, COMPACT_BUBBLE_MS);
+  }, [clearHideTimer, compact]);
+
+  useEffect(() => {
+    if (!compact) {
+      setCompactBubbleVisible(true);
+      clearHideTimer();
+      return;
+    }
+
+    if (message === '') {
+      setCompactBubbleVisible(false);
+      clearHideTimer();
+      return;
+    }
+
+    setCompactBubbleVisible(true);
+    scheduleHide();
+    return clearHideTimer;
+  }, [clearHideTimer, compact, message, scheduleHide]);
+
+  useEffect(() => clearHideTimer, [clearHideTimer]);
+
+  function showCompactBubble(): void {
+    setCompactBubbleVisible(true);
+    scheduleHide();
+  }
+
+  function handleAvatar(): void {
+    if (compact) {
+      if (!compactBubbleVisible) {
+        showCompactBubble();
+        onReplay();
+        return;
+      }
+
+      onHint();
+      showCompactBubble();
+      return;
+    }
+
+    onHint();
+  }
+
+  const bubbleVisible = message !== '' && (!compact || compactBubbleVisible);
+  const panelClass = `zap-panel${variant === 'default' ? '' : ` zap-panel--${variant}`}`;
+  const bubbleClass = `zap-bubble${compact ? ' zap-bubble--overlay' : ''}`;
+
   return (
-    <div className="zap-panel">
-      {message !== '' ? (
-        <div className="zap-bubble" role="status" aria-live="polite">
+    <div className={panelClass}>
+      {bubbleVisible ? (
+        <div className={bubbleClass} role="status" aria-live="polite">
           <p className="zap-bubble__text">{message}</p>
           <button
             type="button"
             className="zap-bubble__replay"
-            onPointerDown={(event) => activate(event, onReplay)}
+            onPointerDown={(event) =>
+              activate(event, () => {
+                onReplay();
+                if (compact) {
+                  showCompactBubble();
+                }
+              })
+            }
           >
             <ReplayIcon />
             <span>{fr.zap.replay}</span>
@@ -42,7 +133,7 @@ export function Zap({
       <button
         type="button"
         className="zap-avatar"
-        onPointerDown={(event) => activate(event, onHint)}
+        onPointerDown={(event) => activate(event, handleAvatar)}
         aria-label={fr.zap.hintAria}
       >
         <ZapCharacter

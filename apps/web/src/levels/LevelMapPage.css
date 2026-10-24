@@ -86,61 +86,58 @@
   }
 }
 
+/* Large and medium: a horizontal path of cards. */
 .level-map__path {
-  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: min(860px, 100%);
-  margin: 24px auto 0;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px 16px;
+  width: min(1100px, 100%);
+  margin: 28px auto 0;
   padding: 0;
   list-style: none;
 }
 
-.level-map__path::before {
-  position: absolute;
-  top: 20px;
-  bottom: 20px;
-  left: 50%;
-  width: 0;
-  border-left: 3px dashed rgba(36, 50, 74, 0.18);
-  content: '';
-  transform: translateX(-50%);
-}
-
 .level-map__item {
+  position: relative;
   display: flex;
-  width: 100%;
+  flex: 0 1 calc(20% - 16px);
+  justify-content: center;
+  min-width: 150px;
 }
 
-.level-map__item:nth-child(odd) {
-  justify-content: flex-start;
+/* Dashed link from one badge to the next in the same row. */
+.level-map__item::after {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  z-index: 0;
+  width: calc(100% + 16px);
+  border-top: 3px dashed rgba(36, 50, 74, 0.16);
+  content: '';
 }
 
-.level-map__item:nth-child(even) {
-  justify-content: flex-end;
+.level-map__item:nth-child(5n)::after,
+.level-map__item:last-child::after {
+  display: none;
 }
 
 .level-node {
   position: relative;
   z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  width: calc(50% - 30px);
+  gap: 10px;
+  width: 100%;
   padding: 0;
   border: 0;
   background: transparent;
   color: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-}
-
-.level-map__item:nth-child(odd) .level-node {
-  flex-direction: row-reverse;
-  text-align: right;
 }
 
 .level-node:disabled {
@@ -183,13 +180,24 @@
   display: flex;
   flex: 1;
   flex-direction: column;
+  align-items: center;
   gap: 3px;
+  width: 100%;
   min-width: 0;
-  padding: 10px 14px;
+  padding: 10px 12px;
   border: 2px solid rgba(255, 255, 255, 0.95);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 8px 20px rgba(36, 50, 74, 0.12);
+  container-type: inline-size;
+}
+
+/* The badge already carries the number; drop the duplicated label when the
+   card itself gets too narrow, whatever the viewport size. */
+@container (max-width: 140px) {
+  .level-node__label {
+    display: none;
+  }
 }
 
 .level-node--locked .level-node__card {
@@ -213,16 +221,13 @@
   font-size: clamp(0.98rem, 2.2vw, 1.15rem);
   font-weight: 900;
   line-height: 1.15;
+  text-wrap: balance;
 }
 
 .level-node__stars {
   display: flex;
   gap: 2px;
   margin-top: 2px;
-}
-
-.level-map__item:nth-child(odd) .level-node__stars {
-  justify-content: flex-end;
 }
 
 .level-node__stars svg {
@@ -240,10 +245,6 @@
   font-weight: 800;
 }
 
-.level-map__item:nth-child(odd) .level-node__status {
-  justify-content: flex-end;
-}
-
 .level-node__status svg {
   width: 16px;
   height: 16px;
@@ -258,74 +259,92 @@
   height: 20px;
 }
 
-@media (max-width: 699px) {
-  .level-map__header {
-    gap: 8px;
-  }
-
-  .level-map__back {
-    min-height: 56px;
-    padding: 0 10px;
-    font-size: 0.85rem;
-  }
-
-  .level-map__heading h1 {
-    font-size: 1.25rem;
-  }
-
-  .level-map__heading p {
-    display: none;
-  }
-
-  .level-map__zap {
-    width: 56px;
-  }
-
-  .level-map__path::before {
-    left: 26px;
-    transform: none;
-  }
-
-  .level-map__item,
-  .level-map__item:nth-child(odd),
-  .level-map__item:nth-child(even) {
-    justify-content: flex-start;
-  }
-
-  .level-node,
-  .level-map__item:nth-child(odd) .level-node {
-    flex-direction: row;
-    width: 100%;
-    text-align: left;
-  }
-
-  .level-map__item {
-    padding-left: 0;
-  }
-
-  .level-map__item:nth-child(odd) .level-node__stars,
-  .level-map__item:nth-child(odd) .level-node__status {
-    justify-content: flex-start;
-  }
-
-  .level-node__badge {
-    width: 48px;
-    height: 48px;
-    flex-basis: 48px;
-  }
+[data-layout='medium'] .level-map__item {
+  flex-basis: calc(25% - 16px);
 }
 
-@media (max-height: 499px) {
-  .level-map {
-    padding-top: max(8px, env(safe-area-inset-top));
-  }
+[data-layout='medium'] .level-map__item:nth-child(5n)::after {
+  display: block;
+}
 
-  .level-map__path {
-    margin-top: 12px;
-    gap: 10px;
-  }
+[data-layout='medium'] .level-map__item:nth-child(4n)::after {
+  display: none;
+}
 
-  .level-node__card {
-    padding: 8px 12px;
-  }
+/* Compact: a vertical scrolling path along the left edge. */
+[data-layout='compact'] .level-map {
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+
+[data-layout='compact'] .level-map__header {
+  gap: 8px;
+}
+
+[data-layout='compact'] .level-map__back {
+  min-height: 56px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+}
+
+[data-layout='compact'] .level-map__heading h1 {
+  font-size: 1.25rem;
+}
+
+[data-layout='compact'] .level-map__heading p {
+  display: none;
+}
+
+[data-layout='compact'] .level-map__zap {
+  width: 56px;
+}
+
+[data-layout='compact'] .level-map__path {
+  position: relative;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+[data-layout='compact'] .level-map__path::before {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 26px;
+  border-left: 3px dashed rgba(36, 50, 74, 0.18);
+  content: '';
+}
+
+[data-layout='compact'] .level-map__item {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  justify-content: flex-start;
+}
+
+[data-layout='compact'] .level-map__item::after {
+  display: none;
+}
+
+[data-layout='compact'] .level-node {
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+}
+
+[data-layout='compact'] .level-node__card {
+  align-items: flex-start;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+[data-layout='compact'] .level-node__stars,
+[data-layout='compact'] .level-node__status {
+  justify-content: flex-start;
+}
+
+[data-layout='compact'] .level-node__badge {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
 }

@@ -3,6 +3,7 @@ import { useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import { ZapCharacter } from './components/Zap';
+import { LayoutProvider } from './layout/LayoutContext';
 import { LevelMapPage } from './levels/LevelMapPage';
 import { MaterialsLevelPage } from './levels/MaterialsLevelPage';
 import { SymbolMatchingPage } from './levels/SymbolMatchingPage';
@@ -14,6 +15,14 @@ import './App.css';
 type Screen = 'home' | 'map' | 'play' | 'sandbox';
 
 export function App() {
+  return (
+    <LayoutProvider>
+      <AppContent />
+    </LayoutProvider>
+  );
+}
+
+function AppContent() {
   const [screen, setScreen] = useState<Screen>('home');
   const [levelId, setLevelId] = useState<string | null>(null);
   const reduceMotion = useReducedMotion() ?? false;

@@ -54,7 +54,8 @@ les LED, les matériaux conducteurs/isolants et la sérialisation.
 
 ## Plan de travail
 
-Le bouton « Jouer » ouvre le plan de travail :
+Le bouton « Jouer » ouvre la carte des niveaux ; chaque niveau lance le plan de
+travail :
 
 - palette de composants avec glisser-déposer et aimantation à la grille ;
 - câblage par deux appuis sur des bornes, ou en glissant d'une borne à l'autre ;
@@ -89,6 +90,38 @@ identifiant (`zap.hint.open.1`, `workbench.statusClosed`, etc.).
   tout le son.
 - La page qui passe en arrière-plan arrête la narration ; elle ne reprend pas
   automatiquement.
+
+## Niveaux et progression
+
+Le chapitre 1, « La lumière », contient dix niveaux et une transition
+« Les symboles ». Les définitions, conditions de réussite et règles d'étoiles
+vivent dans `packages/shared/src/levels` ; le front les consomme sans les
+dupliquer.
+
+La progression est enregistrée dans `localStorage` derrière l'interface
+`ProgressRepository` (`apps/web/src/progress`). Un niveau réussi débloque le
+suivant ; le nombre d'étoiles dépend des indices demandés à Zap.
+
+## Affichage adaptatif
+
+Le mode d'affichage est choisi d'après la taille réelle mesurée par
+`ResizeObserver`, jamais d'après le user agent (`apps/web/src/layout`) :
+
+- `compact` : largeur < 700 px ou hauteur < 500 px (téléphone) ;
+- `large` : au moins 1100 × 700 px (ordinateur) ;
+- `medium` : tout le reste (tablette).
+
+En compact, la palette devient une barre d'icônes en bas, l'annulation et la
+corbeille sont regroupées dans un rail à droite, les consignes se replient
+derrière un bouton ❓ et la bulle de Zap s'affiche en surimpression puis
+disparaît après trois secondes. Sur tablette en portrait, la palette passe en
+bas et Zap se place en haut à gauche. Un téléphone tenu verticalement affiche
+« Tourne ton téléphone ! » à la place du plan de travail.
+
+Les points de rupture sont exposés sur `.app-root` (`data-layout` et
+`data-orientation`) et réutilisés par les feuilles de style ; la carte des
+niveaux est horizontale sur ordinateur et tablette, verticale et défilante sur
+téléphone.
 
 ## Déploiement
 

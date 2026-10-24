@@ -151,17 +151,15 @@
   margin-top: 0.75rem;
 }
 
-@media (max-height: 560px) {
-  .level-complete-card {
-    padding: 1rem 1.25rem;
-  }
+[data-layout='compact'] .level-complete-card {
+  padding: 1rem 1.25rem;
+}
 
-  .level-complete-stars span {
-    width: 48px;
-    height: 48px;
-  }
+[data-layout='compact'] .level-complete-stars span {
+  width: 48px;
+  height: 48px;
+}
 
-  .level-complete-stars {
-    margin: 0.4rem 0;
-  }
+[data-layout='compact'] .level-complete-stars {
+  margin: 0.4rem 0;
 }

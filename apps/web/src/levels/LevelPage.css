@@ -74,14 +74,12 @@
   pointer-events: auto;
 }
 
-@media (max-width: 699px) {
-  .level-back-button {
-    min-height: 56px;
-    padding: 0 10px;
-    font-size: 0.85rem;
-  }
+[data-layout='compact'] .level-back-button {
+  min-height: 56px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+}
 
-  .level-header__heading p {
-    display: none;
-  }
+[data-layout='compact'] .level-header__heading p {
+  display: none;
 }

@@ -18,12 +18,12 @@ import {
 
 import { fr } from '../narration/fr';
 import { unlockAudio } from './audio';
+import { useLayout } from '../layout/LayoutContext';
 import { ComponentBlock } from './ComponentBlock';
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
   CELL_SIZE,
-  COMPACT_QUERY,
   COMPONENT_HEIGHT,
   COMPONENT_WIDTH,
   GRID_COLUMNS,
@@ -146,7 +146,7 @@ export function WorkbenchSvg({
   onToggleSwitch,
   onAddWire,
 }: WorkbenchSvgProps) {
-  const isCompact = useCompactLayout();
+  const isCompact = useLayout().size === 'compact';
   const gestureRef = useRef<BoardGesture | null>(null);
   const pendingRef = useRef<TerminalRef | null>(pendingTerminal);
   const trashHoverRef = useRef(false);
@@ -981,27 +981,6 @@ function TrashIcon() {
       <path d="M -2 -2 V 8 M 2 -2 V 8" />
     </>
   );
-}
-
-function useCompactLayout(): boolean {
-  const [isCompact, setIsCompact] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-    return window.matchMedia(COMPACT_QUERY).matches;
-  });
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(COMPACT_QUERY);
-    const handleChange = (event: MediaQueryListEvent) => {
-      setIsCompact(event.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  return isCompact;
 }
 
 function releaseCapture(svg: SVGSVGElement, pointerId: number): void {
