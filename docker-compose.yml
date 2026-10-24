@@ -1,6 +1,33 @@
 name: circuits-de-zap
 
 services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    environment:
+      MONGO_REPLICA_HOST: mongo:27017
+    # Only bound to the host loopback, for migrations, seeds and mongosh.
+    # The API talks to mongo:27017 over the compose network.
+    ports:
+      - "127.0.0.1:27018:27017"
+    volumes:
+      - mongo-data:/data/db
+      - ./deploy/mongo/replica-healthcheck.sh:/usr/local/bin/replica-healthcheck:ro
+    healthcheck:
+      test: ["CMD", "bash", "/usr/local/bin/replica-healthcheck"]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   api:
     build:
       context: .
@@ -13,10 +40,18 @@ services:
       - /tmp
     security_opt:
       - no-new-privileges:true
+    depends_on:
+      mongo:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: "3100"
+      MONGODB_URI: mongodb://mongo:27017/circuits?replicaSet=rs0
+      COOKIE_SECRET: ${COOKIE_SECRET:?Definis COOKIE_SECRET dans .env, 32 caracteres minimum}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://circuit-learning.87543362.xyz}
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: "true"
     ports:
       - "127.0.0.1:3100:3100"
     healthcheck:
@@ -35,3 +70,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  mongo-data:

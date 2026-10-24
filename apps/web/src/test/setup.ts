@@ -7,6 +7,47 @@ afterEach(() => {
   cleanup();
 });
 
+if (typeof window.PointerEvent === 'undefined') {
+  class PointerEventPolyfill extends MouseEvent {
+    readonly pointerId: number;
+    readonly pointerType: string;
+
+    constructor(type: string, params: PointerEventInit = {}) {
+      super(type, params);
+      this.pointerId = params.pointerId ?? 0;
+      this.pointerType = params.pointerType ?? 'mouse';
+    }
+  }
+
+  Object.defineProperty(window, 'PointerEvent', {
+    configurable: true,
+    writable: true,
+    value: PointerEventPolyfill,
+  });
+}
+
+if (typeof window.ResizeObserver === 'undefined') {
+  class ResizeObserverPolyfill {
+    observe(): void {
+      return undefined;
+    }
+
+    unobserve(): void {
+      return undefined;
+    }
+
+    disconnect(): void {
+      return undefined;
+    }
+  }
+
+  Object.defineProperty(window, 'ResizeObserver', {
+    configurable: true,
+    writable: true,
+    value: ResizeObserverPolyfill,
+  });
+}
+
 if (!window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,

@@ -1,0 +1,442 @@
+.level-map {
+  min-height: 100dvh;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(32px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  color: var(--color-ink);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 214, 102, 0.35) 0, transparent 40%),
+    radial-gradient(circle at 88% 16%, rgba(126, 217, 255, 0.4) 0, transparent 44%),
+    linear-gradient(160deg, #eaf8ff 0%, #fff9ec 100%);
+}
+
+.level-map__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(860px, 100%);
+  margin: 0 auto;
+}
+
+.level-map__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 2px solid rgba(36, 50, 74, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 0 rgba(36, 50, 74, 0.12);
+}
+
+.level-map__back:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(36, 50, 74, 0.12);
+}
+
+.level-map__heading {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.level-map__heading h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 900;
+  line-height: 1.06;
+}
+
+.level-map__heading p {
+  margin: 2px 0 0;
+  color: var(--color-ink-soft);
+  font-size: clamp(0.9rem, 2vw, 1.05rem);
+  font-weight: 700;
+}
+
+.level-map__zap {
+  width: clamp(64px, 9vw, 88px);
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.level-map__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(860px, 100%);
+  margin: 12px auto 0;
+}
+
+.level-map__collection,
+.level-map__bye {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 2px solid rgba(36, 50, 74, 0.12);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.level-map__collection svg {
+  width: 22px;
+  height: 22px;
+}
+
+.level-map__child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 6px 8px 6px 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.level-map__avatar {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.level-map__name {
+  max-width: 140px;
+  overflow: hidden;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.level-map__bye {
+  min-height: 48px;
+  border-color: rgba(184, 60, 10, 0.2);
+  color: var(--color-primary-deep);
+}
+
+.level-map__guest {
+  width: min(860px, 100%);
+  margin: 12px auto 0;
+  padding: 10px 14px;
+  border: 2px dashed rgba(36, 50, 74, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--color-ink-soft);
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.level-map__loading {
+  width: 44px;
+  height: 44px;
+  margin: 15dvh auto 0;
+  border: 4px solid rgba(36, 50, 74, 0.12);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: level-map-spin 0.9s linear infinite;
+}
+
+@keyframes level-map-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Large and medium: a horizontal path of cards. */
+.level-map__path {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px 16px;
+  width: min(1100px, 100%);
+  margin: 28px auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.level-map__item {
+  position: relative;
+  display: flex;
+  flex: 0 1 calc(20% - 16px);
+  justify-content: center;
+  min-width: 150px;
+}
+
+/* Dashed link from one badge to the next in the same row. */
+.level-map__item::after {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  z-index: 0;
+  width: calc(100% + 16px);
+  border-top: 3px dashed rgba(36, 50, 74, 0.16);
+  content: '';
+}
+
+.level-map__item:nth-child(5n)::after,
+.level-map__item:last-child::after {
+  display: none;
+}
+
+.level-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.level-node:disabled {
+  cursor: default;
+}
+
+.level-node__badge {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 900;
+  box-shadow: 0 6px 14px rgba(36, 50, 74, 0.2);
+}
+
+.level-node__badge svg {
+  width: 26px;
+  height: 26px;
+}
+
+.level-node--completed .level-node__badge {
+  background: #0f9d8c;
+}
+
+.level-node--locked .level-node__badge {
+  background: #94a3b8;
+}
+
+.level-node--transition .level-node__badge {
+  background: #9b5de5;
+}
+
+.level-node__card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 20px rgba(36, 50, 74, 0.12);
+  container-type: inline-size;
+}
+
+/* The badge already carries the number; drop the duplicated label when the
+   card itself gets too narrow, whatever the viewport size. */
+@container (max-width: 140px) {
+  .level-node__label {
+    display: none;
+  }
+}
+
+.level-node--locked .level-node__card {
+  opacity: 0.68;
+}
+
+.level-node--transition .level-node__card {
+  border-color: #e9d5ff;
+}
+
+.level-node__label {
+  color: var(--color-ink-soft);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.level-node__title {
+  color: var(--color-ink);
+  font-size: clamp(0.98rem, 2.2vw, 1.15rem);
+  font-weight: 900;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.level-node__stars {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.level-node__stars svg {
+  width: 22px;
+  height: 22px;
+}
+
+.level-node__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.level-node__status svg {
+  width: 16px;
+  height: 16px;
+}
+
+.level-node__status--play {
+  color: var(--color-primary);
+}
+
+.level-node__status--play svg {
+  width: 20px;
+  height: 20px;
+}
+
+[data-layout='medium'] .level-map__item {
+  flex-basis: calc(25% - 16px);
+}
+
+[data-layout='medium'] .level-map__item:nth-child(5n)::after {
+  display: block;
+}
+
+[data-layout='medium'] .level-map__item:nth-child(4n)::after {
+  display: none;
+}
+
+/* Compact: a vertical scrolling path along the left edge. */
+[data-layout='compact'] .level-map {
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+
+[data-layout='compact'] .level-map__header {
+  gap: 8px;
+}
+
+[data-layout='compact'] .level-map__back {
+  min-height: 56px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+}
+
+[data-layout='compact'] .level-map__heading h1 {
+  font-size: 1.25rem;
+}
+
+[data-layout='compact'] .level-map__heading p {
+  display: none;
+}
+
+[data-layout='compact'] .level-map__zap {
+  width: 56px;
+}
+
+[data-layout='compact'] .level-map__path {
+  position: relative;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+[data-layout='compact'] .level-map__path::before {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 26px;
+  border-left: 3px dashed rgba(36, 50, 74, 0.18);
+  content: '';
+}
+
+[data-layout='compact'] .level-map__item {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  justify-content: flex-start;
+}
+
+[data-layout='compact'] .level-map__item::after {
+  display: none;
+}
+
+[data-layout='compact'] .level-node {
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+}
+
+[data-layout='compact'] .level-node__card {
+  align-items: flex-start;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+[data-layout='compact'] .level-node__stars,
+[data-layout='compact'] .level-node__status {
+  justify-content: flex-start;
+}
+
+[data-layout='compact'] .level-node__badge {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+}
+
+[data-layout='compact'] .level-map__toolbar {
+  flex-wrap: wrap;
+}
+
+[data-layout='compact'] .level-map__collection,
+[data-layout='compact'] .level-map__bye {
+  min-height: 56px;
+}
+
+[data-layout='compact'] .level-map__child {
+  width: 100%;
+  margin-left: 0;
+}
+
+[data-layout='compact'] .level-map__name {
+  flex: 1;
+  max-width: none;
+}

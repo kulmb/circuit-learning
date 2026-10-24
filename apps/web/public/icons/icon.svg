@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Les Circuits de Zap">
+  <rect width="512" height="512" fill="#ffd166"/>
+  <circle cx="256" cy="256" r="214" fill="#ffe9a8" opacity="0.55"/>
+
+  <g fill="none" stroke="#0f9d8c" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M76 256h84v-80h44"/>
+    <path d="M436 256h-84v80h-44"/>
+  </g>
+  <g fill="#fffdf8" stroke="#0f9d8c" stroke-width="14">
+    <circle cx="76" cy="256" r="15"/>
+    <circle cx="204" cy="176" r="13"/>
+    <circle cx="436" cy="256" r="15"/>
+    <circle cx="308" cy="336" r="13"/>
+  </g>
+
+  <path
+    d="M300 80 150 300h100l-24 132 140-222h-96z"
+    fill="#24324a"
+    stroke="#17252d"
+    stroke-width="10"
+    stroke-linejoin="round"
+  />
+</svg>

@@ -1,0 +1,361 @@
+.zap-character {
+  display: block;
+}
+
+.zap-panel {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 7;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.zap-avatar {
+  position: relative;
+  width: 92px;
+  height: 100px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+
+.zap-avatar__character {
+  width: 92px;
+  height: 92px;
+  filter: drop-shadow(0 8px 12px rgba(36, 50, 74, 0.18));
+}
+
+.zap-avatar__help {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #ffd166;
+  color: #3b2a1a;
+  font-size: 0.7rem;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 #d97706;
+  transform: translateX(-50%);
+}
+
+.zap-avatar__help svg {
+  width: 13px;
+  height: 13px;
+}
+
+.zap-avatar:active {
+  transform: scale(0.97);
+}
+
+.zap-mute,
+.zap-hide {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 2px solid rgba(36, 50, 74, 0.14);
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--color-ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 0 rgba(36, 50, 74, 0.12);
+  pointer-events: auto;
+}
+
+.zap-mute svg,
+.zap-hide svg {
+  width: 24px;
+  height: 24px;
+}
+
+.zap-mute:active,
+.zap-hide:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(36, 50, 74, 0.12);
+}
+
+.zap-mute.is-muted {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.zap-hide {
+  color: #50617a;
+}
+
+.zap-reopen {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 56px;
+  padding: 4px 14px 4px 6px;
+  border: 2px solid rgba(36, 50, 74, 0.14);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 6px 16px rgba(36, 50, 74, 0.16);
+  pointer-events: auto;
+}
+
+.zap-reopen__character {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 3px 5px rgba(36, 50, 74, 0.14));
+}
+
+.zap-reopen__label {
+  padding-right: 2px;
+}
+
+.zap-reopen__dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #f97316;
+}
+
+.zap-reopen:active {
+  transform: scale(0.97);
+}
+
+.zap-bubble {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 12px);
+  width: min(320px, calc(100vw - 48px));
+  padding: 14px 16px;
+  border: 3px solid #bfe9e4;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(36, 50, 74, 0.16);
+  pointer-events: auto;
+}
+
+.zap-bubble::after {
+  position: absolute;
+  left: 34px;
+  bottom: -14px;
+  width: 24px;
+  height: 24px;
+  border-right: 3px solid #bfe9e4;
+  border-bottom: 3px solid #bfe9e4;
+  background: #ffffff;
+  content: '';
+  transform: rotate(45deg);
+}
+
+.zap-bubble__text {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.zap-bubble__replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  margin-top: 10px;
+  padding: 0 14px;
+  border: 2px solid #bfe9e4;
+  border-radius: 12px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.zap-bubble__replay svg {
+  width: 20px;
+  height: 20px;
+}
+
+.zap-bubble__replay:active {
+  transform: translateY(1px);
+}
+
+.zap-mouth {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.zap-mouth--talking {
+  animation: zap-talk 0.24s ease-in-out infinite;
+}
+
+@keyframes zap-talk {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.35);
+  }
+}
+
+[data-layout='compact'] .zap-avatar {
+  width: 76px;
+  height: 84px;
+}
+
+[data-layout='compact'] .zap-avatar__character {
+  width: 76px;
+  height: 76px;
+}
+
+[data-layout='compact'] .zap-avatar__help {
+  padding: 2px 6px;
+  font-size: 0.65rem;
+}
+
+[data-layout='compact'] .zap-bubble {
+  width: min(300px, calc(100vw - 40px));
+  padding: 12px 14px;
+}
+
+/* Compact phones: tiny avatar, bubble as a temporary top overlay. */
+.zap-panel--compact {
+  position: fixed;
+  left: max(8px, env(safe-area-inset-left));
+  bottom: calc(max(8px, env(safe-area-inset-bottom)) + 66px);
+  z-index: 30;
+  gap: 4px;
+}
+
+.zap-panel--compact .zap-avatar {
+  width: 56px;
+  height: 60px;
+}
+
+.zap-panel--compact .zap-avatar__character {
+  width: 56px;
+  height: 56px;
+}
+
+.zap-panel--compact .zap-avatar__help {
+  display: none;
+}
+
+.zap-panel--compact .zap-mute,
+.zap-panel--compact .zap-hide {
+  width: 56px;
+  height: 56px;
+}
+
+.zap-panel--compact .zap-mute svg,
+.zap-panel--compact .zap-hide svg {
+  width: 24px;
+  height: 24px;
+}
+
+.zap-panel--compact .zap-reopen {
+  min-height: 56px;
+}
+
+.zap-bubble--overlay {
+  position: fixed;
+  top: max(66px, calc(env(safe-area-inset-top) + 58px));
+  left: 50%;
+  bottom: auto;
+  z-index: 45;
+  width: min(560px, calc(100vw - 16px));
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.zap-bubble--overlay::after {
+  display: none;
+}
+
+/* The overlay must never steal a tap meant for the board. In compact mode the
+   bubble is temporary: Zap's avatar replays it once it has faded out. */
+.zap-bubble--overlay .zap-bubble__replay {
+  display: none;
+}
+
+/* Tablet portrait: Zap sits in the upper-left corner, bubble to its right. */
+.zap-panel--top {
+  position: fixed;
+  top: max(92px, calc(env(safe-area-inset-top) + 84px));
+  bottom: auto;
+  left: max(8px, env(safe-area-inset-left));
+  z-index: 30;
+  align-items: flex-start;
+}
+
+.zap-panel--top .zap-avatar {
+  width: 64px;
+  height: 68px;
+}
+
+.zap-panel--top .zap-avatar__character {
+  width: 64px;
+  height: 64px;
+}
+
+.zap-panel--top .zap-avatar__help {
+  padding: 2px 6px;
+  font-size: 0.6rem;
+}
+
+.zap-panel--top .zap-mute,
+.zap-panel--top .zap-hide {
+  width: 48px;
+  height: 48px;
+}
+
+.zap-panel--top .zap-mute svg,
+.zap-panel--top .zap-hide svg {
+  width: 24px;
+  height: 24px;
+}
+
+.zap-panel--top .zap-bubble {
+  top: 0;
+  bottom: auto;
+  left: calc(100% + 10px);
+  width: min(360px, calc(100vw - 140px));
+}
+
+.zap-panel--top .zap-bubble::after {
+  top: 26px;
+  bottom: auto;
+  left: -14px;
+  transform: rotate(135deg);
+}

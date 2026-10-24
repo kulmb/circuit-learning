@@ -1,0 +1,30 @@
+name: circuits-de-zap-dev
+
+# Local development only: a single MongoDB node in replica-set mode, so
+# transactions work without running the whole production stack.
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    environment:
+      MONGO_REPLICA_HOST: localhost:27017
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-dev-data:/data/db
+      - ./deploy/mongo/replica-healthcheck.sh:/usr/local/bin/replica-healthcheck:ro
+    healthcheck:
+      test: ["CMD", "bash", "/usr/local/bin/replica-healthcheck"]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongo-dev-data:

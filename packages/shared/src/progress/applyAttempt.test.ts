@@ -1,0 +1,114 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  applyAttemptToProgress,
+  initialPlayerProgress,
+} from './applyAttempt';
+
+describe('applyAttemptToProgress', () => {
+  it('starts with only the first level unlocked', () => {
+    const progress = initialPlayerProgress();
+
+    expect(progress.levels['light-01']?.status).toBe('unlocked');
+    expect(progress.levels['light-02']?.status).toBe('locked');
+    expect(progress.vocabulary).toEqual([]);
+  });
+
+  it('completes a level, unlocks the next and adds vocabulary', () => {
+    const progress = applyAttemptToProgress(
+      initialPlayerProgress(),
+      'light-01',
+      {
+        success: true,
+        hintsUsed: 0,
+        durationMs: 5000,
+        errorsDetected: [],
+      },
+      1000,
+    );
+
+    expect(progress.levels['light-01']).toMatchObject({
+      status: 'completed',
+      stars: 3,
+      attempts: 1,
+      hintsUsed: 0,
+      bestTimeMs: 5000,
+      firstCompletedAt: 1000,
+      lastPlayedAt: 1000,
+    });
+    expect(progress.levels['light-02']?.status).toBe('unlocked');
+    expect(progress.vocabulary).toEqual(
+      expect.arrayContaining(['circuitFerme', 'fil']),
+    );
+  });
+
+  it('keeps the best stars, hints and time on a replay', () => {
+    const first = applyAttemptToProgress(
+      initialPlayerProgress(),
+      'light-01',
+      {
+        success: true,
+        hintsUsed: 0,
+        durationMs: 5000,
+        errorsDetected: [],
+      },
+      1000,
+    );
+    const replay = applyAttemptToProgress(
+      first,
+      'light-01',
+      {
+        success: true,
+        hintsUsed: 3,
+        durationMs: 3000,
+        errorsDetected: [],
+      },
+      2000,
+    );
+
+    expect(replay.levels['light-01']).toMatchObject({
+      stars: 3,
+      attempts: 2,
+      hintsUsed: 0,
+      bestTimeMs: 3000,
+      firstCompletedAt: 1000,
+      lastPlayedAt: 2000,
+    });
+  });
+
+  it('counts a failure without unlocking or adding vocabulary', () => {
+    const progress = applyAttemptToProgress(
+      initialPlayerProgress(),
+      'light-01',
+      {
+        success: false,
+        hintsUsed: 1,
+        durationMs: 7000,
+        errorsDetected: ['open_circuit'],
+      },
+      3000,
+    );
+
+    expect(progress.levels['light-01']).toMatchObject({
+      status: 'unlocked',
+      stars: 0,
+      attempts: 1,
+      hintsUsed: 0,
+      lastPlayedAt: 3000,
+    });
+    expect(progress.levels['light-02']?.status).toBe('locked');
+    expect(progress.vocabulary).toEqual([]);
+  });
+
+  it('ignores an unknown level', () => {
+    const initial = initialPlayerProgress();
+    const progress = applyAttemptToProgress(initial, 'unknown', {
+      success: true,
+      hintsUsed: 0,
+      durationMs: 1000,
+      errorsDetected: [],
+    });
+
+    expect(progress).toBe(initial);
+  });
+});

@@ -163,4 +163,6 @@ export interface CircuitDescription {
 
 export interface CircuitSimulation extends CircuitDescription {
   states: Record<string, ComponentState>;
+  /** Signed current for each loose wire, positive from wire.from to wire.to. */
+  wireCurrents: Record<string, number>;
 }

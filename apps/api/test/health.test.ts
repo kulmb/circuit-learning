@@ -20,5 +20,6 @@ describe('GET /api/health', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ ok: true });
+    expect(response.headers['cache-control']).toBe('public');
   });
 });

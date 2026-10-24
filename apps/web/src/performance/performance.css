@@ -1,0 +1,46 @@
+/* Low-performance mode keeps the circuit readable but removes costly effects. */
+
+html[data-performance='low'] .wire-current {
+  stroke-dasharray: 0.1 46;
+}
+
+html[data-performance='low'] .component-glow {
+  opacity: 0.05 !important;
+}
+
+html[data-performance='low'] .zap-avatar__character,
+html[data-performance='low'] .zap-face,
+html[data-performance='low'] .level-complete-stars span,
+html[data-performance='low'] .material-drag-ghost {
+  filter: none;
+}
+
+html[data-performance='low'] .short-shake,
+html[data-performance='low'] .heat-wave,
+html[data-performance='low'] .buzzer-wave,
+html[data-performance='low'] .wire--hint,
+html[data-performance='low'] .hint-terminal,
+html[data-performance='low'] .component-hint,
+html[data-performance='low'] .palette-item.is-hinted,
+html[data-performance='low'] .rotate-device__phone {
+  animation: none !important;
+}
+
+html[data-performance='low'] .wire--short {
+  animation: none !important;
+  stroke: #ef4444;
+}
+
+html[data-performance='low'] .sandbox-overlay,
+html[data-performance='low'] .guest-merge,
+html[data-performance='low'] .level-complete-overlay {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-performance='low'] .workbench-board,
+html[data-performance='low'] .palette,
+html[data-performance='low'] .sandbox-panel,
+html[data-performance='low'] .level-complete-card {
+  box-shadow: none;
+}

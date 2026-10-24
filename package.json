@@ -1,21 +1,27 @@
 {
   "name": "circuits-de-zap",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Jeu web d'initiation aux circuits électriques pour les enfants de 8 ans.",
   "packageManager": "pnpm@10.34.8",
   "engines": {
-    "node": ">=20",
+    "node": ">=20.19",
     "pnpm": ">=10"
   },
   "scripts": {
     "dev": "pnpm --filter @circuits/shared build && concurrently -k -n shared,api,web -c magenta,blue,green \"pnpm --filter @circuits/shared dev\" \"pnpm --filter @circuits/api dev\" \"pnpm --filter @circuits/web dev\"",
     "build": "pnpm -r build",
+    "build:report": "pnpm --filter @circuits/shared build && pnpm --filter @circuits/web build && node scripts/build-report.mjs",
     "test": "pnpm --filter @circuits/shared build && pnpm -r test",
-    "typecheck": "pnpm --filter @circuits/shared build && pnpm -r typecheck",
-    "verify": "pnpm typecheck && pnpm test && pnpm build"
+    "typecheck": "pnpm --filter @circuits/shared build && pnpm -r typecheck && pnpm typecheck:e2e",
+    "verify": "pnpm typecheck && pnpm test && pnpm build",
+    "typecheck:e2e": "tsc -p e2e/tsconfig.json",
+    "test:e2e": "pnpm --filter @circuits/shared build && pnpm --filter @circuits/web build && playwright test",
+    "test:e2e:update": "pnpm --filter @circuits/shared build && pnpm --filter @circuits/web build && playwright test --update-snapshots"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "^20.19.43",
     "concurrently": "^9.1.0",
     "typescript": "^5.6.3"
   }

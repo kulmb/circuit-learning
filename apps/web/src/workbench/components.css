@@ -1,0 +1,62 @@
+.short-shake {
+  animation: short-shake 0.9s ease-in-out infinite;
+}
+
+@keyframes short-shake {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(-1.5px, 0.5px) rotate(-1deg);
+  }
+  75% {
+    transform: translate(1.5px, -0.5px) rotate(1deg);
+  }
+}
+
+.heat-wave {
+  opacity: 0.7;
+  animation: heat-wave 1.2s ease-in-out infinite;
+}
+
+.heat-wave--delayed {
+  animation-delay: 0.3s;
+}
+
+.heat-wave--late {
+  animation-delay: 0.55s;
+}
+
+@keyframes heat-wave {
+  0% {
+    opacity: 0.2;
+    transform: translateY(3px);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-3px);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateY(-7px);
+  }
+}
+
+.buzzer-wave {
+  animation: buzzer-wave 1.2s ease-in-out infinite;
+}
+
+.buzzer-wave--delayed {
+  animation-delay: 0.3s;
+}
+
+@keyframes buzzer-wave {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}

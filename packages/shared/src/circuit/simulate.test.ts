@@ -106,6 +106,74 @@ describe('circuit simulation', () => {
     expect(battery.current).toBeCloseTo(bulb.current, 3);
   });
 
+  it('computes wire currents in the direction of the loop', () => {
+    const result = simulateCircuit(singleBulbCircuit());
+
+    expect(result.wireCurrents['w1']).toBeCloseTo(0.4286, 3);
+    expect(result.wireCurrents['w2']).toBeCloseTo(0.4286, 3);
+  });
+
+  it('reverses a wire current when the wire orientation is reversed', () => {
+    const circuit: Circuit = {
+      components: [
+        createComponent('battery', { id: 'battery' }),
+        createComponent('bulb', { id: 'bulb' }),
+      ],
+      wires: [
+        createWire('w1', ref('bulb', 'a'), ref('battery', 'positive')),
+        createWire('w2', ref('bulb', 'b'), ref('battery', 'negative')),
+      ],
+    };
+
+    const result = simulateCircuit(circuit);
+
+    expect(result.wireCurrents['w1']).toBeCloseTo(-0.4286, 3);
+    expect(result.wireCurrents['w2']).toBeCloseTo(0.4286, 3);
+  });
+
+  it('splits the current over a shared wire and its branches', () => {
+    const circuit: Circuit = {
+      components: [
+        createComponent('battery', { id: 'battery' }),
+        createComponent('bulb', { id: 'bulb1' }),
+        createComponent('bulb', { id: 'bulb2' }),
+      ],
+      wires: [
+        createWire('trunk', ref('battery', 'positive'), ref('bulb1', 'a')),
+        createWire('branch', ref('bulb1', 'a'), ref('bulb2', 'a')),
+        createWire('return1', ref('bulb1', 'b'), ref('battery', 'negative')),
+        createWire('return2', ref('bulb2', 'b'), ref('battery', 'negative')),
+      ],
+    };
+
+    const result = simulateCircuit(circuit);
+
+    expect(result.wireCurrents['trunk']).toBeCloseTo(0.8182, 3);
+    expect(result.wireCurrents['branch']).toBeCloseTo(0.4091, 3);
+    expect(result.wireCurrents['return1']).toBeCloseTo(0.4091, 3);
+    expect(result.wireCurrents['return2']).toBeCloseTo(0.4091, 3);
+  });
+
+  it('reports the current carried by a wire component', () => {
+    const circuit: Circuit = {
+      components: [
+        createComponent('battery', { id: 'battery' }),
+        createComponent('wire', { id: 'wire-component' }),
+        createComponent('bulb', { id: 'bulb' }),
+      ],
+      wires: [
+        createWire('w1', ref('battery', 'positive'), ref('wire-component', 'a')),
+        createWire('w2', ref('wire-component', 'b'), ref('bulb', 'a')),
+        createWire('w3', ref('bulb', 'b'), ref('battery', 'negative')),
+      ],
+    };
+
+    const result = simulateCircuit(circuit);
+
+    expect(stateOf(result, 'wire-component').current).toBeCloseTo(0.4286, 3);
+    expect(stateOf(result, 'bulb').state).toBe('normal');
+  });
+
   it('detects an open circuit and the bulb terminal that is not connected', () => {
     const circuit: Circuit = {
       components: [
@@ -128,6 +196,7 @@ describe('circuit simulation', () => {
       result.diagnostics.some((diagnostic) => diagnostic.code === 'bulb_one_side'),
     ).toBe(true);
     expect(stateOf(result, 'bulb').state).toBe('off');
+    expect(result.wireCurrents).toEqual({});
   });
 
   it('reports an open switch and lights the bulb once it is closed', () => {
@@ -248,6 +317,7 @@ describe('circuit simulation', () => {
     expect(
       result.diagnostics.some((diagnostic) => diagnostic.code === 'short_circuit'),
     ).toBe(true);
+    expect(result.wireCurrents).toEqual({});
   });
 
   it('detects a short circuit through a closed switch', () => {
