@@ -571,6 +571,39 @@ Les points de rupture sont exposés sur `.app-root` (`data-layout` et
 niveaux est horizontale sur ordinateur et tablette, verticale et défilante sur
 téléphone.
 
+## PWA et hors ligne
+
+Le front est une PWA générée par `vite-plugin-pwa` (Workbox, mode `generateSW`).
+
+- Manifest : nom « Les Circuits de Zap », `display: fullscreen` avec
+  `display_override: [fullscreen, standalone]`, orientation paysage, icônes
+  96/144/192/384/512, icône maskable et icônes `apple-touch-icon` 152/167/180.
+  Les PNG sont générés depuis `apps/web/public/icons/icon.svg`.
+- Le service worker précache l’application, les polices, les icônes,
+  `audio/manifest.json` et les fichiers audio présents, ainsi que `GameShell` et
+  le module de définitions de niveaux. La liste courante contient 28 entrées.
+- `/api/auth/*` est en `NetworkOnly`. Les autres appels `/api` sont en
+  `NetworkFirst`, mais seules les réponses portant `Cache-Control: public`
+  peuvent entrer dans `CacheStorage`. L’API répond `no-store` pour toutes les
+  données personnelles ; seul `/api/health` est public. Aucune progression,
+  création ou donnée d’élève n’est donc conservée par le service worker.
+- Les navigations SPA retombent sur `index.html` ; un niveau déjà précaché se
+  lance hors ligne. La progression hors ligne continue d’utiliser la file
+  `ApiProgressRepository` (ou `localStorage` en invité).
+- Une mise à jour ne s’applique jamais pendant une partie : le service worker
+  attend, et seule la carte des niveaux affiche « Une nouvelle version est
+  prête » avec le bouton « Mettre à jour ». Une vérification est aussi lancée
+  toutes les heures quand la page est visible.
+- Le service worker n’est enregistré qu’en build de production
+  (`import.meta.env.PROD`) ; `devOptions` reste désactivé pour ne pas perturber
+  le développement.
+
+L’espace adulte contient `/admin/install` : étapes d’ajout à l’écran d’accueil
+pour iPad (Safari) et Android (Chrome), et rappel important sur iPad : le
+stockage de la PWA est séparé de Safari. Il faut se connecter dans la PWA puis
+appuyer de nouveau sur « Fixer cet appareil à ce groupe ». Les créations locales
+et la progression invitée de Safari ne sont pas copiées automatiquement.
+
 ## Déploiement
 
 L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
@@ -583,7 +616,10 @@ L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
   migrations et les seeds lancés depuis l'hôte ; l'API le joint par
   `mongo:27017` sur le réseau Compose.
 - Caddy sert le front à la racine et `/api/*` en reverse proxy. Le bloc de site
-  est fourni dans `deploy/caddy/circuit-learning.caddy`.
+  est fourni dans `deploy/caddy/circuit-learning.caddy`. Le service worker et le
+  manifest sont servis avec `Cache-Control: no-cache` ; le manifest reçoit aussi
+  `Content-Type: application/manifest+json`, et la CSP autorise explicitement
+  `worker-src 'self'` et `manifest-src 'self'`.
 - Les anciennes URL `kulmb.87543362.xyz/circuit/*` redirigent en 301 vers le
   nouveau domaine.
 

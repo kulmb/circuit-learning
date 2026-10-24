@@ -16,6 +16,7 @@ import {
   PROGRESS_SYNCED_EVENT,
 } from '../progress/ApiProgressRepository';
 import { useProgress } from '../progress/ProgressContext';
+import { applyPwaUpdate, usePwaUpdate } from '../pwa/update';
 import './LevelMapPage.css';
 
 export interface LevelMapPageProps {
@@ -34,6 +35,7 @@ export function LevelMapPage({
   const [progress, setProgress] = useState<PlayerProgress | null>(null);
   const { repository, isGuest, ready, session, logout } = useProgress();
   const child = session?.user.role === 'eleve' ? session.user : null;
+  const pwaUpdate = usePwaUpdate();
 
   useEffect(() => {
     if (!ready) {
@@ -125,6 +127,19 @@ export function LevelMapPage({
           </div>
         ) : null}
       </div>
+
+      {pwaUpdate.ready ? (
+        <div className="level-map__update" role="status">
+          <span>{getText('pwa.updateReady')}</span>
+          <button
+            type="button"
+            className="level-map__update-button"
+            onPointerDown={(event) => activate(event, applyPwaUpdate)}
+          >
+            {getText('pwa.update')}
+          </button>
+        </div>
+      ) : null}
 
       {isGuest && ready ? (
         <p className="level-map__guest" role="status">

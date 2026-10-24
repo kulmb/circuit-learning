@@ -22,6 +22,7 @@ export const adminTexts = {
     children: 'Mes enfants',
     users: 'Utilisateurs',
     audit: 'Journal',
+    install: 'Installer',
     account: 'Mon compte',
     logout: 'Se déconnecter',
   },
@@ -157,6 +158,38 @@ export const adminTexts = {
     previous: 'Précédent',
     next: 'Suivant',
     empty: 'Aucune entrée.',
+  },
+  install: {
+    title: 'Installer sur cette tablette',
+    subtitle:
+      'L’application s’installe comme une vraie application, sans passer par un magasin.',
+    benefit:
+      'Elle s’ouvre en plein écran, reste disponible hors ligne et garde les niveaux déjà chargés.',
+    ipadTitle: 'Sur iPad',
+    ipadSteps: [
+      'Ouvre l’adresse du jeu dans Safari.',
+      'Appuie sur le bouton Partager.',
+      'Choisis « Sur l’écran d’accueil ».',
+      'Appuie sur « Ajouter ».',
+    ],
+    androidTitle: 'Sur Android',
+    androidSteps: [
+      'Ouvre l’adresse du jeu dans Chrome.',
+      'Appuie sur le menu à trois points.',
+      'Choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».',
+      'Confirme l’installation.',
+    ],
+    pinTitle: 'Important : refixer l’appareil',
+    pinText:
+      'Sur iPad, l’application installée possède son propre stockage. Si cet appareil était fixé à un groupe dans Safari, ouvre l’application installée, connecte-toi avec le compte encadrant, puis appuie de nouveau sur « Fixer cet appareil à ce groupe ».',
+    pinDetail:
+      'Les données de Safari (progression invitée, créations locales) ne sont pas copiées automatiquement dans l’application.',
+    offlineTitle: 'Hors ligne',
+    offlineText:
+      'Après une première ouverture, l’application et les niveaux déjà chargés restent disponibles sans réseau. La progression est mise en attente puis synchronisée au retour de la connexion.',
+    orientationText:
+      'L’application s’ouvre en plein écran et en paysage, comme le plan de travail.',
+    note: 'L’installation se fait depuis le navigateur, pas depuis un magasin d’applications.',
   },
   account: {
     title: 'Mon compte',

@@ -167,6 +167,9 @@ export const texts = {
   'map.sandbox': 'Atelier libre',
   'map.bye': 'Au revoir',
 
+  'pwa.updateReady': 'Une nouvelle version est prête.',
+  'pwa.update': 'Mettre à jour',
+
   'parentSettings.title': 'Réglages parents',
   'parentSettings.subtitle': 'Pour les adultes qui accompagnent l’enfant.',
   'parentSettings.back': 'Retour',

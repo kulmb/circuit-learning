@@ -1212,3 +1212,66 @@
   flex-wrap: wrap;
   gap: 6px;
 }
+
+/* ---------- Install instructions ---------- */
+
+.admin-install {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-install__lead {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.admin-install__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-install__platform {
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.admin-install__platform h2 {
+  margin: 0 0 10px;
+  color: #0f766e;
+}
+
+.admin-install__platform ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 1.3rem;
+  line-height: 1.45;
+}
+
+.admin-install__platform li::marker {
+  color: #0f9d8c;
+  font-weight: 900;
+}
+
+.admin-install__pin {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.admin-install__pin h2 {
+  color: #92400e;
+}
+
+.admin-install__note {
+  margin: 0;
+}
+
+[data-layout='compact'] .admin-install__grid {
+  grid-template-columns: 1fr;
+}

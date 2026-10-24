@@ -41,6 +41,21 @@ export function buildApp({
 
   app.decorateRequest('auth', null);
 
+  // Service-worker caching is strict: only the public health probe may be
+  // stored. Everything else (progress, sandbox, groups, students, auth) is
+  // personal data and never enters CacheStorage.
+  app.addHook('onSend', async (request, reply, payload) => {
+    const pathname = request.url.split('?')[0] ?? request.url;
+
+    if (pathname === API_HEALTH_PATH) {
+      reply.header('Cache-Control', 'public');
+    } else if (pathname.startsWith('/api/')) {
+      reply.header('Cache-Control', 'no-store');
+    }
+
+    return payload;
+  });
+
   const allowedOrigins = new Set([originOf(publicOrigin)]);
   if (config.nodeEnv !== 'production') {
     allowedOrigins.add('http://localhost:5173');

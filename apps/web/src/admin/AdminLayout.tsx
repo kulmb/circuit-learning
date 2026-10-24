@@ -18,6 +18,11 @@ function navigationFor(role: string): NavigationItem[] {
     path: '/admin/account',
     active: (path) => path === '/admin/account',
   };
+  const install: NavigationItem = {
+    label: adminTexts.nav.install,
+    path: '/admin/install',
+    active: (path) => path === '/admin/install',
+  };
 
   if (role === 'admin') {
     return [
@@ -36,6 +41,7 @@ function navigationFor(role: string): NavigationItem[] {
         path: '/admin/audit',
         active: (path) => path.startsWith('/admin/audit'),
       },
+      install,
       account,
     ];
   }
@@ -47,6 +53,7 @@ function navigationFor(role: string): NavigationItem[] {
         path: '/admin',
         active: (path) => path === '/admin' || path.startsWith('/admin/groups/'),
       },
+      install,
       account,
     ];
   }
@@ -58,6 +65,7 @@ function navigationFor(role: string): NavigationItem[] {
       active: (path) =>
         path === '/admin' || path.startsWith('/admin/students/'),
     },
+    install,
     account,
   ];
 }

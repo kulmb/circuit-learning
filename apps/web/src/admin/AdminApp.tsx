@@ -11,6 +11,7 @@ import { adminTexts } from './fr';
 import { GroupDashboardPage } from './GroupDashboardPage';
 import { GroupDetailPage } from './GroupDetailPage';
 import { GroupsPage } from './GroupsPage';
+import { InstallPage } from './InstallPage';
 import { InvitePage } from './InvitePage';
 import { ParentHomePage } from './ParentHomePage';
 import { StudentDetailPage } from './StudentDetailPage';
@@ -71,6 +72,8 @@ export default function AdminApp({ path: pathOverride }: AdminAppProps = {}) {
     );
   } else if (path === '/admin/account') {
     content = <AccountPage />;
+  } else if (path === '/admin/install') {
+    content = <InstallPage />;
   } else if (path === '/admin/users') {
     content = role === 'admin' ? <UsersPage /> : <DeniedPage />;
   } else if (path === '/admin/audit') {

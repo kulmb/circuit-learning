@@ -302,6 +302,27 @@ describe('AdminApp', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('shows the install instructions and the iOS re-pin warning', async () => {
+    renderAdmin('/admin/install');
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Installer sur cette tablette',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Sur iPad')).toBeInTheDocument();
+    expect(screen.getByText('Sur Android')).toBeInTheDocument();
+    expect(
+      screen.getByText(/refixer l’appareil/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/appuie de nouveau sur « Fixer cet appareil/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Installer' }),
+    ).toBeInTheDocument();
+  });
+
   it('shows the group progress dashboard', async () => {
     vi.stubGlobal(
       'fetch',

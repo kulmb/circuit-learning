@@ -1,12 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
+import { markPwaUpdateReady, resetPwaUpdate } from './pwa/update';
 
 describe('App', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/');
     window.localStorage.clear();
+    resetPwaUpdate();
   });
 
   it('shows the title and the two main actions', () => {
@@ -86,6 +88,31 @@ describe('App', () => {
     expect(
       await screen.findByRole('heading', { name: 'Chapitre 1 : La lumière' }),
     ).toBeInTheDocument();
+  });
+
+  it('offers a service-worker update only on the level map', async () => {
+    const apply = vi.fn();
+    markPwaUpdateReady(apply);
+
+    render(<App />);
+
+    expect(
+      screen.queryByText('Une nouvelle version est prête.'),
+    ).not.toBeInTheDocument();
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: /jouer/i }));
+    fireEvent.pointerDown(
+      await screen.findByRole('button', { name: /jouer en invité/i }),
+    );
+
+    expect(
+      await screen.findByText('Une nouvelle version est prête.'),
+    ).toBeInTheDocument();
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: 'Mettre à jour' }),
+    );
+    expect(apply).toHaveBeenCalledTimes(1);
   });
 
   it('loads the parent settings behind a small question', async () => {

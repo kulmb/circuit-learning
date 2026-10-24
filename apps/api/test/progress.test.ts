@@ -196,6 +196,7 @@ describe('progress API', () => {
     });
     expect(body.levels[1].status).toBe('locked');
     expect(body.vocabulary).toEqual([]);
+    expect(response.headers['cache-control']).toBe('no-store');
   });
 
   it('refuses locked and unknown levels', async () => {

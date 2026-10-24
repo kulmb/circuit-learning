@@ -29,6 +29,10 @@ const initialStyles = new Set(
   [...html.matchAll(/<link[^>]+href="([^"]+\.css)"/g)].map((match) => match[1]),
 );
 
+const pwaRootFiles = readdirSync(dist)
+  .filter((name) => name === 'sw.js' || name === 'manifest.webmanifest' || /^workbox-.*\.js$/.test(name))
+  .map((name) => join(dist, name));
+
 const files = walk(join(dist, 'assets')).map((path) => {
   const buffer = readFileSync(path);
   const archive = gzipSync(buffer);
@@ -45,6 +49,23 @@ const files = walk(join(dist, 'assets')).map((path) => {
   };
 });
 
+const pwaFiles = pwaRootFiles.map((path) => {
+  const buffer = readFileSync(path);
+  return {
+    url: `/${relative(dist, path).split('\\').join('/')}`,
+    rawBytes: buffer.byteLength,
+    gzipBytes: gzipSync(buffer).byteLength,
+  };
+});
+
+const swSource = existsSync(join(dist, 'sw.js'))
+  ? readFileSync(join(dist, 'sw.js'), 'utf8')
+  : '';
+const precacheMatch = swSource.match(/precacheAndRoute\(\[(.*?)\],\{\}\)/s);
+const precacheCount = precacheMatch
+  ? [...precacheMatch[1].matchAll(/url:"/g)].length
+  : 0;
+
 const initialJs = files.filter((file) => file.initial && file.ext === '.js');
 const initialCss = files.filter((file) => file.initial && file.ext === '.css');
 const initialJsBytes = sum(initialJs, 'gzipBytes');
@@ -55,9 +76,12 @@ const lazyChunks = files.filter(
 const lazyStyles = files.filter(
   (file) => file.ext === '.css' && !file.initial,
 );
-const bitmapAssets = files.filter((file) =>
+const gameBitmapAssets = files.filter((file) =>
   ['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(file.ext),
 );
+const pwaIconFiles = existsSync(join(dist, 'icons'))
+  ? readdirSync(join(dist, 'icons')).filter((name) => name.endsWith('.png'))
+  : [];
 const levelMarker = 'light-02-wire-1';
 const initialCode = initialJs
   .map((file) => readFileSync(file.path, 'utf8'))
@@ -69,7 +93,7 @@ const levelDataInInitial = initialCode.includes(levelMarker);
 const levelDataLazy = lazyCode.includes(levelMarker);
 const ok =
   initialJsBytes <= budgetBytes &&
-  bitmapAssets.length === 0 &&
+  gameBitmapAssets.length === 0 &&
   !levelDataInInitial &&
   levelDataLazy;
 
@@ -127,6 +151,16 @@ const lines = [
     (file) => `| \`${file.url}\` | ${format(file.rawBytes)} | ${format(file.gzipBytes)} |`,
   ),
   '',
+  '## Fichiers PWA',
+  '',
+  `Entrées préchargées par Workbox : ${precacheCount}.`,
+  '',
+  '| Fichier | Brut | Gzip |',
+  '|---|---:|---:|',
+  ...pwaFiles.map(
+    (file) => `| \`${file.url}\` | ${format(file.rawBytes)} | ${format(file.gzipBytes)} |`,
+  ),
+  '',
   '## Polices auto-hébergées',
   '',
   '| Fichier | Brut | Gzip |',
@@ -139,12 +173,15 @@ const lines = [
   '',
   '## Vérifications',
   '',
-  `- Images bitmap dans le build : ${bitmapAssets.length === 0 ? 'aucune (tout est en SVG)' : bitmapAssets.map((file) => file.url).join(', ')}`,
+  `- Illustrations du jeu en bitmap : ${gameBitmapAssets.length === 0 ? 'aucune (SVG uniquement)' : gameBitmapAssets.map((file) => file.url).join(', ')}`,
+  `- Icônes PWA PNG (iOS et maskable) : ${pwaIconFiles.length}, générées depuis \`/icons/icon.svg\`.`,
   '- Les vignettes de l’atelier sont des images créées par l’enfant à la volée ;',
   '  elles ne font pas partie du build.',
   `- JavaScript initial sous 300 Ko gzip : ${initialJsBytes <= budgetBytes ? 'oui' : 'non'}`,
   `- Données complètes des niveaux hors du JavaScript initial : ${levelDataInInitial ? 'non' : 'oui'}`,
   `- Données complètes des niveaux dans un module différé : ${levelDataLazy ? 'oui' : 'non'}`,
+  `- Entrées précachées par le service worker : ${precacheCount}`,
+  '- Les réponses API personnelles sont en `Cache-Control: no-store` ; seul `/api/health` est public et cachable.',
   '',
 ];
 
