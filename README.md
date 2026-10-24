@@ -22,7 +22,7 @@ Monorepo pnpm :
 # MongoDB 7, en replica set à un seul nœud (transactions)
 docker compose -f docker-compose.dev.yml up -d
 
-cp .env.example .env       # puis adapter ADMIN_EMAIL / ADMIN_PASSWORD
+cp .env.example .env       # puis adapter ADMIN_USERNAME / ADMIN_PASSWORD
 pnpm install
 pnpm --filter @circuits/api db:migrate
 pnpm --filter @circuits/api db:seed
@@ -43,18 +43,21 @@ Le seed est idempotent. Il affiche le code à six caractères du groupe
 
 ### Compte administrateur
 
-Pour la production, `admin:create` crée uniquement l'administrateur (sans le
-groupe ni les élèves de démonstration) à partir des mêmes variables :
+Un compte adulte est identifié par un **nom court**, pas par une adresse
+e-mail : 3 à 32 caractères (lettres minuscules, chiffres, `.`, `-`, `_`).
+L'e-mail reste un champ optionnel du modèle mais n'est pas utilisé pour la
+connexion. Pour la production, `admin:create` crée uniquement l'administrateur
+(sans le groupe ni les élèves de démonstration) :
 
 ```bash
-ADMIN_EMAIL='...' ADMIN_PASSWORD='...' ADMIN_NAME='...' \
+ADMIN_USERNAME='...' ADMIN_PASSWORD='...' ADMIN_NAME='...' \
   pnpm --filter @circuits/api admin:create
 ```
 
-Le mot de passe se change ensuite sans le connaître au préalable :
+Le mot de passe se change ensuite **sans demander l'ancien** :
 
 ```bash
-ADMIN_EMAIL='...' pnpm --filter @circuits/api admin:password
+ADMIN_USERNAME='...' pnpm --filter @circuits/api admin:password
 ```
 
 La commande demande deux fois le nouveau mot de passe sans l'afficher (12
@@ -169,7 +172,7 @@ collection.
 
 | Collection | Contenu |
 |---|---|
-| `users` | rôle, prénom/pseudo, avatar, e-mail et mot de passe adultes, secret image des élèves, verrouillage, liens parent, vocabulaire |
+| `users` | rôle, prénom/pseudo, identifiant et mot de passe adultes, avatar, e-mail optionnel, secret image des élèves, verrouillage, liens parent, vocabulaire |
 | `groups` | nom, code d'invitation, créateur, archivage, membres avec leur rôle |
 | `sessions` | sessions adultes et enfants, expiration |
 | `invites` | invitations encadrant, parent et réinitialisation |
@@ -180,9 +183,10 @@ collection.
 
 Points structurants :
 
-- l'e-mail n'est unique que lorsqu'il existe (index partiel), et un élève ne
-  peut avoir ni e-mail ni mot de passe : la minimisation RGPD est appliquée par
-  le schéma ;
+- l'identifiant adulte (`username`) est unique et ne dépend pas d'un e-mail ;
+  l'e-mail reste optionnel et n'est pas utilisé pour la connexion ;
+- un élève ne peut avoir ni identifiant adulte, ni e-mail, ni mot de passe :
+  la minimisation RGPD est appliquée par le schéma ;
 - les mots de passe adultes et les secrets image des élèves sont hachés en
   argon2id, jamais stockés en clair ;
 - le code de groupe fait six caractères parmi les lettres et chiffres non
@@ -197,8 +201,9 @@ Points structurants :
   entrées HTTP seront validées par zod.
 
 Les migrations vivent dans `apps/api/migrations` (configuration
-`apps/api/migrate-mongo-config.js`). La première crée tous les index ; l'API
-appelle aussi `syncIndexes()` au démarrage, les deux chemins étant idempotents.
+`apps/api/migrate-mongo-config.js`). La première crée les index de base, la
+seconde l'index unique des identifiants adultes ; l'API appelle aussi
+`syncIndexes()` au démarrage, les deux chemins étant idempotents.
 
 `deleteStudent` (`apps/api/src/services/deleteStudent.ts`) supprime, dans une
 transaction, l'élève et ses données (`levelprogress`, `levelattempts`,
@@ -257,7 +262,7 @@ MONGODB_URI='mongodb://127.0.0.1:27018/circuits?directConnection=true' \
 
 # Créer l'administrateur (une seule fois, avec un vrai mot de passe)
 MONGODB_URI='mongodb://127.0.0.1:27018/circuits?directConnection=true' \
-ADMIN_EMAIL='...' ADMIN_PASSWORD='...' ADMIN_NAME='...' \
+ADMIN_USERNAME='...' ADMIN_PASSWORD='...' ADMIN_NAME='...' \
   pnpm --filter @circuits/api admin:create
 ```
 

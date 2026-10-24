@@ -7,13 +7,13 @@ import {
   seedDemoData,
 } from '../services/seedDemoData.js';
 
-const adminEmail = process.env.ADMIN_EMAIL?.trim() ?? '';
+const adminUsername = process.env.ADMIN_USERNAME?.trim() ?? '';
 const adminPassword = process.env.ADMIN_PASSWORD ?? '';
 const adminName = process.env.ADMIN_NAME?.trim() || 'Administrateur';
 
-if (adminEmail === '' || adminPassword === '') {
+if (adminUsername === '' || adminPassword === '') {
   console.error(
-    'ADMIN_EMAIL et ADMIN_PASSWORD sont obligatoires. Copiez .env.example vers .env et renseignez-les.',
+    'ADMIN_USERNAME et ADMIN_PASSWORD sont obligatoires. Copiez .env.example vers .env et renseignez-les.',
   );
   process.exit(1);
 }
@@ -22,12 +22,12 @@ try {
   await connectDatabase(config.mongodbUri);
 
   const result = await seedDemoData({
-    adminEmail,
+    adminUsername,
     adminPassword,
     adminName,
   });
 
-  console.log(`Administrateur : ${adminEmail}`);
+  console.log(`Administrateur : ${adminUsername}`);
   console.log(
     `Groupe « ${DEMO_GROUP_NAME} » : code ${result.joinCode} (${result.groupId})`,
   );

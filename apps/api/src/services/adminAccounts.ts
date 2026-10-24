@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 
 import {
   AuditLogModel,
-  EMAIL_PATTERN,
   SessionModel,
   UserModel,
 } from '../db/models/index.js';
@@ -11,11 +10,12 @@ import {
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
 } from './secrets.js';
+import { normalizeUsername, validateUsername } from './username.js';
 
 export interface CreateAdminOptions {
-  email: string;
+  username: string;
   password: string;
-  displayName?: string;
+  displayName?: string | undefined;
 }
 
 export interface CreateAdminResult {
@@ -24,23 +24,13 @@ export interface CreateAdminResult {
 }
 
 export interface ChangePasswordOptions {
-  email: string;
+  username: string;
   newPassword: string;
 }
 
 export interface ChangePasswordResult {
   userId: string;
   sessionsRevoked: number;
-}
-
-function normalizeEmail(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function validateEmail(email: string): void {
-  if (!EMAIL_PATTERN.test(email)) {
-    throw new Error('Adresse e-mail invalide.');
-  }
 }
 
 function validatePassword(password: string): void {
@@ -65,16 +55,18 @@ function validatePassword(password: string): void {
 export async function createAdminAccount(
   options: CreateAdminOptions,
 ): Promise<CreateAdminResult> {
-  const email = normalizeEmail(options.email);
-  validateEmail(email);
+  const username = normalizeUsername(options.username);
+  validateUsername(username);
   validatePassword(options.password);
 
   const displayName = options.displayName?.trim() || 'Administrateur';
-  const existing = await UserModel.findOne({ email }).select('+passwordHash');
+  const existing = await UserModel.findOne({ username }).select('+passwordHash');
 
   if (existing !== null) {
     if (existing.role !== 'admin') {
-      throw new Error(`Le compte ${email} existe déjà avec un autre rôle.`);
+      throw new Error(
+        `L’identifiant ${username} existe déjà avec un autre rôle.`,
+      );
     }
 
     let changed = false;
@@ -99,7 +91,7 @@ export async function createAdminAccount(
   const user = await UserModel.create({
     role: 'admin',
     displayName,
-    email,
+    username,
     passwordHash: await hashSecret(options.password),
   });
 
@@ -114,8 +106,8 @@ export async function createAdminAccount(
 export async function changeAccountPassword(
   options: ChangePasswordOptions,
 ): Promise<ChangePasswordResult> {
-  const email = normalizeEmail(options.email);
-  validateEmail(email);
+  const username = normalizeUsername(options.username);
+  validateUsername(username);
   validatePassword(options.newPassword);
 
   const passwordHash = await hashSecret(options.newPassword);
@@ -123,12 +115,12 @@ export async function changeAccountPassword(
 
   try {
     return await session.withTransaction(async () => {
-      const user = await UserModel.findOne({ email })
+      const user = await UserModel.findOne({ username })
         .select('+passwordHash')
         .session(session);
 
       if (user === null) {
-        throw new Error(`Aucun compte avec l’adresse ${email}.`);
+        throw new Error(`Aucun compte avec l’identifiant ${username}.`);
       }
 
       if (user.role === 'eleve') {

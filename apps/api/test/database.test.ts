@@ -97,6 +97,13 @@ describe('indexes', () => {
       partialFilterExpression: { email: { $type: 'string' } },
     });
 
+    const username = await indexNamed(UserModel, 'users_username_unique');
+    expect(username).toMatchObject({
+      key: { username: 1 },
+      unique: true,
+      partialFilterExpression: { username: { $type: 'string' } },
+    });
+
     expect(await indexNamed(GroupModel, 'groups_join_code_unique')).toMatchObject({
       key: { joinCode: 1 },
       unique: true,
@@ -168,6 +175,37 @@ describe('users', () => {
     ).rejects.toMatchObject({ code: 11000 });
   });
 
+  it('uses lowercase unique usernames without an email', async () => {
+    await UserModel.create({
+      role: 'admin',
+      displayName: 'Admin',
+      username: ' Kulmb ',
+      passwordHash: 'hash',
+    });
+
+    const stored = await UserModel.findOne({ username: 'kulmb' });
+    expect(stored?.username).toBe('kulmb');
+    expect(stored?.email).toBeNull();
+
+    await expect(
+      UserModel.create({
+        role: 'encadrant',
+        displayName: 'Doublon',
+        username: 'KULMB',
+        passwordHash: 'hash',
+      }),
+    ).rejects.toMatchObject({ code: 11000 });
+
+    await expect(
+      UserModel.create({
+        role: 'parent',
+        displayName: 'Trop court',
+        username: 'ab',
+        passwordHash: 'hash',
+      }),
+    ).rejects.toThrow();
+  });
+
   it('keeps adult credentials and picture secrets on the right roles', async () => {
     await expect(
       UserModel.create({
@@ -177,6 +215,15 @@ describe('users', () => {
         email: 'lina@example.com',
       }),
     ).rejects.toThrow(/adresse e-mail/i);
+
+    await expect(
+      UserModel.create({
+        role: 'eleve',
+        displayName: 'Lina',
+        pictureSecretHash: 'hash',
+        username: 'lina',
+      }),
+    ).rejects.toThrow(/identifiant/i);
 
     await expect(
       UserModel.create({
@@ -369,7 +416,7 @@ describe('invites and audit logs', () => {
 describe('admin accounts', () => {
   it('creates an admin once without overwriting the password', async () => {
     const first = await createAdminAccount({
-      email: ' Kulmb@Example.com ',
+      username: ' Kulmb ',
       password: ADMIN_PASSWORD,
       displayName: 'kulmb',
     });
@@ -377,18 +424,19 @@ describe('admin accounts', () => {
     expect(first.created).toBe(true);
 
     const admin = await UserModel.findOne({
-      email: 'kulmb@example.com',
+      username: 'kulmb',
     }).select('+passwordHash');
 
     expect(admin?.role).toBe('admin');
     expect(admin?.displayName).toBe('kulmb');
+    expect(admin?.email).toBeNull();
     if (admin?.passwordHash === null || admin?.passwordHash === undefined) {
       throw new Error('The admin password hash is missing');
     }
     expect(await verifySecret(admin.passwordHash, ADMIN_PASSWORD)).toBe(true);
 
     const second = await createAdminAccount({
-      email: 'kulmb@example.com',
+      username: 'kulmb',
       password: 'another-very-long-password',
       displayName: 'kulmb',
     });
@@ -396,7 +444,7 @@ describe('admin accounts', () => {
     expect(second.created).toBe(false);
 
     const unchanged = await UserModel.findOne({
-      email: 'kulmb@example.com',
+      username: 'kulmb',
     }).select('+passwordHash');
 
     if (
@@ -415,7 +463,7 @@ describe('admin accounts', () => {
     const admin = await UserModel.create({
       role: 'admin',
       displayName: 'kulmb',
-      email: 'kulmb@example.com',
+      username: 'kulmb',
       passwordHash: await hashSecret(ADMIN_PASSWORD),
       failedLogins: 4,
       lockedUntil: new Date(Date.now() + 60_000),
@@ -427,7 +475,7 @@ describe('admin accounts', () => {
     ]);
 
     const result = await changeAccountPassword({
-      email: 'KULMB@example.com',
+      username: 'KULMB',
       newPassword: 'new-password-456789',
     });
 
@@ -457,27 +505,34 @@ describe('admin accounts', () => {
     await UserModel.create({
       role: 'encadrant',
       displayName: 'Coach',
-      email: 'coach@example.com',
+      username: 'coach',
       passwordHash: 'hash',
     });
 
     await expect(
       createAdminAccount({
-        email: 'coach@example.com',
+        username: 'coach',
         password: ADMIN_PASSWORD,
       }),
     ).rejects.toThrow(/autre rôle/i);
 
     await expect(
+      createAdminAccount({
+        username: 'ab',
+        password: ADMIN_PASSWORD,
+      }),
+    ).rejects.toThrow(/identifiant/i);
+
+    await expect(
       changeAccountPassword({
-        email: 'nobody@example.com',
+        username: 'nobody',
         newPassword: ADMIN_PASSWORD,
       }),
     ).rejects.toThrow(/Aucun compte/i);
 
     await expect(
       changeAccountPassword({
-        email: 'coach@example.com',
+        username: 'coach',
         newPassword: 'short',
       }),
     ).rejects.toThrow(/12 caractères/i);
@@ -487,7 +542,7 @@ describe('admin accounts', () => {
 describe('seed', () => {
   it('creates the demo admin, group and students once', async () => {
     const first = await seedDemoData({
-      adminEmail: 'Admin@Example.com',
+      adminUsername: ' Admin-Demo ',
       adminPassword: ADMIN_PASSWORD,
       adminName: 'Admin Démo',
     });
@@ -499,11 +554,12 @@ describe('seed', () => {
     expect(await UserModel.countDocuments()).toBe(4);
     expect(await GroupModel.countDocuments()).toBe(1);
 
-    const admin = await UserModel.findOne({ email: 'admin@example.com' }).select(
+    const admin = await UserModel.findOne({ username: 'admin-demo' }).select(
       '+passwordHash',
     );
 
     expect(admin?.role).toBe('admin');
+    expect(admin?.email).toBeNull();
     if (admin?.passwordHash === null || admin?.passwordHash === undefined) {
       throw new Error('The admin password hash is missing');
     }
@@ -535,7 +591,7 @@ describe('seed', () => {
     ).toBe(true);
 
     const second = await seedDemoData({
-      adminEmail: 'admin@example.com',
+      adminUsername: 'admin-demo',
       adminPassword: ADMIN_PASSWORD,
       adminName: 'Admin Démo',
     });
@@ -557,7 +613,7 @@ describe('deleteStudent', () => {
       _id: adminId,
       role: 'admin',
       displayName: 'Admin',
-      email: 'admin@example.com',
+      username: 'admin',
       passwordHash: 'hash',
     });
 
@@ -576,7 +632,7 @@ describe('deleteStudent', () => {
     const parent = await UserModel.create({
       role: 'parent',
       displayName: 'Parent',
-      email: 'parent@example.com',
+      username: 'parent',
       passwordHash: 'hash',
       parentOf: [student._id],
     });
@@ -712,7 +768,7 @@ describe('deleteStudent', () => {
     const admin = await UserModel.create({
       role: 'admin',
       displayName: 'Admin',
-      email: 'admin@example.com',
+      username: 'admin',
       passwordHash: 'hash',
     });
 
@@ -737,21 +793,26 @@ describe('migration', () => {
     const db = mongoose.connection.getClient().db('migration_checks');
     await db.dropDatabase();
 
-    const migrationUrl = new URL(
-      '../migrations/20261024000001-create-indexes.js',
-      import.meta.url,
-    );
-    const migration = (await import(migrationUrl.href)) as {
+    type Migration = {
       up: (database: typeof db) => Promise<void>;
       down: (database: typeof db) => Promise<void>;
     };
+    const loadMigration = async (file: string): Promise<Migration> => {
+      const url = new URL(`../migrations/${file}`, import.meta.url);
 
-    await migration.up(db);
+      return (await import(url.href)) as Migration;
+    };
+    const first = await loadMigration('20261024000001-create-indexes.js');
+    const second = await loadMigration('20261024000002-add-username-index.js');
+
+    await first.up(db);
+    await second.up(db);
 
     const names = async (collection: string): Promise<(string | undefined)[]> =>
       (await db.collection(collection).indexes()).map((index) => index.name);
 
     expect(await names('users')).toContain('users_email_unique');
+    expect(await names('users')).toContain('users_username_unique');
     expect(await names('groups')).toContain('groups_join_code_unique');
     expect(await names('groups')).toContain('groups_members_user_id');
     expect(await names('sessions')).toContain('sessions_expires_ttl');
@@ -775,14 +836,23 @@ describe('migration', () => {
       unique: true,
       partialFilterExpression: { email: { $type: 'string' } },
     });
+    const usernameIndex = (await db.collection('users').indexes()).find(
+      (index) => index.name === 'users_username_unique',
+    );
+    expect(usernameIndex).toMatchObject({
+      unique: true,
+      partialFilterExpression: { username: { $type: 'string' } },
+    });
     const sessionTtl = (await db.collection('sessions').indexes()).find(
       (index) => index.name === 'sessions_expires_ttl',
     );
     expect(sessionTtl?.expireAfterSeconds).toBe(0);
 
-    await migration.down(db);
+    await second.down(db);
+    await first.down(db);
 
     expect(await names('users')).not.toContain('users_email_unique');
+    expect(await names('users')).not.toContain('users_username_unique');
     expect(await names('groups')).not.toContain('groups_join_code_unique');
     expect(await names('groups')).not.toContain('groups_members_user_id');
     expect(await names('sessions')).not.toContain('sessions_expires_ttl');

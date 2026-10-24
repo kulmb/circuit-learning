@@ -6,6 +6,8 @@ import mongoose, {
   type Types,
 } from 'mongoose';
 
+import { USERNAME_PATTERN } from '../../services/username.js';
+
 export const USER_ROLES = ['admin', 'encadrant', 'parent', 'eleve'] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
@@ -18,6 +20,7 @@ export interface VocabularyEntry {
 export interface User {
   role: UserRole;
   displayName: string;
+  username: string | null;
   avatarId: string | null;
   email: string | null;
   passwordHash: string | null;
@@ -48,6 +51,17 @@ const userSchema = new Schema<User>(
   {
     role: { type: String, required: true, enum: USER_ROLES },
     displayName: { type: String, required: true, trim: true, maxlength: 80 },
+    username: {
+      type: String,
+      default: null,
+      trim: true,
+      lowercase: true,
+      match: USERNAME_PATTERN,
+      set: (value: string | null | undefined) =>
+        value === undefined || value === null || value.trim() === ''
+          ? null
+          : value,
+    },
     avatarId: { type: String, default: null, trim: true, maxlength: 80 },
     email: {
       type: String,
@@ -92,8 +106,24 @@ userSchema.index(
   },
 );
 
+// The adult login is a short identifier. Email stays optional and unused.
+userSchema.index(
+  { username: 1 },
+  {
+    name: 'users_username_unique',
+    unique: true,
+    partialFilterExpression: { username: { $type: 'string' } },
+  },
+);
+
 userSchema.pre('validate', function validateRoles() {
   if (this.role === 'eleve') {
+    if (this.username !== null && this.username !== undefined) {
+      this.invalidate(
+        'username',
+        'Un élève n’a pas d’identifiant de connexion adulte.',
+      );
+    }
     if (this.email !== null && this.email !== undefined) {
       this.invalidate('email', 'Un élève ne peut pas avoir d’adresse e-mail.');
     }

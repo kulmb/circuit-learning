@@ -16,11 +16,15 @@ function readOption(name: string): string | undefined {
   return index >= 0 ? process.argv[index + 1] : undefined;
 }
 
-const email = (readOption('email') ?? process.env.ADMIN_EMAIL ?? '').trim();
+const username = (
+  readOption('username') ??
+  process.env.ADMIN_USERNAME ??
+  ''
+).trim();
 
-if (email === '') {
+if (username === '') {
   console.error(
-    'Indiquez le compte avec ADMIN_EMAIL=... ou --email=... .',
+    'Indiquez le compte avec ADMIN_USERNAME=... ou --username=... .',
   );
   process.exit(1);
 }
@@ -46,12 +50,12 @@ try {
   await connectDatabase(config.mongodbUri);
 
   const result = await changeAccountPassword({
-    email,
+    username,
     newPassword,
   });
 
   console.log(
-    `Mot de passe modifié pour ${email}. Sessions révoquées : ${result.sessionsRevoked}.`,
+    `Mot de passe modifié pour ${username}. Sessions révoquées : ${result.sessionsRevoked}.`,
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

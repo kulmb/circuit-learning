@@ -1,17 +1,13 @@
 import mongoose from 'mongoose';
 
 import {
-  EMAIL_PATTERN,
   GroupModel,
   UserModel,
   type UserDocument,
 } from '../db/models/index.js';
+import { createAdminAccount } from './adminAccounts.js';
 import { generateJoinCode } from './joinCode.js';
-import {
-  hashSecret,
-  MIN_PASSWORD_LENGTH,
-  pictureSecretFromPattern,
-} from './secrets.js';
+import { hashSecret, pictureSecretFromPattern } from './secrets.js';
 
 export const DEMO_GROUP_NAME = 'Équipe Camelot';
 
@@ -27,7 +23,7 @@ export const DEMO_PICTURE_PATTERN = ['renard', 'pomme', 'ballon'] as const;
 export const DEMO_VOCABULARY = ['circuitFerme', 'fil'] as const;
 
 export interface SeedOptions {
-  adminEmail: string;
+  adminUsername: string;
   adminPassword: string;
   adminName?: string;
   groupName?: string;
@@ -45,44 +41,25 @@ export interface SeedResult {
 
 /**
  * Creates (or completes) the demo accounts. Safe to run more than once: the
- * admin is matched by email, the group by name and creator, and students by
+ * admin is matched by username, the group by name and creator, and students by
  * name inside that group.
  */
 export async function seedDemoData(
   options: SeedOptions,
 ): Promise<SeedResult> {
-  const email = options.adminEmail.trim().toLowerCase();
-
-  if (!EMAIL_PATTERN.test(email)) {
-    throw new Error('ADMIN_EMAIL n’est pas une adresse e-mail valide.');
-  }
-
-  if (options.adminPassword.length < MIN_PASSWORD_LENGTH) {
-    throw new Error(
-      `ADMIN_PASSWORD doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`,
-    );
-  }
-
-  const adminName = options.adminName?.trim() || 'Administrateur';
-  const groupName = options.groupName?.trim() || DEMO_GROUP_NAME;
-
-  let admin = await UserModel.findOne({ email }).select('+passwordHash');
-  let createdAdmin = false;
+  const adminResult = await createAdminAccount({
+    username: options.adminUsername,
+    password: options.adminPassword,
+    displayName: options.adminName,
+  });
+  const admin = await UserModel.findById(adminResult.userId);
+  const createdAdmin = adminResult.created;
 
   if (admin === null) {
-    admin = await UserModel.create({
-      role: 'admin',
-      displayName: adminName,
-      email,
-      passwordHash: await hashSecret(options.adminPassword),
-    });
-    createdAdmin = true;
-  } else if (admin.role !== 'admin') {
-    throw new Error(`Le compte ${email} existe déjà avec un autre rôle.`);
-  } else if (admin.passwordHash === null) {
-    admin.passwordHash = await hashSecret(options.adminPassword);
-    await admin.save();
+    throw new Error('L’administrateur vient d’être créé mais reste introuvable.');
   }
+
+  const groupName = options.groupName?.trim() || DEMO_GROUP_NAME;
 
   let group = await GroupModel.findOne({
     name: groupName,
