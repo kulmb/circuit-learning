@@ -78,6 +78,12 @@ describe('wire path', () => {
 
     expect(path).toBe('M 0 0 Q 50 25 100 0');
   });
+
+  it('bows a short loop far enough to clear the component body', () => {
+    const path = buildWirePath({ x: 0, y: 0 }, { x: 80, y: 0 }, 96, 0.75);
+
+    expect(path).toBe('M 0 0 Q 40 60 80 0');
+  });
 });
 
 describe('board bounds', () => {

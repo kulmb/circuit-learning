@@ -1,20 +1,88 @@
+import { getLevelById } from '@circuits/shared';
 import { useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import { ZapCharacter } from './components/Zap';
+import { LevelMapPage } from './levels/LevelMapPage';
+import { MaterialsLevelPage } from './levels/MaterialsLevelPage';
+import { SymbolMatchingPage } from './levels/SymbolMatchingPage';
 import { fr } from './narration/fr';
 import { unlockNarration } from './narration/narrationService';
 import { WorkbenchPage } from './workbench/WorkbenchPage';
 import './App.css';
 
-type Screen = 'home' | 'play' | 'sandbox';
+type Screen = 'home' | 'map' | 'play' | 'sandbox';
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('home');
+  const [levelId, setLevelId] = useState<string | null>(null);
   const reduceMotion = useReducedMotion() ?? false;
+  const level = levelId === null ? undefined : getLevelById(levelId);
+
+  if (screen === 'map') {
+    return (
+      <LevelMapPage
+        onBack={() => setScreen('home')}
+        onSelectLevel={(selectedLevelId) => {
+          setLevelId(selectedLevelId);
+          setScreen('play');
+        }}
+      />
+    );
+  }
 
   if (screen === 'play') {
-    return <WorkbenchPage onBack={() => setScreen('home')} />;
+    if (level === undefined) {
+      return (
+        <LevelMapPage
+          onBack={() => setScreen('home')}
+          onSelectLevel={(selectedLevelId) => {
+            setLevelId(selectedLevelId);
+            setScreen('play');
+          }}
+        />
+      );
+    }
+
+    const nextLevelProps =
+      level.nextLevelId === null
+        ? {}
+        : {
+            onNextLevel: () => {
+              setLevelId(level.nextLevelId);
+            },
+          };
+
+    if (level.kind === 'materials') {
+      return (
+        <MaterialsLevelPage
+          key={level.id}
+          level={level}
+          onBack={() => setScreen('map')}
+          {...nextLevelProps}
+        />
+      );
+    }
+
+    if (level.kind === 'matching') {
+      return (
+        <SymbolMatchingPage
+          key={level.id}
+          level={level}
+          onBack={() => setScreen('map')}
+          {...nextLevelProps}
+        />
+      );
+    }
+
+    return (
+      <WorkbenchPage
+        key={level.id}
+        level={level}
+        onBack={() => setScreen('map')}
+        {...nextLevelProps}
+      />
+    );
   }
 
   return (
@@ -39,7 +107,7 @@ export function App() {
               onPointerDown={(event) =>
                 activate(event, () => {
                   unlockNarration();
-                  setScreen('play');
+                  setScreen('map');
                 })
               }
             >

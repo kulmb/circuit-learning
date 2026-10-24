@@ -1,4 +1,6 @@
-export type DisplayMode = 'realistic' | 'symbol' | 'overlay';
+import type { DisplayMode } from '@circuits/shared';
+
+export type { DisplayMode } from '@circuits/shared';
 
 const NEXT_MODE: Record<DisplayMode, DisplayMode> = {
   realistic: 'symbol',

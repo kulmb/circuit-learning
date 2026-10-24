@@ -59,6 +59,7 @@ export interface WorkbenchSvgProps {
   pendingTerminal: TerminalRef | null;
   displayMode: DisplayMode;
   hintHighlight: HintHighlight | null;
+  lockedComponentIds: string[];
   previewComponent: CircuitComponent | null;
   svgRef: RefObject<SVGSVGElement>;
   acquirePointer: (pointerId: number) => boolean;
@@ -129,6 +130,7 @@ export function WorkbenchSvg({
   pendingTerminal,
   displayMode,
   hintHighlight,
+  lockedComponentIds,
   previewComponent,
   svgRef,
   acquirePointer,
@@ -204,7 +206,17 @@ export function WorkbenchSvg({
         continue;
       }
 
-      wires.push({ wire, from, to, path: buildWirePath(from, to) });
+      // A wire joining two terminals of the same component (a direct short)
+      // would otherwise run straight under the component body and stay
+      // invisible and impossible to select. Bow it wide enough to be seen.
+      const isLoop = wire.from.componentId === wire.to.componentId;
+
+      wires.push({
+        wire,
+        from,
+        to,
+        path: buildWirePath(from, to, isLoop ? 96 : 36, isLoop ? 0.75 : 0.25),
+      });
     }
 
     return wires;
@@ -374,6 +386,10 @@ export function WorkbenchSvg({
     const adjustedPoint = applyTouchOffset(svgPoint, gesture.pointerType, touchOffset);
 
     if (gesture.kind === 'component') {
+      if (lockedComponentIds.includes(gesture.componentId)) {
+        return;
+      }
+
       const candidate = {
         x: adjustedPoint.x + gesture.grabOffset.x,
         y: adjustedPoint.y + gesture.grabOffset.y,
@@ -683,6 +699,7 @@ export function WorkbenchSvg({
           displayMode={displayMode}
           short={simulation.shortCircuit}
           hinted={hintHighlight?.componentIds.includes(component.id) ?? false}
+          locked={lockedComponentIds.includes(component.id)}
         />
       ))}
 
@@ -694,6 +711,7 @@ export function WorkbenchSvg({
           displayMode={displayMode}
           short={false}
           hinted={false}
+          locked={false}
           ghost
         />
       ) : null}
@@ -780,7 +798,10 @@ export function WorkbenchSvg({
           })
         : null}
 
-      {selected !== null && selectedComponent !== undefined && dragPreview === null ? (
+      {selected !== null &&
+      selectedComponent !== undefined &&
+      dragPreview === null &&
+      !lockedComponentIds.includes(selectedComponent.id) ? (
         <SelectionToolbar
           component={selectedComponent}
           components={circuit.components}

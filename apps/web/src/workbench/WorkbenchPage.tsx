@@ -1,19 +1,25 @@
 import {
   createComponent,
+  evaluateLevelSuccess,
+  starsForHints,
   type CircuitComponent,
   type CircuitSimulation,
+  type LevelDefinition,
   type Vec2,
 } from '@circuits/shared';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
 import { Zap } from '../components/Zap';
-import { fr } from '../narration/fr';
+import { LevelSuccessOverlay } from '../levels/LevelSuccessOverlay';
+import { useLevelSession } from '../levels/useLevelSession';
+import { fr, getText } from '../narration/fr';
 import {
   buildHintPlan,
   hintExpression,
@@ -23,7 +29,7 @@ import {
 } from '../narration/hints';
 import { unlockNarration } from '../narration/narrationService';
 import { useNarration } from '../narration/useNarration';
-import { playBuzzerBeep, unlockAudio } from './audio';
+import { playBuzzerBeep, playSuccessFanfare, unlockAudio } from './audio';
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
@@ -51,6 +57,8 @@ import './Workbench.css';
 
 export interface WorkbenchPageProps {
   onBack: () => void;
+  level?: LevelDefinition;
+  onNextLevel?: () => void;
 }
 
 interface PaletteDragState {
@@ -75,14 +83,22 @@ interface Status {
   tone: 'success' | 'danger' | 'info' | 'neutral';
 }
 
-export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
+export function WorkbenchPage({
+  onBack,
+  level,
+  onNextLevel,
+}: WorkbenchPageProps) {
   const {
     circuit,
     simulation,
     selected,
     pendingTerminal,
     displayMode,
+    levelId,
+    lockedComponentIds,
+    availableCounts,
     history,
+    loadLevel,
     addComponent,
     moveComponent,
     rotateComponent,
@@ -112,6 +128,10 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
     level: number;
   } | null>(null);
   const [hintHighlight, setHintHighlight] = useState<HintHighlight | null>(null);
+  const [levelHintIndex, setLevelHintIndex] = useState(0);
+  const [completionStars, setCompletionStars] = useState<number | null>(null);
+  const completedRef = useRef(false);
+  const levelSession = useLevelSession(level ?? null);
 
   const status = getStatus(simulation);
   const ghostPoint = paletteDrag !== null ? paletteGhostPoint(paletteDrag) : null;
@@ -121,6 +141,31 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
       component.type === 'bulb' &&
       simulation.states[component.id]?.state !== 'off',
   );
+  const paletteItems = useMemo(() => {
+    if (level === undefined) {
+      return PALETTE_ITEMS;
+    }
+
+    return level.availableComponents.flatMap((offer) => {
+      const item = PALETTE_ITEMS.find((candidate) => candidate.key === offer.key);
+      return item === undefined ? [] : [item];
+    });
+  }, [level]);
+  const levelSuccess = useMemo(
+    () =>
+      level === undefined
+        ? simulation.ok
+        : evaluateLevelSuccess(level, circuit, simulation),
+    [circuit, level, simulation],
+  );
+  const levelReady = level === undefined || levelId === level.id;
+  const achieved = levelReady && levelSuccess;
+
+  useEffect(() => {
+    if (level !== undefined) {
+      loadLevel(level);
+    }
+  }, [level, loadLevel]);
   const buzzingKey = circuit.components
     .filter(
       (component) =>
@@ -149,8 +194,8 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
   }, [buzzingKey]);
 
   useEffect(() => {
-    narration.say('zap.welcome');
-  }, [narration.say]);
+    narration.say(level === undefined ? 'zap.welcome' : level.introTextId);
+  }, [level, narration.say]);
 
   useEffect(() => {
     if (simulation.shortCircuit) {
@@ -162,7 +207,7 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
       return;
     }
 
-    if (simulation.ok) {
+    if (achieved) {
       if (lastFeedbackRef.current !== 'ok') {
         lastFeedbackRef.current = 'ok';
         setExpression('content');
@@ -172,18 +217,81 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
     }
 
     lastFeedbackRef.current = '';
-  }, [hasLitBulb, narration.say, simulation.ok, simulation.shortCircuit]);
+  }, [achieved, hasLitBulb, narration.say, simulation.shortCircuit]);
 
   useEffect(() => {
     setHintState(null);
     setHintHighlight(null);
+    setLevelHintIndex(0);
   }, [circuit]);
+
+  useEffect(() => {
+    if (level !== undefined && levelReady) {
+      levelSession.recordDiagnostics(
+        simulation.diagnostics.map((diagnostic) => diagnostic.code),
+      );
+    }
+  }, [
+    level,
+    levelReady,
+    levelSession.recordDiagnostics,
+    simulation.diagnostics,
+  ]);
+
+  useEffect(() => {
+    if (level === undefined || !achieved || completedRef.current) {
+      return;
+    }
+
+    completedRef.current = true;
+    playSuccessFanfare();
+    const fallbackStars = starsForHints(levelSession.hintsUsed);
+
+    void levelSession
+      .completeSuccess()
+      .then((progress) => {
+        setCompletionStars(
+          progress?.levels[level.id]?.stars ?? fallbackStars,
+        );
+      })
+      .catch(() => setCompletionStars(fallbackStars));
+  }, [
+    achieved,
+    level,
+    levelSession.completeSuccess,
+    levelSession.hintsUsed,
+  ]);
 
   function requestHint(): void {
     unlockNarration();
     unlockAudio();
 
+    if (level !== undefined) {
+      levelSession.recordHint();
+    }
+
     const plan = buildHintPlan(simulation, circuit);
+
+    if (level !== undefined && level.kind === 'circuit') {
+      if (achieved) {
+        setExpression('content');
+        narration.say(hasLitBulb ? 'zap.successBulb' : 'zap.successGeneric');
+        return;
+      }
+
+      if (plan.code === 'success' || plan.code === 'open_circuit') {
+        const maxIndex = Math.max(0, level.hintTextIds.length - 1);
+        const hintIndex = Math.min(levelHintIndex, maxIndex);
+        const textId = level.hintTextIds[hintIndex] ?? 'zap.hint.open.1';
+
+        setLevelHintIndex(Math.min(hintIndex + 1, maxIndex));
+        setHintState(null);
+        setHintHighlight(null);
+        setExpression(hintIndex >= 2 ? 'surprised' : 'thinking');
+        narration.say(textId);
+        return;
+      }
+    }
 
     if (plan.code === 'success') {
       setHintState(null);
@@ -193,14 +301,14 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
       return;
     }
 
-    const level =
+    const nextLevel =
       hintState?.code === plan.code ? Math.min(hintState.level + 1, 3) : 1;
 
-    setHintState({ code: plan.code, level });
-    setExpression(hintExpression(plan, level));
-    setHintHighlight(level === 3 ? plan.highlight : null);
+    setHintState({ code: plan.code, level: nextLevel });
+    setExpression(hintExpression(plan, nextLevel));
+    setHintHighlight(nextLevel === 3 ? plan.highlight : null);
     narration.say(
-      plan.texts[level - 1] ?? plan.texts[0] ?? 'zap.hint.open.1',
+      plan.texts[nextLevel - 1] ?? plan.texts[0] ?? 'zap.hint.open.1',
     );
   }
 
@@ -279,6 +387,10 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
       return;
     }
 
+    if (availableCounts !== null && (availableCounts[item.key] ?? 0) <= 0) {
+      return;
+    }
+
     event.preventDefault();
     unlockAudio();
 
@@ -351,7 +463,12 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
     releasePointer(event.pointerId);
 
     if (drag.placement !== null) {
-      addComponent(drag.item.type, drag.item.options ?? {}, drag.placement.position);
+      addComponent(
+        drag.item.type,
+        drag.item.options ?? {},
+        drag.placement.position,
+        drag.item.key,
+      );
       setPaletteDrag(null);
       return;
     }
@@ -400,8 +517,16 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
         </button>
 
         <div className="workbench-header__title">
-          <h1>{fr.workbench.title}</h1>
-          <p>{fr.workbench.hint}</p>
+          <h1>
+            {level === undefined
+              ? fr.workbench.title
+              : getText(level.titleTextId)}
+          </h1>
+          <p>
+            {level === undefined
+              ? fr.workbench.hint
+              : getText(level.goalTextId)}
+          </p>
         </div>
 
         <button
@@ -429,28 +554,45 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
         <aside className="palette" aria-label={fr.workbench.paletteTitle}>
           <h2>{fr.workbench.paletteTitle}</h2>
           <div className="palette__items">
-            {PALETTE_ITEMS.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className={`palette-item${hintHighlight?.paletteKey === item.key ? ' is-hinted' : ''}`}
-                data-palette-key={item.key}
-                onPointerDown={(event) => handlePalettePointerDown(event, item)}
-                onPointerMove={handlePalettePointerMove}
-                onPointerUp={handlePalettePointerUp}
-                onPointerCancel={handlePalettePointerCancel}
-                onLostPointerCapture={handlePaletteLostPointerCapture}
-              >
-                <span
-                  className="palette-item__swatch"
-                  style={{ backgroundColor: item.color, color: item.textColor }}
-                  aria-hidden="true"
+            {level !== undefined && paletteItems.length === 0 ? (
+              <p className="palette__empty">{getText('level.noComponents')}</p>
+            ) : null}
+            {paletteItems.map((item) => {
+              const remaining =
+                availableCounts === null
+                  ? null
+                  : (availableCounts[item.key] ?? 0);
+              const unavailable = remaining !== null && remaining <= 0;
+
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`palette-item${hintHighlight?.paletteKey === item.key ? ' is-hinted' : ''}`}
+                  data-palette-key={item.key}
+                  onPointerDown={(event) => handlePalettePointerDown(event, item)}
+                  onPointerMove={handlePalettePointerMove}
+                  onPointerUp={handlePalettePointerUp}
+                  onPointerCancel={handlePalettePointerCancel}
+                  onLostPointerCapture={handlePaletteLostPointerCapture}
+                  disabled={unavailable}
                 >
-                  {item.shortLabel}
-                </span>
-                <span className="palette-item__label">{item.label}</span>
-              </button>
-            ))}
+                  <span
+                    className="palette-item__swatch"
+                    style={{ backgroundColor: item.color, color: item.textColor }}
+                    aria-hidden="true"
+                  >
+                    {item.shortLabel}
+                  </span>
+                  <span className="palette-item__label">{item.label}</span>
+                  {remaining !== null ? (
+                    <span className="palette-item__count" aria-hidden="true">
+                      {remaining}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
         </aside>
 
@@ -463,6 +605,7 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
               pendingTerminal={pendingTerminal}
               displayMode={displayMode}
               hintHighlight={hintHighlight}
+              lockedComponentIds={lockedComponentIds}
               previewComponent={paletteDrag?.placement?.component ?? null}
               svgRef={svgRef}
               acquirePointer={acquirePointer}
@@ -546,6 +689,16 @@ export function WorkbenchPage({ onBack }: WorkbenchPageProps) {
         >
           {returningGhost.item.shortLabel}
         </motion.div>
+      ) : null}
+
+      {level !== undefined && completionStars !== null ? (
+        <LevelSuccessOverlay
+          level={level}
+          stars={completionStars}
+          hasNext={level.nextLevelId !== null}
+          onNext={onNextLevel ?? onBack}
+          onMap={onBack}
+        />
       ) : null}
     </div>
   );

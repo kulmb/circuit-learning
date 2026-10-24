@@ -16,6 +16,7 @@ export interface ComponentBlockProps {
   displayMode: DisplayMode;
   short: boolean;
   hinted: boolean;
+  locked: boolean;
   ghost?: boolean;
 }
 
@@ -26,6 +27,7 @@ export function ComponentBlock({
   displayMode,
   short,
   hinted,
+  locked,
   ghost = false,
 }: ComponentBlockProps) {
   const centerX = component.position.x * CELL_SIZE;
@@ -90,6 +92,22 @@ export function ComponentBlock({
           strokeDasharray="10 7"
           pointerEvents="none"
         />
+      ) : null}
+
+      {locked ? (
+        <g
+          transform={`translate(${-halfWidth + 12} ${-halfHeight + 12})`}
+          pointerEvents="none"
+        >
+          <circle r={9} fill="#ffffff" stroke="#94a3b8" strokeWidth={1.5} />
+          <path
+            d="M -3 -1 v-2 a3 3 0 0 1 6 0 v2"
+            fill="none"
+            stroke="#475569"
+            strokeWidth={1.8}
+          />
+          <rect x={-4} y={-1} width={8} height={6} rx={1.5} fill="#475569" />
+        </g>
       ) : null}
 
       {component.terminals.map((terminal) => {

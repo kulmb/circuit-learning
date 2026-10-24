@@ -1,0 +1,87 @@
+.level-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(960px, 100%);
+  margin: 0 auto;
+}
+
+.level-back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 2px solid rgba(36, 50, 74, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 0 rgba(36, 50, 74, 0.12);
+}
+
+.level-back-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(36, 50, 74, 0.12);
+}
+
+.level-header__heading {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.level-header__heading h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3.4vw, 2.1rem);
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.level-header__heading p {
+  margin: 3px 0 0;
+  color: var(--color-ink-soft);
+  font-size: clamp(0.9rem, 2vw, 1.05rem);
+  font-weight: 700;
+}
+
+.level-zap {
+  position: relative;
+  width: min(960px, 100%);
+  /* Reserve the full speech bubble so it never covers cards or drop zones. */
+  min-height: 280px;
+  margin: 8px auto 0;
+}
+
+.level-zap .zap-panel {
+  left: 4px;
+  bottom: 0;
+}
+
+/* If the viewport is too short for the reserved space, the bubble must not
+   swallow taps meant for the activity underneath. */
+.level-zap .zap-bubble {
+  pointer-events: none;
+}
+
+.level-zap .zap-bubble__replay {
+  pointer-events: auto;
+}
+
+@media (max-width: 699px) {
+  .level-back-button {
+    min-height: 56px;
+    padding: 0 10px;
+    font-size: 0.85rem;
+  }
+
+  .level-header__heading p {
+    display: none;
+  }
+}

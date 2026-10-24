@@ -52,6 +52,51 @@ export function playBuzzerBeep(): void {
   }
 }
 
+export function playSuccessFanfare(): void {
+  if (muted || audioContext === null) {
+    return;
+  }
+
+  if (audioContext.state === 'suspended') {
+    void audioContext
+      .resume()
+      .then(() => {
+        if (audioContext !== null) {
+          emitFanfare(audioContext);
+        }
+      })
+      .catch(() => undefined);
+    return;
+  }
+
+  if (audioContext.state === 'running') {
+    emitFanfare(audioContext);
+  }
+}
+
+function emitFanfare(context: AudioContext): void {
+  const notes = [523.25, 659.25, 783.99, 1046.5];
+  const start = context.currentTime + 0.02;
+
+  notes.forEach((frequency, index) => {
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const noteStart = start + index * 0.09;
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(frequency, noteStart);
+
+    gain.gain.setValueAtTime(0.0001, noteStart);
+    gain.gain.exponentialRampToValueAtTime(0.03, noteStart + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.2);
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(noteStart);
+    oscillator.stop(noteStart + 0.22);
+  });
+}
+
 function emitBeep(context: AudioContext): void {
   const now = context.currentTime;
   const oscillator = context.createOscillator();

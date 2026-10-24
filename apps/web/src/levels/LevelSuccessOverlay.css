@@ -1,0 +1,167 @@
+.level-complete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  background: rgba(20, 32, 52, 0.55);
+  backdrop-filter: blur(5px);
+}
+
+.level-complete-card {
+  width: min(600px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: clamp(1.4rem, 4vw, 2.5rem);
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 214, 102, 0.35), transparent 55%),
+    #fffdf8;
+  border: 3px solid #fff;
+  border-radius: clamp(24px, 5vw, 36px);
+  box-shadow: 0 24px 60px rgba(20, 32, 52, 0.35);
+}
+
+.level-complete-eyebrow {
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.level-complete-title {
+  margin: 0.25rem 0 0;
+  color: var(--color-ink);
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.level-complete-stars {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.level-complete-stars span {
+  display: inline-flex;
+  width: clamp(52px, 12vw, 72px);
+  height: clamp(52px, 12vw, 72px);
+  filter: drop-shadow(0 6px 10px rgba(217, 119, 6, 0.22));
+}
+
+.level-complete-stars svg {
+  width: 100%;
+  height: 100%;
+}
+
+.level-complete-chapter {
+  margin: 0.25rem 0 0;
+  color: #b45309;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.level-complete-learned {
+  margin: 1rem 0 0.75rem;
+  color: var(--color-ink);
+  font-size: clamp(1.15rem, 3vw, 1.35rem);
+  font-weight: 900;
+}
+
+.level-vocabulary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 0 0 1.25rem;
+}
+
+.level-vocabulary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  text-align: left;
+  background: #ecfdf5;
+  border: 2px solid #a7f3d0;
+  border-radius: 16px;
+}
+
+.level-vocabulary-word {
+  color: #065f46;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.level-vocabulary-definition {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.level-complete-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.level-complete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-radius: 18px;
+  font: inherit;
+  font-size: clamp(1.1rem, 3vw, 1.3rem);
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.level-complete-button--primary {
+  color: #ffffff;
+  background: linear-gradient(180deg, #ffb04d 0%, var(--color-primary) 100%);
+  box-shadow: 0 6px 0 var(--color-primary-deep);
+}
+
+.level-complete-button--secondary {
+  color: var(--color-ink);
+  background: #ffffff;
+  border: 2px solid rgba(36, 50, 74, 0.14);
+  box-shadow: 0 5px 0 rgba(36, 50, 74, 0.12);
+}
+
+.level-complete-button:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.level-complete-card > .level-complete-button {
+  margin-top: 0.75rem;
+}
+
+@media (max-height: 560px) {
+  .level-complete-card {
+    padding: 1rem 1.25rem;
+  }
+
+  .level-complete-stars span {
+    width: 48px;
+    height: 48px;
+  }
+
+  .level-complete-stars {
+    margin: 0.4rem 0;
+  }
+}

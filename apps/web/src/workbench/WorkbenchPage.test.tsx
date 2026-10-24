@@ -1,7 +1,8 @@
+import { getLevelById } from '@circuits/shared';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { getText } from '../narration/fr';
+import { getText, getVocabulary } from '../narration/fr';
 import { WorkbenchPage } from './WorkbenchPage';
 import { useWorkbenchStore } from './workbenchStore';
 
@@ -64,6 +65,7 @@ function tap(element: Element, x: number, y: number): void {
 describe('workbench interactions', () => {
   beforeEach(() => {
     useWorkbenchStore.getState().resetWorkbench();
+    window.localStorage.clear();
   });
 
   it('creates a wire by tapping two terminals', () => {
@@ -125,6 +127,86 @@ describe('workbench interactions', () => {
     expect(
       screen.getByRole('button', { name: /affichage : symboles/i }),
     ).toBeInTheDocument();
+  });
+
+  it('plays the first level to success and shows the learned words', async () => {
+    const level = getLevelById('light-01');
+    if (!level) throw new Error('Level missing');
+
+    render(
+      <WorkbenchPage
+        level={level}
+        onBack={() => undefined}
+        onNextLevel={() => undefined}
+      />,
+    );
+    getSvg();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Allume l’ampoule' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getText('level.noComponents')),
+    ).toBeInTheDocument();
+
+    tap(getTerminal('battery-1', 'positive'), 100, 100);
+    tap(getTerminal('bulb-1', 'a'), 200, 100);
+    tap(getTerminal('bulb-1', 'b'), 260, 100);
+    tap(getTerminal('battery-1', 'negative'), 100, 200);
+
+    expect(
+      await screen.findByRole('heading', { name: getText('success.title') }),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('.level-complete-stars')?.getAttribute('aria-label'),
+    ).toBe('3 / 3');
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: getText('success.continue') }),
+    );
+
+    expect(
+      screen.getByText(getText('success.learned')),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getVocabulary('circuitFerme')?.word ?? ''),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: getText('success.next') }),
+    ).toBeInTheDocument();
+  });
+
+  it('uses level hints and lowers the star rating', async () => {
+    const level = getLevelById('light-01');
+    if (!level) throw new Error('Level missing');
+
+    render(
+      <WorkbenchPage level={level} onBack={() => undefined} />,
+    );
+    getSvg();
+
+    const zapButton = screen.getByRole('button', {
+      name: /demander un indice/i,
+    });
+
+    fireEvent.pointerDown(zapButton);
+    expect(screen.getByText(getText('level.01.hint.1'))).toBeInTheDocument();
+    fireEvent.pointerDown(zapButton);
+    expect(screen.getByText(getText('level.01.hint.2'))).toBeInTheDocument();
+    fireEvent.pointerDown(zapButton);
+    expect(screen.getByText(getText('level.01.hint.3'))).toBeInTheDocument();
+
+    tap(getTerminal('battery-1', 'positive'), 100, 100);
+    tap(getTerminal('bulb-1', 'a'), 200, 100);
+    tap(getTerminal('bulb-1', 'b'), 260, 100);
+    tap(getTerminal('battery-1', 'negative'), 100, 200);
+
+    expect(
+      await screen.findByRole('heading', { name: getText('success.title') }),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('.level-complete-stars')?.getAttribute('aria-label'),
+    ).toBe('1 / 3');
   });
 
   it('gives three progressively precise hints and highlights the issue', () => {

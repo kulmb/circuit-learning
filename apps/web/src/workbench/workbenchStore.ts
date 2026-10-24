@@ -9,6 +9,7 @@ import {
   type CircuitSimulation,
   type ComponentType,
   type CreateComponentOptions,
+  type LevelDefinition,
   type Rotation,
   type TerminalRef,
   type Vec2,
@@ -28,6 +29,7 @@ export interface Selection {
 interface CircuitSnapshot {
   components: CircuitComponent[];
   wires: Wire[];
+  availableCounts: Record<string, number> | null;
 }
 
 const HISTORY_LIMIT = 50;
@@ -38,8 +40,17 @@ export interface WorkbenchState {
   selected: Selection | null;
   pendingTerminal: TerminalRef | null;
   displayMode: DisplayMode;
+  levelId: string | null;
+  lockedComponentIds: string[];
+  availableCounts: Record<string, number> | null;
   history: CircuitSnapshot[];
-  addComponent: (type: ComponentType, options: ComponentOptions, position: Vec2) => void;
+  loadLevel: (level: LevelDefinition) => void;
+  addComponent: (
+    type: ComponentType,
+    options: ComponentOptions,
+    position: Vec2,
+    paletteKey?: string,
+  ) => void;
   moveComponent: (componentId: string, position: Vec2) => void;
   rotateComponent: (componentId: string) => void;
   toggleSwitch: (componentId: string) => void;
@@ -62,19 +73,67 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
   selected: null,
   pendingTerminal: null,
   displayMode: 'realistic',
+  levelId: null,
+  lockedComponentIds: [],
+  availableCounts: null,
   history: [],
 
-  addComponent(type, options, position) {
+  loadLevel(level) {
+    const circuit: Circuit = {
+      components: level.preplacedComponents.map((entry) =>
+        cloneComponent(entry.component),
+      ),
+      wires: level.preplacedWires.map(cloneWire),
+    };
+    const availableCounts = Object.fromEntries(
+      level.availableComponents.map((entry) => [entry.key, entry.count]),
+    );
+
+    set({
+      circuit,
+      simulation: simulateCircuit(circuit),
+      selected: null,
+      pendingTerminal: null,
+      displayMode: level.displayMode,
+      levelId: level.id,
+      lockedComponentIds: level.preplacedComponents
+        .filter((entry) => entry.locked)
+        .map((entry) => entry.component.id),
+      availableCounts,
+      history: [],
+    });
+  },
+
+  addComponent(type, options, position, paletteKey) {
     const state = get();
+
+    if (state.availableCounts !== null) {
+      if (paletteKey === undefined) {
+        return;
+      }
+
+      const remaining = state.availableCounts[paletteKey] ?? 0;
+      if (remaining <= 0) {
+        return;
+      }
+    }
+
     const id = nextId(type, state.circuit);
     const component = createComponent(type, { id, position, ...options });
     const circuit: Circuit = {
       components: [...state.circuit.components, component],
       wires: state.circuit.wires,
     };
+    const availableCounts =
+      state.availableCounts !== null && paletteKey !== undefined
+        ? {
+            ...state.availableCounts,
+            [paletteKey]: (state.availableCounts[paletteKey] ?? 0) - 1,
+          }
+        : state.availableCounts;
 
     set({
-      ...nextCircuitState(state, circuit),
+      ...nextCircuitState(state, circuit, availableCounts),
       selected: { kind: 'component', id },
       pendingTerminal: null,
     });
@@ -88,6 +147,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
 
     if (
       target === undefined ||
+      state.lockedComponentIds.includes(target.id) ||
       (target.position.x === position.x && target.position.y === position.y)
     ) {
       return;
@@ -115,7 +175,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       (component) => component.id === componentId,
     );
 
-    if (target === undefined) {
+    if (target === undefined || state.lockedComponentIds.includes(target.id)) {
       return;
     }
 
@@ -164,7 +224,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       (component) => component.id === componentId,
     );
 
-    if (target === undefined) {
+    if (target === undefined || state.lockedComponentIds.includes(target.id)) {
       return;
     }
 
@@ -205,6 +265,10 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
         selected: null,
         pendingTerminal: null,
       });
+      return;
+    }
+
+    if (state.lockedComponentIds.includes(selection.id)) {
       return;
     }
 
@@ -308,6 +372,8 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
     set({
       circuit,
       simulation: simulateCircuit(circuit),
+      availableCounts:
+        previous.availableCounts === null ? null : { ...previous.availableCounts },
       history: state.history.slice(0, -1),
       selected: null,
       pendingTerminal: null,
@@ -323,6 +389,9 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       selected: null,
       pendingTerminal: null,
       displayMode: 'realistic',
+      levelId: null,
+      lockedComponentIds: [],
+      availableCounts: null,
       history: [],
     });
   },
@@ -347,11 +416,24 @@ function createInitialCircuit(): Circuit {
 function nextCircuitState(
   state: WorkbenchState,
   circuit: Circuit,
-): Pick<WorkbenchState, 'circuit' | 'simulation' | 'history'> {
+  availableCounts: Record<string, number> | null = state.availableCounts,
+): Pick<
+  WorkbenchState,
+  'circuit' | 'simulation' | 'history' | 'availableCounts'
+> {
   return {
     circuit,
     simulation: simulateCircuit(circuit),
-    history: [...state.history, cloneCircuit(state.circuit)].slice(-HISTORY_LIMIT),
+    availableCounts,
+    history: [
+      ...state.history,
+      {
+        components: state.circuit.components.map(cloneComponent),
+        wires: state.circuit.wires.map(cloneWire),
+        availableCounts:
+          state.availableCounts === null ? null : { ...state.availableCounts },
+      },
+    ].slice(-HISTORY_LIMIT),
   };
 }
 

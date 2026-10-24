@@ -75,7 +75,12 @@ export function findNearestTerminal(
   return nearest;
 }
 
-export function buildWirePath(from: Point, to: Point, curve = 36): string {
+export function buildWirePath(
+  from: Point,
+  to: Point,
+  curve = 36,
+  maxControlFraction = 0.25,
+): string {
   const deltaX = to.x - from.x;
   const deltaY = to.y - from.y;
   const length = Math.hypot(deltaX, deltaY);
@@ -84,7 +89,7 @@ export function buildWirePath(from: Point, to: Point, curve = 36): string {
     return `M ${format(from.x)} ${format(from.y)}`;
   }
 
-  const controlDistance = Math.min(curve, length * 0.25);
+  const controlDistance = Math.min(curve, length * maxControlFraction);
   const middleX = (from.x + to.x) / 2;
   const middleY = (from.y + to.y) / 2;
   const controlX = middleX - (deltaY / length) * controlDistance;
