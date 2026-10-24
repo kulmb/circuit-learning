@@ -289,6 +289,14 @@ export function ChildLoginPage({
             </button>
           </div>
 
+          <button
+            type="button"
+            className="group-code__guest"
+            onPointerDown={(event) => activate(event, onGuest)}
+          >
+            {getText('login.guest')}
+          </button>
+
           <div className="group-code__keys">
             {KEYS.map((key) => (
               <button
@@ -305,13 +313,6 @@ export function ChildLoginPage({
             ))}
           </div>
 
-          <button
-            type="button"
-            className="group-code__guest"
-            onPointerDown={(event) => activate(event, onGuest)}
-          >
-            {getText('login.guest')}
-          </button>
         </section>
       ) : stage === 'students' && group !== null ? (
         <section className="avatar-picker">
@@ -332,7 +333,7 @@ export function ChildLoginPage({
 
           {group.students.length === 0 ? (
             <p className="avatar-picker__pinned">
-              Aucun élève dans ce groupe pour le moment.
+              {getText('login.emptyGroup')}
             </p>
           ) : null}
 

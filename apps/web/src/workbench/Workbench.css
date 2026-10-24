@@ -851,3 +851,7 @@
   font-weight: 700;
   line-height: 1.3;
 }
+
+[data-layout='compact'] .workbench-instructions__close {
+  min-height: 56px;
+}

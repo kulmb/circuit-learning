@@ -162,3 +162,7 @@
 [data-layout='compact'] .collection-card__definition {
   font-size: 0.85rem;
 }
+
+[data-layout='compact'] .collection__back {
+  min-height: 56px;
+}

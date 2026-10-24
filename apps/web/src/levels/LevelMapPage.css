@@ -125,7 +125,7 @@
 }
 
 .level-map__bye {
-  min-height: 40px;
+  min-height: 48px;
   border-color: rgba(184, 60, 10, 0.2);
   color: var(--color-primary-deep);
 }
@@ -466,6 +466,11 @@
 
 [data-layout='compact'] .level-map__toolbar {
   flex-wrap: wrap;
+}
+
+[data-layout='compact'] .level-map__collection,
+[data-layout='compact'] .level-map__bye {
+  min-height: 56px;
 }
 
 [data-layout='compact'] .level-map__child {

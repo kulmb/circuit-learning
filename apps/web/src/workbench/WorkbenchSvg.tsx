@@ -71,6 +71,7 @@ export interface WorkbenchSvgProps {
   previewComponent: CircuitComponent | null;
   board: BoardDimensions;
   view: BoardView;
+  scale: number;
   pannable: boolean;
   setView: (update: BoardView | ((current: BoardView) => BoardView)) => void;
   svgRef: (node: SVGSVGElement | null) => void;
@@ -165,6 +166,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
   previewComponent,
   board,
   view,
+  scale,
   pannable,
   setView,
   svgRef,
@@ -1070,6 +1072,8 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
           component={selectedComponent}
           components={circuit.components}
           board={board}
+          compact={isCompact}
+          viewportScale={scale}
           onRotate={() => onRotateComponent(selectedComponent.id)}
           onDelete={onDeleteSelection}
         />
@@ -1080,6 +1084,8 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
           x={(selectedWire.from.x + selectedWire.to.x) / 2}
           y={(selectedWire.from.y + selectedWire.to.y) / 2}
           board={board}
+          compact={isCompact}
+          viewportScale={scale}
           onDelete={onDeleteSelection}
         />
       ) : null}
@@ -1174,6 +1180,8 @@ interface SelectionToolbarProps {
   component: CircuitComponent;
   components: CircuitComponent[];
   board: BoardDimensions;
+  compact: boolean;
+  viewportScale: number;
   onRotate: () => void;
   onDelete: () => void;
 }
@@ -1182,12 +1190,17 @@ function SelectionToolbar({
   component,
   components,
   board,
+  compact,
+  viewportScale,
   onRotate,
   onDelete,
 }: SelectionToolbarProps) {
-  const buttonSize = 72;
-  const gap = 8;
-  const padding = 6;
+  const buttonSize = compact
+    ? Math.max(72, Math.ceil(56 / Math.max(viewportScale, 0.1)))
+    : 72;
+  const visualScale = buttonSize / 72;
+  const gap = 8 * visualScale;
+  const padding = 6 * visualScale;
   const width = padding * 2 + buttonSize * 2 + gap;
   const height = padding * 2 + buttonSize;
   const { left, top } = chooseToolbarPosition(
@@ -1234,11 +1247,22 @@ interface WireDeleteButtonProps {
   x: number;
   y: number;
   board: BoardDimensions;
+  compact: boolean;
+  viewportScale: number;
   onDelete: () => void;
 }
 
-function WireDeleteButton({ x, y, board, onDelete }: WireDeleteButtonProps) {
-  const size = 72;
+function WireDeleteButton({
+  x,
+  y,
+  board,
+  compact,
+  viewportScale,
+  onDelete,
+}: WireDeleteButtonProps) {
+  const size = compact
+    ? Math.max(72, Math.ceil(56 / Math.max(viewportScale, 0.1)))
+    : 72;
 
   return (
     <g
@@ -1287,13 +1311,13 @@ function ToolbarButton({ x, y, size, label, icon, tone = 'default', onActivate }
       <rect
         width={size}
         height={size}
-        rx={14}
+        rx={size * 0.19}
         fill={tone === 'danger' ? '#fff1f2' : '#f4f8fc'}
         stroke={tone === 'danger' ? '#fecdd3' : '#d7e3ee'}
         strokeWidth={2}
       />
       <g
-        transform={`translate(${size / 2} ${size / 2})`}
+        transform={`translate(${size / 2} ${size / 2}) scale(${size / 72})`}
         fill="none"
         stroke={tone === 'danger' ? '#be123c' : '#24324a'}
         strokeWidth={4}

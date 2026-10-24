@@ -263,3 +263,7 @@
     transform: rotate(360deg);
   }
 }
+
+[data-layout='compact'] .home__adult {
+  min-height: 56px;
+}

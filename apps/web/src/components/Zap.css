@@ -213,13 +213,13 @@
 }
 
 .zap-panel--compact .zap-mute {
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  height: 56px;
 }
 
 .zap-panel--compact .zap-mute svg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 .zap-bubble--overlay {
@@ -271,13 +271,13 @@
 }
 
 .zap-panel--top .zap-mute {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
 }
 
 .zap-panel--top .zap-mute svg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 .zap-panel--top .zap-bubble {

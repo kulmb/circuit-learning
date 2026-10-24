@@ -104,8 +104,8 @@ export const texts = {
   'component.switch.short': 'Inter.',
   'component.motor.label': 'Moteur',
   'component.motor.short': 'Moteur',
-  'component.buzzer.label': 'Buzzer',
-  'component.buzzer.short': 'Buzzer',
+  'component.buzzer.label': 'Sonnerie',
+  'component.buzzer.short': 'Son',
   'component.led.label': 'LED',
   'component.led.short': 'LED',
   'component.resistor.label': 'Résistance',
@@ -162,7 +162,7 @@ export const texts = {
   'map.transition': 'Transition',
   'map.final': 'Chapitre terminé !',
   'map.guestNotice':
-    'Tu joues en invité. Ta progression ne sera pas gardée.',
+    'Tu joues en invité. Ta progression reste sur cet appareil.',
   'map.collection': 'Ma collection',
   'map.sandbox': 'Atelier libre',
   'map.bye': 'Au revoir',
@@ -224,6 +224,7 @@ export const texts = {
   'login.delete': 'Effacer',
   'login.guest': 'Jouer en invité',
   'login.adult': 'Espace adulte',
+  'login.emptyGroup': 'Aucun élève dans ce groupe pour le moment.',
   'login.chooseAvatar': 'Choisis ton avatar',
   'login.pictureTitle': 'Touche tes trois images',
   'login.pictureHint': 'Dans le bon ordre.',
@@ -263,6 +264,8 @@ export const texts = {
   'progress.mergeBusy': 'Fusion en cours…',
   'progress.mergeError':
     'La fusion n’a pas marché. Réessaie plus tard.',
+
+  'level.backToMap': 'Carte des niveaux',
 
   'level.01.title': 'Allume l’ampoule',
   'level.01.goal': 'Relie la pile à l’ampoule.',

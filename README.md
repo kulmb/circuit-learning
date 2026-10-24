@@ -571,6 +571,34 @@ Les points de rupture sont exposés sur `.app-root` (`data-layout` et
 niveaux est horizontale sur ordinateur et tablette, verticale et défilante sur
 téléphone.
 
+## Audit d’utilisabilité enfant
+
+Le détail des mesures et des correctifs est dans
+[`docs/child-usability-audit.md`](docs/child-usability-audit.md). L’audit couvre
+l’accueil, la connexion, la carte, la collection, l’atelier et le plan de
+travail à cinq tailles, du téléphone en paysage à l’ordinateur.
+
+- Tous les boutons HTML mesurés font au moins 48 px, et 56 px en compact. Le
+  pavé de code utilise une grille de touches de 56 px minimum. La barre d’outils
+  SVG Tourner/Supprimer est recalculée selon l’échelle du plan et mesure 56 px
+  sur un écran 568 × 320.
+- Les commandes de page restent à cinq maximum. Le pavé de code, la palette,
+  les cartes de niveaux/élèves et les commandes du guide Zap sont traités comme
+  contenu ou guide, pas comme commandes de page.
+- `apps/web/src/narration/childTexts.test.ts` vérifie les phrases de 12 mots
+  maximum et l’absence de mots anglais évidents. Hunspell ne signale que « Zap ».
+- Toutes les interactions enfants passent par les Pointer Events ; aucun
+  `onClick`, gestionnaire clavier, double-clic ou clic droit n’est requis.
+- Le court-circuit clignote à 1,2 s par cycle, sous la limite de trois flashs
+  par seconde.
+- Les cinq tailles testées n’ont ni défilement horizontal ni bouton coupé. Le
+  panneau atelier rend le plan `inert` derrière ses boîtes modales.
+- Un composant lâché hors du plan revient avec une animation et n’est pas
+  ajouté.
+
+Sur un écran 568 × 320, le plan complet reste petit : le mode zoomable et la
+zone d’aimantation de 40 px prennent le relais pour les bornes dessinées.
+
 ## PWA et hors ligne
 
 Le front est une PWA générée par `vite-plugin-pwa` (Workbox, mode `generateSW`).

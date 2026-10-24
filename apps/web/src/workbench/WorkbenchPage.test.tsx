@@ -88,6 +88,43 @@ describe('workbench interactions', () => {
     expect(useWorkbenchStore.getState().simulation.ok).toBe(true);
   });
 
+  it('returns a palette component smoothly when dropped outside the board', () => {
+    vi.spyOn(SVGSVGElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      width: 320,
+      height: 200,
+      right: 320,
+      bottom: 200,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    render(<WorkbenchPage onBack={() => undefined} />);
+    getSvg();
+
+    const button = screen.getByRole('button', { name: /ampoule/i });
+    Object.assign(button, {
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    });
+    const down = {
+      pointerId: 7,
+      pointerType: 'mouse',
+      button: 0,
+      clientX: 600,
+      clientY: 500,
+    };
+
+    fireEvent.pointerDown(button, down);
+    fireEvent.pointerMove(button, { ...down, clientX: 650, clientY: 540 });
+    fireEvent.pointerUp(button, { ...down, clientX: 650, clientY: 540 });
+
+    expect(useWorkbenchStore.getState().circuit.components).toHaveLength(2);
+    expect(document.querySelector('.palette-ghost--returning')).not.toBeNull();
+  });
+
   it('drags a placed component and snaps it to the grid', () => {
     render(<WorkbenchPage onBack={() => undefined} />);
     getSvg();

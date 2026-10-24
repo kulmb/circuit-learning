@@ -284,7 +284,7 @@ export function SymbolMatchingPage({
             onBack();
           }}
         >
-          ← {getText('map.back')}
+          ← {getText('level.backToMap')}
         </button>
       </div>
     );
@@ -305,7 +305,7 @@ export function SymbolMatchingPage({
           }}
         >
           <span aria-hidden="true">←</span>
-          <span>{getText('map.back')}</span>
+          <span>{getText('level.backToMap')}</span>
         </button>
 
         <div className="level-header__heading">

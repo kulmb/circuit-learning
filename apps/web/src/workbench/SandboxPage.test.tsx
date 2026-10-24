@@ -48,6 +48,9 @@ describe('sandbox page', () => {
       screen.getByRole('heading', { name: 'Mon atelier' }),
     ).toBeInTheDocument();
     expect(document.body.style.overflow).toBe('hidden');
+    expect(
+      document.querySelector('.workbench-page')?.getAttribute('aria-hidden'),
+    ).toBe('true');
 
     press(
       screen.getByRole('button', {

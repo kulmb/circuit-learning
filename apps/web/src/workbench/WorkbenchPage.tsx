@@ -244,6 +244,14 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   }, [buzzingKey]);
 
   const sandboxMode = sandbox !== undefined;
+  const workbenchPaused = sandbox?.pauseCuriosity ?? false;
+  const pageRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (pageRef.current !== null) {
+      pageRef.current.inert = workbenchPaused;
+    }
+  }, [workbenchPaused]);
 
   useEffect(() => {
     narration.say(
@@ -666,7 +674,9 @@ export const WorkbenchPage = memo(function WorkbenchPage({
 
   return (
     <div
+      ref={pageRef}
       className="workbench-page"
+      aria-hidden={workbenchPaused ? true : undefined}
       onContextMenu={(event) => event.preventDefault()}
     >
       <header className="workbench-header">
@@ -844,6 +854,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
               previewComponent={paletteDrag?.placement?.component ?? null}
               board={board}
               view={viewport.view}
+              scale={viewport.scale}
               pannable={viewport.pannable}
               setView={viewport.setView}
               svgRef={attachSvg}

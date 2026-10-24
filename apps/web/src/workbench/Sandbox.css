@@ -489,8 +489,12 @@
   gap: 8px;
 }
 
-[data-layout='compact'] .sandbox-button {
+[data-layout='compact'] .sandbox-button,
+[data-layout='compact'] .sandbox-close {
   min-height: 56px;
+}
+
+[data-layout='compact'] .sandbox-button {
   padding: 6px 8px;
   font-size: 0.78rem;
 }
@@ -515,3 +519,7 @@
   max-height: 42dvh;
 }
 
+
+[data-layout='compact'] .sandbox-work {
+  min-height: 56px;
+}
