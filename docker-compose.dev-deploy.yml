@@ -1,0 +1,79 @@
+name: circuits-de-zap-dev-host
+
+# Déploiement de développement : https://circuit-learning-dev.87543362.xyz
+# Totalement isolé de la production (base, API, image et volume distincts).
+# Projet Compose distinct de docker-compose.dev.yml (MongoDB local).
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    environment:
+      MONGO_REPLICA_HOST: mongo:27017
+    # Loopback uniquement, pour les migrations et les seeds depuis l'hôte.
+    ports:
+      - "127.0.0.1:27019:27017"
+    volumes:
+      - mongo-dev-host-data:/data/db
+      - ./deploy/mongo/replica-healthcheck.sh:/usr/local/bin/replica-healthcheck:ro
+    healthcheck:
+      test: ["CMD", "bash", "/usr/local/bin/replica-healthcheck"]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: circuits-api:dev
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3100"
+      MONGODB_URI: mongodb://mongo:27017/circuits?replicaSet=rs0
+      COOKIE_SECRET: ${COOKIE_SECRET:?Definis COOKIE_SECRET dans .env.dev, 32 caracteres minimum}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://circuit-learning-dev.87543362.xyz}
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: "true"
+    # L'API de développement n'écoute que sur la boucle locale, derrière Caddy.
+    ports:
+      - "127.0.0.1:3200:3100"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3100/api/health').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1));"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongo-dev-host-data:
