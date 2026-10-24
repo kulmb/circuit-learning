@@ -329,6 +329,34 @@ travail :
 Le moteur recalcule le circuit après chaque modification ; pendant un déplacement,
 seul l'aperçu visuel bouge.
 
+## Atelier libre
+
+L’« Atelier libre » est accessible depuis l’accueil et depuis la carte des
+niveaux. Il reprend le plan de travail, sans objectif ni étoile :
+
+- la pile et l’ampoule sont toujours disponibles ; l’interrupteur, le métal et
+  la gomme, la résistance, le moteur et la LED apparaissent quand le niveau qui
+  les présente est terminé. Les quantités sont illimitées ;
+- la simulation, les animations de courant et l’avertissement de court-circuit
+  restent actifs ;
+- après 24 secondes sans modification, Zap propose une idée en lien avec le
+  circuit (par exemple « Et si tu ajoutais une deuxième pile ? »). Il ne propose
+  que des composants déjà débloqués et se tait pendant les boîtes de dialogue ;
+- le bouton « Mon atelier » ouvre un panneau avec « Enregistrer », « Prendre une
+  photo » et « Tout effacer ». L’effacement demande une confirmation Oui / Non ;
+- une création est enregistrée par le `ProgressRepository` : sur le serveur pour
+  un élève connecté, dans `localStorage` pour un invité. La sauvegarde passe par
+  la file hors ligne existante et met à jour la vignette ;
+- « Prendre une photo » fabrique un PNG de 1248 × 992 (titre, nom du circuit et
+  plan), enregistre sa vignette JPEG avec la création et propose le
+  téléchargement `circuit-zap-<nom>.png` ;
+- les créations enregistrées sont listées avec leur vignette et peuvent être
+  rouvertes. Une ouverture sauvegarde d’abord les modifications en cours.
+
+Le panneau est plein écran sur téléphone en paysage ; sur tablette et ordinateur,
+il reste une boîte centrée. La photo est rendue depuis une copie SVG hors écran
+(`SandboxSnapshot`), sans sélection, bornes ni contrôles.
+
 ## Zoom et déplacement
 
 La taille logique du plan vient du niveau (`board.columns` × `board.rows`) et le
@@ -404,7 +432,9 @@ pas confiance au client :
 
 `attemptId` et l’identifiant d’un circuit libre sont fournis par le client et
 uniques par élève : une requête rejouée met à jour la même ligne au lieu d’en
-créer une deuxième.
+créer une deuxième. La vignette d’un atelier doit être une data URL d’image
+(PNG, JPEG ou WebP) : une URL distante est refusée, donc le tableau de bord
+d’un adulte ne charge jamais de ressource tierce.
 
 ### Hors ligne et invités
 

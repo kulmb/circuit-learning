@@ -19,6 +19,7 @@ export interface ComponentBlockProps {
   hinted: boolean;
   locked: boolean;
   ghost?: boolean;
+  showTerminals?: boolean;
 }
 
 export function ComponentBlock({
@@ -30,6 +31,7 @@ export function ComponentBlock({
   hinted,
   locked,
   ghost = false,
+  showTerminals = true,
 }: ComponentBlockProps) {
   const centerX = component.position.x * CELL_SIZE;
   const centerY = component.position.y * CELL_SIZE;
@@ -111,51 +113,53 @@ export function ComponentBlock({
         </g>
       ) : null}
 
-      {component.terminals.map((terminal) => {
-        const terminalX = terminal.offset.x * CELL_SIZE;
-        const terminalY = terminal.offset.y * CELL_SIZE;
+      {showTerminals
+        ? component.terminals.map((terminal) => {
+            const terminalX = terminal.offset.x * CELL_SIZE;
+            const terminalY = terminal.offset.y * CELL_SIZE;
 
-        return (
-          <g
-            key={terminal.id}
-            data-terminal-component={ghost ? undefined : component.id}
-            data-terminal-id={ghost ? undefined : terminal.id}
-          >
-            <circle
-              cx={terminalX}
-              cy={terminalY}
-              r={TERMINAL_HIT_RADIUS}
-              fill="transparent"
-              pointerEvents={ghost ? 'none' : 'all'}
-            />
-            <circle
-              cx={terminalX}
-              cy={terminalY}
-              r={10}
-              fill="#ffffff"
-              stroke={selected ? '#1d4ed8' : '#24324a'}
-              strokeWidth={5}
-            />
-            {terminal.label ? (
+            return (
               <g
-                transform={`rotate(${-component.rotation} ${terminalX} ${terminalY})`}
+                key={terminal.id}
+                data-terminal-component={ghost ? undefined : component.id}
+                data-terminal-id={ghost ? undefined : terminal.id}
               >
-                <text
-                  x={terminalX}
-                  y={terminalY}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fill="#24324a"
-                  fontSize={13}
-                  fontWeight={900}
-                >
-                  {terminal.label}
-                </text>
+                <circle
+                  cx={terminalX}
+                  cy={terminalY}
+                  r={TERMINAL_HIT_RADIUS}
+                  fill="transparent"
+                  pointerEvents={ghost ? 'none' : 'all'}
+                />
+                <circle
+                  cx={terminalX}
+                  cy={terminalY}
+                  r={10}
+                  fill="#ffffff"
+                  stroke={selected ? '#1d4ed8' : '#24324a'}
+                  strokeWidth={5}
+                />
+                {terminal.label ? (
+                  <g
+                    transform={`rotate(${-component.rotation} ${terminalX} ${terminalY})`}
+                  >
+                    <text
+                      x={terminalX}
+                      y={terminalY}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fill="#24324a"
+                      fontSize={13}
+                      fontWeight={900}
+                    >
+                      {terminal.label}
+                    </text>
+                  </g>
+                ) : null}
               </g>
-            ) : null}
-          </g>
-        );
-      })}
+            );
+          })
+        : null}
     </g>
   );
 }

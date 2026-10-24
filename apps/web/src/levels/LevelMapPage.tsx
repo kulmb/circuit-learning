@@ -20,12 +20,14 @@ export interface LevelMapPageProps {
   onBack: () => void;
   onSelectLevel: (levelId: string) => void;
   onCollection: () => void;
+  onSandbox: () => void;
 }
 
 export function LevelMapPage({
   onBack,
   onSelectLevel,
   onCollection,
+  onSandbox,
 }: LevelMapPageProps) {
   const [progress, setProgress] = useState<PlayerProgress | null>(null);
   const { repository, isGuest, ready, session, logout } = useProgress();
@@ -90,6 +92,15 @@ export function LevelMapPage({
         >
           <CollectionIcon />
           <span>{getText('map.collection')}</span>
+        </button>
+
+        <button
+          type="button"
+          className="level-map__collection"
+          onPointerDown={(event) => activate(event, onSandbox)}
+        >
+          <WrenchIcon />
+          <span>{getText('map.sandbox')}</span>
         </button>
 
         {child !== null ? (
@@ -279,6 +290,21 @@ function SymbolIcon() {
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function WrenchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

@@ -66,11 +66,19 @@ export const sandboxParamsSchema = z.object({
   id: sandboxIdSchema,
 });
 
+export const sandboxThumbnailSchema = z
+  .string()
+  .max(300_000)
+  .regex(
+    /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/,
+    'La vignette doit être une image encodée en base64.',
+  );
+
 export const sandboxInputSchema = z
   .object({
     name: z.string().trim().min(1).max(80),
     data: z.unknown(),
-    thumbnail: z.string().max(300_000).nullable().optional(),
+    thumbnail: sandboxThumbnailSchema.nullable().optional(),
   })
   .strict();
 

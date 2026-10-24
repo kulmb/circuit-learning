@@ -3,9 +3,12 @@ import {
   cloneWire,
   createComponent,
   createWire,
+  deserializeCircuit,
+  serializeCircuit,
   simulateCircuit,
   type Circuit,
   type CircuitComponent,
+  type CircuitDocument,
   type CircuitSimulation,
   type ComponentType,
   type CreateComponentOptions,
@@ -18,6 +21,7 @@ import {
 import { create } from 'zustand';
 
 import { nextDisplayMode, type DisplayMode } from './displayMode';
+import type { SandboxWorkMeta } from './sandbox';
 
 export type ComponentOptions = Omit<CreateComponentOptions, 'id' | 'position'>;
 
@@ -44,7 +48,18 @@ export interface WorkbenchState {
   lockedComponentIds: string[];
   availableCounts: Record<string, number> | null;
   history: CircuitSnapshot[];
+  sandboxActive: boolean;
+  sandboxOwnerKey: string | null;
+  sandboxWork: SandboxWorkMeta | null;
+  sandboxSavedFingerprint: string | null;
   loadLevel: (level: LevelDefinition) => void;
+  loadSandboxCircuit: (
+    document: CircuitDocument,
+    work: SandboxWorkMeta | null,
+    ownerKey: string,
+  ) => void;
+  markSandboxSaved: (work: SandboxWorkMeta, fingerprint: string) => void;
+  clearSandboxCircuit: () => void;
   addComponent: (
     type: ComponentType,
     options: ComponentOptions,
@@ -77,6 +92,10 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
   lockedComponentIds: [],
   availableCounts: null,
   history: [],
+  sandboxActive: false,
+  sandboxOwnerKey: null,
+  sandboxWork: null,
+  sandboxSavedFingerprint: null,
 
   loadLevel(level) {
     const circuit: Circuit = {
@@ -101,6 +120,56 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
         .map((entry) => entry.component.id),
       availableCounts,
       history: [],
+      sandboxActive: false,
+      sandboxOwnerKey: null,
+      sandboxWork: null,
+      sandboxSavedFingerprint: null,
+    });
+  },
+
+  loadSandboxCircuit(document, work, ownerKey) {
+    const circuit = deserializeCircuit(document);
+    const fingerprint = JSON.stringify(serializeCircuit(circuit));
+
+    set({
+      circuit,
+      simulation: simulateCircuit(circuit),
+      selected: null,
+      pendingTerminal: null,
+      displayMode: 'realistic',
+      levelId: null,
+      lockedComponentIds: [],
+      availableCounts: null,
+      history: [],
+      sandboxActive: true,
+      sandboxOwnerKey: ownerKey,
+      sandboxWork: work,
+      sandboxSavedFingerprint: fingerprint,
+    });
+  },
+
+  markSandboxSaved(work, fingerprint) {
+    set({
+      sandboxWork: work,
+      sandboxSavedFingerprint: fingerprint,
+    });
+  },
+
+  clearSandboxCircuit() {
+    const circuit: Circuit = { components: [], wires: [] };
+
+    set({
+      circuit,
+      simulation: simulateCircuit(circuit),
+      selected: null,
+      pendingTerminal: null,
+      levelId: null,
+      lockedComponentIds: [],
+      availableCounts: null,
+      history: [],
+      sandboxActive: true,
+      sandboxWork: null,
+      sandboxSavedFingerprint: JSON.stringify(serializeCircuit(circuit)),
     });
   },
 
@@ -393,6 +462,10 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       lockedComponentIds: [],
       availableCounts: null,
       history: [],
+      sandboxActive: false,
+      sandboxOwnerKey: null,
+      sandboxWork: null,
+      sandboxSavedFingerprint: null,
     });
   },
 }));

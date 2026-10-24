@@ -37,6 +37,10 @@ import { boardForLevel, CELL_SIZE } from './constants';
 import type { DisplayMode } from './displayMode';
 import { PALETTE_ITEMS, type PaletteItem } from './paletteItems';
 import {
+  chooseSandboxCuriosity,
+  sandboxCuriosityTips,
+} from './sandbox';
+import {
   applyTouchOffset,
   clampGridPosition,
   isDragGesture,
@@ -56,11 +60,22 @@ import { WorkbenchSvg } from './WorkbenchSvg';
 import { useWorkbenchStore } from './workbenchStore';
 import './Workbench.css';
 
+export interface SandboxChrome {
+  items: PaletteItem[];
+  dirty: boolean;
+  pauseCuriosity: boolean;
+  onOpenWorkshop: () => void;
+}
+
 export interface WorkbenchPageProps {
   onBack: () => void;
   level?: LevelDefinition;
   onNextLevel?: () => void;
+  sandbox?: SandboxChrome;
 }
+
+const CURIOSITY_FIRST_MS = 24_000;
+const CURIOSITY_NEXT_MS = 40_000;
 
 interface PaletteDragState {
   item: PaletteItem;
@@ -88,6 +103,7 @@ export function WorkbenchPage({
   onBack,
   level,
   onNextLevel,
+  sandbox,
 }: WorkbenchPageProps) {
   const {
     circuit,
@@ -167,6 +183,10 @@ export function WorkbenchPage({
       simulation.states[component.id]?.state !== 'off',
   );
   const paletteItems = useMemo(() => {
+    if (sandbox !== undefined) {
+      return sandbox.items;
+    }
+
     if (level === undefined) {
       return PALETTE_ITEMS;
     }
@@ -175,7 +195,7 @@ export function WorkbenchPage({
       const item = PALETTE_ITEMS.find((candidate) => candidate.key === offer.key);
       return item === undefined ? [] : [item];
     });
-  }, [level]);
+  }, [level, sandbox]);
   const levelSuccess = useMemo(
     () =>
       level === undefined
@@ -218,9 +238,72 @@ export function WorkbenchPage({
     }
   }, [buzzingKey]);
 
+  const sandboxMode = sandbox !== undefined;
+
   useEffect(() => {
-    narration.say(level === undefined ? 'zap.welcome' : level.introTextId);
-  }, [level, narration.say]);
+    narration.say(
+      sandboxMode
+        ? 'sandbox.intro'
+        : level === undefined
+          ? 'zap.welcome'
+          : level.introTextId,
+    );
+  }, [level, narration.say, sandboxMode]);
+
+  const previousCuriosityRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (sandbox === undefined || sandbox.pauseCuriosity) {
+      return;
+    }
+
+    const availableKeys = new Set(
+      sandbox.items.map((item) => item.key),
+    );
+    let cancelled = false;
+    let timer = 0;
+
+    const schedule = (delay: number): void => {
+      timer = window.setTimeout(() => {
+        if (cancelled) {
+          return;
+        }
+
+        if (!document.hidden) {
+          const tips = sandboxCuriosityTips(
+            circuit,
+            simulation,
+            availableKeys,
+          );
+          const choice = chooseSandboxCuriosity(
+            tips,
+            previousCuriosityRef.current,
+          );
+
+          if (choice !== null) {
+            previousCuriosityRef.current = choice;
+            setHintState(null);
+            setHintHighlight(null);
+            setExpression(
+              choice === 'sandbox.curiosity.photo'
+                ? 'surprised'
+                : 'thinking',
+            );
+            narration.say(choice);
+          }
+        }
+
+        schedule(CURIOSITY_NEXT_MS);
+      }, delay);
+    };
+
+    schedule(CURIOSITY_FIRST_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [circuit, narration.say, sandbox, simulation]);
 
   useEffect(() => {
     if (simulation.shortCircuit) {
@@ -588,20 +671,46 @@ export function WorkbenchPage({
 
         <div className="workbench-header__title">
           <h1>
-            {level === undefined
-              ? fr.workbench.title
-              : getText(level.titleTextId)}
+            {sandbox !== undefined
+              ? fr.sandbox.title
+              : level === undefined
+                ? fr.workbench.title
+                : getText(level.titleTextId)}
           </h1>
           {isCompact ? null : (
             <p>
-              {level === undefined
-                ? fr.workbench.hint
-                : getText(level.goalTextId)}
+              {sandbox !== undefined
+                ? fr.sandbox.subtitle
+                : level === undefined
+                  ? fr.workbench.hint
+                  : getText(level.goalTextId)}
             </p>
           )}
         </div>
 
-        {isCompact ? (
+        {sandbox !== undefined ? (
+          <button
+            type="button"
+            className={`workbench-icon-button workbench-sandbox-button${sandbox.dirty ? ' is-dirty' : ''}`}
+            aria-label={fr.sandbox.myWorkshop}
+            onPointerDown={(event) =>
+              activateButton(event, sandbox.onOpenWorkshop)
+            }
+          >
+            <ToolboxIcon />
+            <span className="workbench-sandbox-button__label">
+              {fr.sandbox.myWorkshop}
+            </span>
+            {sandbox.dirty ? (
+              <span
+                className="workbench-sandbox-button__dot"
+                aria-hidden="true"
+              />
+            ) : null}
+          </button>
+        ) : null}
+
+        {isCompact && sandbox === undefined ? (
           <button
             type="button"
             className="workbench-icon-button workbench-help-button"
@@ -911,6 +1020,22 @@ function getModeLabel(mode: DisplayMode): string {
     case 'overlay':
       return fr.workbench.displayOverlay;
   }
+}
+
+function ToolboxIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M4 9h16v10H4zM9 9V6h6v3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M4 12h16" stroke="currentColor" strokeWidth="2" />
+      <path d="M10 12h4v3h-4z" fill="currentColor" />
+    </svg>
+  );
 }
 
 function ViewIcon() {

@@ -1,0 +1,517 @@
+.sandbox-page {
+  position: relative;
+  height: 100dvh;
+  min-height: 100dvh;
+}
+
+/* The photo copy stays out of the viewport but keeps its own layout. */
+.sandbox-snapshot {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 768px;
+  height: 512px;
+  pointer-events: none;
+}
+
+.sandbox-snapshot svg {
+  display: block;
+  width: 768px;
+  height: 512px;
+}
+
+/* ---------- Loading ---------- */
+
+.sandbox-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 100dvh;
+  padding: 24px;
+  color: var(--color-ink);
+  text-align: center;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 214, 102, 0.35) 0, transparent 40%),
+    radial-gradient(circle at 88% 16%, rgba(126, 217, 255, 0.4) 0, transparent 44%),
+    linear-gradient(160deg, #eaf8ff 0%, #fff9ec 100%);
+}
+
+.sandbox-loading p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.sandbox-loading__spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid rgba(15, 157, 140, 0.2);
+  border-top-color: var(--color-secondary);
+  border-radius: 50%;
+  animation: sandbox-spin 0.9s linear infinite;
+}
+
+@keyframes sandbox-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Shared buttons ---------- */
+
+.sandbox-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 10px 16px;
+  border: 2px solid rgba(36, 50, 74, 0.14);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 0 rgba(36, 50, 74, 0.12);
+}
+
+.sandbox-button svg {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+.sandbox-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(36, 50, 74, 0.12);
+}
+
+.sandbox-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.sandbox-button--primary {
+  border-color: transparent;
+  color: #ffffff;
+  background: linear-gradient(180deg, #2fc4b2 0%, var(--color-secondary) 100%);
+  box-shadow: 0 5px 0 var(--color-secondary-deep);
+}
+
+.sandbox-button--photo {
+  border-color: #f1c453;
+  color: #4a3500;
+  background: #ffe9a8;
+  box-shadow: 0 5px 0 #e0ac2e;
+}
+
+.sandbox-button--danger {
+  border-color: #fecdd3;
+  color: #9f1239;
+  background: #fff1f2;
+  box-shadow: 0 5px 0 #fecdd3;
+}
+
+.sandbox-button--neutral {
+  background: #f8fafc;
+  color: var(--color-ink);
+}
+
+/* ---------- Overlays ---------- */
+
+.sandbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(23, 37, 54, 0.54);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.sandbox-panel,
+.sandbox-confirm,
+.sandbox-photo-dialog {
+  width: min(780px, 100%);
+  max-height: calc(100dvh - 32px);
+  padding: clamp(18px, 3vw, 28px);
+  overflow-y: auto;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 28px;
+  background: #fffdf8;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+  box-sizing: border-box;
+}
+
+.sandbox-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sandbox-panel__eyebrow {
+  margin: 0 0 2px;
+  color: var(--color-secondary-deep);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sandbox-panel h2,
+.sandbox-confirm h2,
+.sandbox-photo-dialog h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.sandbox-close {
+  min-height: 52px;
+  padding: 0 18px;
+  border: 2px solid rgba(36, 50, 74, 0.12);
+  border-radius: 14px;
+  background: #f8fafc;
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sandbox-panel__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.sandbox-panel__badge,
+.sandbox-work__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #d9f5ef;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.sandbox-panel__badge.is-dirty {
+  background: #fff0d1;
+  color: #92400e;
+}
+
+.sandbox-panel__actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0 8px;
+}
+
+.sandbox-panel__status {
+  min-height: 24px;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.sandbox-panel__status--saved {
+  color: #047857;
+}
+
+.sandbox-panel__status--error {
+  color: #be123c;
+}
+
+.sandbox-panel__error {
+  margin: 4px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.sandbox-works {
+  margin-top: 18px;
+}
+
+.sandbox-works h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.sandbox-works__hint {
+  margin: 4px 0 12px;
+  color: var(--color-ink-soft);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.sandbox-works__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sandbox-work {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px;
+  border: 2px solid rgba(36, 50, 74, 0.12);
+  border-radius: 18px;
+  background: #ffffff;
+  color: var(--color-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+.sandbox-work.is-current {
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(15, 157, 140, 0.16);
+}
+
+.sandbox-work:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.sandbox-work__thumb {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 480 / 351;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #eef6fb;
+}
+
+.sandbox-work__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sandbox-work__placeholder {
+  font-size: 2rem;
+}
+
+.sandbox-work__name {
+  overflow: hidden;
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sandbox-work__date {
+  color: var(--color-ink-soft);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sandbox-work__badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+}
+
+.sandbox-panel__unlock {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 2px dashed rgba(36, 50, 74, 0.16);
+  border-radius: 14px;
+  background: #f8fafc;
+  color: var(--color-ink-soft);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* ---------- Clear confirmation ---------- */
+
+.sandbox-confirm {
+  width: min(470px, 100%);
+  text-align: center;
+}
+
+.sandbox-confirm p {
+  margin: 12px 0 20px;
+  color: var(--color-ink-soft);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.sandbox-confirm__choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sandbox-confirm__choices .sandbox-button {
+  min-height: 68px;
+  font-size: 1.05rem;
+}
+
+/* ---------- Photo preview ---------- */
+
+.sandbox-photo-dialog {
+  width: min(760px, 100%);
+  text-align: center;
+}
+
+.sandbox-photo-dialog__image {
+  display: block;
+  width: 100%;
+  max-height: 54dvh;
+  margin: 16px auto 12px;
+  border: 2px solid #d7e3ee;
+  border-radius: 16px;
+  background: #f7fbff;
+  object-fit: contain;
+}
+
+.sandbox-photo-dialog__status {
+  margin: 0 0 14px;
+  color: #047857;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.sandbox-photo-dialog__status.is-error {
+  color: #be123c;
+}
+
+.sandbox-photo-dialog__download {
+  margin-bottom: 10px;
+}
+
+.sandbox-photo-dialog > .sandbox-button {
+  display: flex;
+  width: min(340px, 100%);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+/* ---------- Sandbox button in the workbench header ---------- */
+
+.workbench-sandbox-button {
+  position: relative;
+  min-width: 132px;
+}
+
+.workbench-sandbox-button svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.workbench-sandbox-button.is-dirty {
+  border-color: #f5b73c;
+}
+
+.workbench-sandbox-button__dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #f97316;
+}
+
+/* ---------- Compact phones (landscape) ---------- */
+
+[data-layout='compact'] .sandbox-overlay {
+  padding: 0;
+  align-items: stretch;
+}
+
+[data-layout='compact'] .sandbox-panel,
+[data-layout='compact'] .sandbox-confirm,
+[data-layout='compact'] .sandbox-photo-dialog {
+  width: 100%;
+  max-height: 100dvh;
+  min-height: 100dvh;
+  padding:
+    max(10px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  border: 0;
+  border-radius: 0;
+}
+
+[data-layout='compact'] .sandbox-panel__actions {
+  gap: 8px;
+}
+
+[data-layout='compact'] .sandbox-button {
+  min-height: 56px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+}
+
+[data-layout='compact'] .sandbox-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+[data-layout='compact'] .sandbox-works__grid {
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+[data-layout='compact'] .sandbox-confirm,
+[data-layout='compact'] .sandbox-photo-dialog {
+  min-height: 0;
+  margin: auto;
+}
+
+[data-layout='compact'] .sandbox-photo-dialog__image {
+  max-height: 42dvh;
+}
+

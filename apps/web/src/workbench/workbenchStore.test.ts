@@ -1,6 +1,7 @@
 import { getLevelById } from '@circuits/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { createSandboxStarter } from './sandbox';
 import { useWorkbenchStore } from './workbenchStore';
 
 function store() {
@@ -243,5 +244,47 @@ describe('workbench store', () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toContain('bulb-2');
     expect(ids).toContain('bulb-3');
+  });
+
+  it('loads a sandbox without counts or locked components', () => {
+    const work = {
+      id: 'sandbox-1',
+      name: 'Mon circuit 1',
+      updatedAt: 1000,
+    };
+
+    store().loadSandboxCircuit(createSandboxStarter(), work, 'guest');
+
+    expect(store().sandboxActive).toBe(true);
+    expect(store().levelId).toBeNull();
+    expect(store().availableCounts).toBeNull();
+    expect(store().lockedComponentIds).toEqual([]);
+    expect(store().sandboxWork).toEqual(work);
+
+    store().addComponent('bulb', {}, { x: 5, y: 2 }, 'bulb');
+    store().addComponent('bulb', {}, { x: 6, y: 2 }, 'bulb');
+    store().addComponent('bulb', {}, { x: 7, y: 2 }, 'bulb');
+
+    expect(store().circuit.components).toHaveLength(5);
+    expect(store().availableCounts).toBeNull();
+
+    store().clearSandboxCircuit();
+
+    expect(store().circuit.components).toHaveLength(0);
+    expect(store().sandboxWork).toBeNull();
+    expect(store().sandboxActive).toBe(true);
+  });
+
+  it('leaves the sandbox when a level starts', () => {
+    store().loadSandboxCircuit(createSandboxStarter(), null, 'guest');
+    expect(store().sandboxActive).toBe(true);
+
+    const level = getLevelById('light-01');
+    if (!level) throw new Error('Level missing');
+    store().loadLevel(level);
+
+    expect(store().sandboxActive).toBe(false);
+    expect(store().sandboxWork).toBeNull();
+    expect(store().sandboxSavedFingerprint).toBeNull();
   });
 });

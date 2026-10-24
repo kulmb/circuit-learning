@@ -514,5 +514,17 @@ describe('sandbox API', () => {
     });
     expect(oversized.statusCode).toBe(400);
     expect(oversized.json().error.code).toBe('invalid_sandbox');
+
+    const remoteThumbnail = await app.inject({
+      method: 'PUT',
+      url: '/api/me/sandbox/sandbox-remote',
+      headers: { cookie: `zap_session=${linaCookie}` },
+      payload: {
+        name: 'Vignette distante',
+        data: document,
+        thumbnail: 'https://example.test/pixel.png',
+      },
+    });
+    expect(remoteThumbnail.statusCode).toBe(400);
   });
 });
