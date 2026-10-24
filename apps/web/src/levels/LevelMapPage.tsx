@@ -9,7 +9,10 @@ import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'rea
 
 import { ZapCharacter } from '../components/Zap';
 import { getText } from '../narration/fr';
-import { localProgressRepository } from '../progress/LocalProgressRepository';
+import {
+  PROGRESS_SYNCED_EVENT,
+} from '../progress/ApiProgressRepository';
+import { useProgress } from '../progress/ProgressContext';
 import './LevelMapPage.css';
 
 export interface LevelMapPageProps {
@@ -19,19 +22,32 @@ export interface LevelMapPageProps {
 
 export function LevelMapPage({ onBack, onSelectLevel }: LevelMapPageProps) {
   const [progress, setProgress] = useState<PlayerProgress | null>(null);
+  const { repository, isGuest, ready } = useProgress();
 
   useEffect(() => {
+    if (!ready) {
+      return;
+    }
+
     let active = true;
-    void localProgressRepository.getProgress().then((value) => {
-      if (active) {
-        setProgress(value);
-      }
-    });
+    setProgress(null);
+
+    const reload = (): void => {
+      void repository.getProgress().then((value) => {
+        if (active) {
+          setProgress(value);
+        }
+      });
+    };
+
+    reload();
+    window.addEventListener(PROGRESS_SYNCED_EVENT, reload);
 
     return () => {
       active = false;
+      window.removeEventListener(PROGRESS_SYNCED_EVENT, reload);
     };
-  }, []);
+  }, [ready, repository]);
 
   return (
     <div className="level-map">
@@ -59,7 +75,13 @@ export function LevelMapPage({ onBack, onSelectLevel }: LevelMapPageProps) {
         />
       </header>
 
-      {progress === null ? (
+      {isGuest && ready ? (
+        <p className="level-map__guest" role="status">
+          {getText('map.guestNotice')}
+        </p>
+      ) : null}
+
+      {!ready || progress === null ? (
         <div className="level-map__loading" aria-hidden="true" />
       ) : (
         <ol className="level-map__path">

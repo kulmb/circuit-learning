@@ -68,6 +68,18 @@
   font-weight: 900;
 }
 
+.level-complete-save-error {
+  max-width: 32ch;
+  margin: 0.5rem auto 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 236, 210, 0.9);
+  color: #8a4b08;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .level-complete-learned {
   margin: 1rem 0 0.75rem;
   color: var(--color-ink);

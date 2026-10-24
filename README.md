@@ -289,9 +289,56 @@ Le chapitre 1, « La lumière », contient dix niveaux et une transition
 vivent dans `packages/shared/src/levels` ; le front les consomme sans les
 dupliquer.
 
-La progression est enregistrée dans `localStorage` derrière l'interface
+La progression est enregistrée dans `localStorage` derrière l’interface
 `ProgressRepository` (`apps/web/src/progress`). Un niveau réussi débloque le
-suivant ; le nombre d'étoiles dépend des indices demandés à Zap.
+suivant ; le nombre d’étoiles dépend des indices demandés à Zap.
+
+## Synchronisation de la progression
+
+### API enfant
+
+| Route | Rôle |
+|---|---|
+| `GET /api/me/progress` | tous les niveaux et le vocabulaire débloqué |
+| `POST /api/me/attempts/start` | `{ levelId, attemptId? }` → tentative |
+| `POST /api/me/attempts/:attemptId/finish` | résultat, puis progression complète |
+| `PUT /api/me/sandbox/:id` | enregistre un circuit libre (200 Ko maximum) |
+| `GET /api/me/sandbox` | liste les circuits libres |
+
+Ces routes sont réservées à une session enfant (`eleve`). Le serveur ne fait
+pas confiance au client :
+
+- le niveau doit exister dans `packages/shared` et être débloqué ;
+- les étoiles sont recalculées avec `starsForHints` ;
+- une réussite débloque le niveau suivant et ajoute son vocabulaire ;
+- `attempts` est incrémenté avec `$inc`, les étoiles avec `$max`, le meilleur
+  temps et le meilleur nombre d’indices avec `$min` ;
+- la fin de tentative, la progression, le déblocage et le vocabulaire sont
+  écrits dans une seule transaction ;
+- terminer deux fois la même tentative (ou rejouer une requête hors ligne) ne
+  compte qu’une fois.
+
+`attemptId` et l’identifiant d’un circuit libre sont fournis par le client et
+uniques par élève : une requête rejouée met à jour la même ligne au lieu d’en
+créer une deuxième.
+
+### Hors ligne et invités
+
+`ApiProgressRepository` garde un cache et une file d’opérations par élève dans
+`localStorage`. Quand le réseau manque, début, fin de tentative et sauvegarde
+d’atelier sont mis en file ; ils sont rejoués dans l’ordre au retour de
+`online`, à l’ouverture de la carte et après une sauvegarde réussie. La carte
+se recharge sur l’événement `circuits:progress-synced`.
+
+Sans session enfant, l’application utilise `LocalProgressRepository` : c’est le
+mode invité, signalé sur la carte des niveaux. Après une connexion enfant, si
+l’appareil contient une progression d’invité, une boîte de dialogue demande à
+l’adulte s’il faut la fusionner ; les tentatives sont rejouées avec des
+identifiants déterministes pour qu’une fusion interrompue reste sans doublon.
+Un refus est mémorisé jusqu’à ce que la progression d’invité change.
+
+Si une sauvegarde échoue vraiment, l’enfant ne voit qu’une phrase de Zap :
+« Oups, je n’arrive pas à sauvegarder. On réessaie plus tard ! ».
 
 ## Base de données
 
@@ -306,8 +353,8 @@ collection.
 | `sessions` | sessions adultes et enfants, empreinte du jeton, groupe de l'enfant, expiration |
 | `invites` | invitations encadrant, parent et réinitialisation |
 | `levelprogress` | une ligne par élève et par niveau |
-| `levelattempts` | historique des tentatives, avec le groupe dénormalisé |
-| `sandboxcircuits` | circuits libres, format partagé, 200 Ko maximum |
+| `levelattempts` | historique des tentatives, identifiant client, durée, groupe dénormalisé |
+| `sandboxcircuits` | circuits libres, identifiant client, format partagé, 200 Ko maximum |
 | `auditlogs` | actions sensibles des adultes |
 
 Points structurants :
@@ -332,8 +379,9 @@ Points structurants :
 Les migrations vivent dans `apps/api/migrations` (configuration
 `apps/api/migrate-mongo-config.js`). La première crée les index de base, la
 seconde l'index unique des identifiants adultes, la troisième l'index unique
-de l'empreinte des sessions ; l'API appelle aussi `syncIndexes()` au démarrage,
-les deux chemins étant idempotents.
+de l'empreinte des sessions, la quatrième les index des identifiants clients
+des tentatives et des ateliers ; l'API appelle aussi `syncIndexes()` au
+démarrage, les deux chemins étant idempotents.
 
 Les sessions ne stockent jamais le jeton du cookie : `tokenHash` contient son
 SHA-256 et un index unique partiel empêche deux sessions de partager un jeton.

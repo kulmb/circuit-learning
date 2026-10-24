@@ -58,6 +58,7 @@ export function SymbolMatchingPage({
   const [hintIndex, setHintIndex] = useState(0);
   const [expression, setExpression] = useState<ZapExpression>('content');
   const [completionStars, setCompletionStars] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState(false);
   const completedRef = useRef(false);
   const activePointerRef = useRef<number | null>(null);
   const targetRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -88,6 +89,7 @@ export function SymbolMatchingPage({
     }
 
     completedRef.current = true;
+    setSaveError(false);
     playSuccessFanfare();
     setExpression('content');
     narration.say('zap.successGeneric');
@@ -96,11 +98,19 @@ export function SymbolMatchingPage({
     void session
       .completeSuccess()
       .then((progress) => {
+        if (progress === null) {
+          setSaveError(true);
+          narration.say('progress.saveError');
+        }
         setCompletionStars(
           progress?.levels[level.id]?.stars ?? fallbackStars,
         );
       })
-      .catch(() => setCompletionStars(fallbackStars));
+      .catch(() => {
+        setSaveError(true);
+        narration.say('progress.saveError');
+        setCompletionStars(fallbackStars);
+      });
   }, [
     allMatched,
     level.id,
@@ -393,6 +403,7 @@ export function SymbolMatchingPage({
           level={level}
           stars={completionStars}
           hasNext={level.nextLevelId !== null}
+          saveError={saveError}
           onNext={onNextLevel ?? onBack}
           onMap={onBack}
         />

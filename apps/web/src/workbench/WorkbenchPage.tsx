@@ -153,6 +153,7 @@ export function WorkbenchPage({
   const [hintHighlight, setHintHighlight] = useState<HintHighlight | null>(null);
   const [levelHintIndex, setLevelHintIndex] = useState(0);
   const [completionStars, setCompletionStars] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState(false);
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const completedRef = useRef(false);
   const levelSession = useLevelSession(level ?? null);
@@ -268,22 +269,32 @@ export function WorkbenchPage({
     }
 
     completedRef.current = true;
+    setSaveError(false);
     playSuccessFanfare();
     const fallbackStars = starsForHints(levelSession.hintsUsed);
 
     void levelSession
       .completeSuccess()
       .then((progress) => {
+        if (progress === null) {
+          setSaveError(true);
+          narration.say('progress.saveError');
+        }
         setCompletionStars(
           progress?.levels[level.id]?.stars ?? fallbackStars,
         );
       })
-      .catch(() => setCompletionStars(fallbackStars));
+      .catch(() => {
+        setSaveError(true);
+        narration.say('progress.saveError');
+        setCompletionStars(fallbackStars);
+      });
   }, [
     achieved,
     level,
     levelSession.completeSuccess,
     levelSession.hintsUsed,
+    narration.say,
   ]);
 
   function requestHint(): void {
@@ -847,6 +858,7 @@ export function WorkbenchPage({
           level={level}
           stars={completionStars}
           hasNext={level.nextLevelId !== null}
+          saveError={saveError}
           onNext={onNextLevel ?? onBack}
           onMap={onBack}
         />

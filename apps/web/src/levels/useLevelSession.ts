@@ -6,7 +6,7 @@ import type {
   PlayerProgress,
 } from '@circuits/shared';
 
-import { localProgressRepository } from '../progress/LocalProgressRepository';
+import { useProgressRepository } from '../progress/ProgressContext';
 
 export interface LevelSession {
   hintsUsed: number;
@@ -23,6 +23,7 @@ export function useLevelSession(level: LevelDefinition | null): LevelSession {
   const attemptPromiseRef = useRef<Promise<AttemptStart> | null>(null);
   const startTimeRef = useRef(Date.now());
   const finishedRef = useRef(false);
+  const repository = useProgressRepository();
 
   const finishAttempt = useCallback(
     async (success: boolean): Promise<PlayerProgress | null> => {
@@ -32,19 +33,19 @@ export function useLevelSession(level: LevelDefinition | null): LevelSession {
 
       finishedRef.current = true;
 
-      const pendingAttempt = attemptPromiseRef.current;
-      const attempt =
-        attemptRef.current ??
-        (pendingAttempt !== null ? await pendingAttempt : null) ?? {
-          id: `attempt-${Date.now()}`,
-          levelId: level.id,
-          startedAt: startTimeRef.current,
-        };
-
-      const durationMs = Math.max(0, Date.now() - attempt.startedAt);
-
       try {
-        return await localProgressRepository.finishAttempt(attempt, {
+        const pendingAttempt = attemptPromiseRef.current;
+        const attempt =
+          attemptRef.current ??
+          (pendingAttempt !== null ? await pendingAttempt : null) ?? {
+            id: `attempt-${Date.now()}`,
+            levelId: level.id,
+            startedAt: startTimeRef.current,
+          };
+
+        const durationMs = Math.max(0, Date.now() - attempt.startedAt);
+
+        return await repository.finishAttempt(attempt, {
           success,
           hintsUsed: hintsRef.current,
           durationMs,
@@ -54,7 +55,7 @@ export function useLevelSession(level: LevelDefinition | null): LevelSession {
         return null;
       }
     },
-    [level],
+    [level, repository],
   );
 
   useEffect(() => {
@@ -70,19 +71,34 @@ export function useLevelSession(level: LevelDefinition | null): LevelSession {
     setHintsUsed(0);
 
     let active = true;
-    const promise = localProgressRepository.startAttempt(level.id).then((attempt) => {
-      if (active) {
-        attemptRef.current = attempt;
-      }
-      return attempt;
-    });
+    const promise = repository
+      .startAttempt(level.id)
+      .then((attempt) => {
+        if (active) {
+          attemptRef.current = attempt;
+        }
+        return attempt;
+      })
+      .catch(() => {
+        const fallback: AttemptStart = {
+          id: `attempt-${Date.now()}`,
+          levelId: level.id,
+          startedAt: startTimeRef.current,
+        };
+
+        if (active) {
+          attemptRef.current = fallback;
+        }
+
+        return fallback;
+      });
     attemptPromiseRef.current = promise;
 
     return () => {
       active = false;
       void finishAttempt(false);
     };
-  }, [level, finishAttempt]);
+  }, [level, finishAttempt, repository]);
 
   const recordHint = useCallback(() => {
     hintsRef.current += 1;

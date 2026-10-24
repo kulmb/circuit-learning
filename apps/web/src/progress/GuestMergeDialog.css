@@ -1,0 +1,89 @@
+.guest-merge {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
+  background: rgba(20, 32, 52, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.guest-merge__card {
+  width: min(440px, 100%);
+  padding: 24px;
+  border-radius: 24px;
+  background: #fffdf7;
+  color: var(--color-ink);
+  box-shadow: 0 24px 60px rgba(20, 32, 52, 0.28);
+}
+
+.guest-merge__eyebrow {
+  margin: 0 0 6px;
+  color: var(--color-primary-dark, #1d6fb8);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.guest-merge__card h2 {
+  margin: 0;
+  font-size: clamp(1.3rem, 3vw, 1.6rem);
+  font-weight: 900;
+}
+
+.guest-merge__card p {
+  margin: 10px 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.guest-merge__error {
+  color: #a12a1f;
+}
+
+.guest-merge__actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.guest-merge__button {
+  min-height: 56px;
+  padding: 0 18px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.guest-merge__button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.guest-merge__button--primary {
+  background: var(--color-primary, #2f80ed);
+  color: #ffffff;
+  box-shadow: 0 4px 0 rgba(20, 32, 52, 0.18);
+}
+
+.guest-merge__button--secondary {
+  border-color: rgba(36, 50, 74, 0.18);
+  background: #ffffff;
+  color: var(--color-ink);
+}
+
+.guest-merge__button:active:not(:disabled) {
+  transform: translateY(2px);
+}

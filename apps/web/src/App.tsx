@@ -9,6 +9,8 @@ import { MaterialsLevelPage } from './levels/MaterialsLevelPage';
 import { SymbolMatchingPage } from './levels/SymbolMatchingPage';
 import { fr } from './narration/fr';
 import { unlockNarration } from './narration/narrationService';
+import { GuestMergeDialog } from './progress/GuestMergeDialog';
+import { ProgressProvider } from './progress/ProgressContext';
 import { WorkbenchPage } from './workbench/WorkbenchPage';
 import './App.css';
 
@@ -17,7 +19,10 @@ type Screen = 'home' | 'map' | 'play' | 'sandbox';
 export function App() {
   return (
     <LayoutProvider>
-      <AppContent />
+      <ProgressProvider>
+        <AppContent />
+        <GuestMergeDialog />
+      </ProgressProvider>
     </LayoutProvider>
   );
 }

@@ -23,6 +23,9 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /accueil/i }),
     ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/tu joues en invité/i),
+    ).toBeInTheDocument();
 
     const firstLevel = await screen.findByRole('button', {
       name: /allume l’ampoule/i,

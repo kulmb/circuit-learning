@@ -5,6 +5,7 @@ import type {
   InviteCreatedResponse,
   InvitePreviewResponse,
   ManagedGroup,
+  SandboxCircuitDto,
   StudentSummary,
 } from '@circuits/shared';
 
@@ -12,6 +13,7 @@ import type {
   AuditLogDocument,
   GroupDocument,
   InviteDocument,
+  SandboxCircuitDocument,
   SessionDocument,
   UserDocument,
 } from '../db/models/index.js';
@@ -163,6 +165,18 @@ export function toAdminUser(user: UserDocument): AdminUser {
     disabled: user.disabledAt !== null && user.disabledAt !== undefined,
     createdAt: user.createdAt.toISOString(),
     lastSeenAt: user.lastSeenAt?.toISOString() ?? null,
+  };
+}
+
+export function toSandboxCircuit(
+  circuit: SandboxCircuitDocument,
+): SandboxCircuitDto {
+  return {
+    id: circuit.clientId ?? circuit._id.toString(),
+    name: circuit.name,
+    data: circuit.data,
+    thumbnail: circuit.thumbnail ?? null,
+    updatedAt: circuit.updatedAt.getTime(),
   };
 }
 

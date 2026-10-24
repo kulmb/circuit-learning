@@ -146,6 +146,20 @@ describe('indexes', () => {
     expect(
       await indexNamed(LevelAttemptModel, 'levelattempts_group_level'),
     ).toMatchObject({ key: { groupId: 1, levelId: 1 } });
+    expect(
+      await indexNamed(LevelAttemptModel, 'levelattempts_user_client_unique'),
+    ).toMatchObject({
+      key: { userId: 1, clientId: 1 },
+      unique: true,
+      partialFilterExpression: { clientId: { $type: 'string' } },
+    });
+    expect(
+      await indexNamed(SandboxCircuitModel, 'sandbox_user_client_unique'),
+    ).toMatchObject({
+      key: { userId: 1, clientId: 1 },
+      unique: true,
+      partialFilterExpression: { clientId: { $type: 'string' } },
+    });
   });
 });
 
@@ -818,10 +832,12 @@ describe('migration', () => {
     const first = await loadMigration('20261024000001-create-indexes.js');
     const second = await loadMigration('20261024000002-add-username-index.js');
     const third = await loadMigration('20261024000003-session-token-index.js');
+    const fourth = await loadMigration('20261024000004-client-ids.js');
 
     await first.up(db);
     await second.up(db);
     await third.up(db);
+    await fourth.up(db);
 
     const names = async (collection: string): Promise<(string | undefined)[]> =>
       (await db.collection(collection).indexes()).map((index) => index.name);
@@ -844,6 +860,12 @@ describe('migration', () => {
     expect(await names('levelattempts')).toContain(
       'levelattempts_group_level',
     );
+    expect(await names('levelattempts')).toContain(
+      'levelattempts_user_client_unique',
+    );
+    expect(await names('sandboxcircuits')).toContain(
+      'sandbox_user_client_unique',
+    );
 
     const emailIndex = (await db.collection('users').indexes()).find(
       (index) => index.name === 'users_email_unique',
@@ -864,6 +886,7 @@ describe('migration', () => {
     );
     expect(sessionTtl?.expireAfterSeconds).toBe(0);
 
+    await fourth.down(db);
     await third.down(db);
     await second.down(db);
     await first.down(db);
@@ -880,6 +903,12 @@ describe('migration', () => {
     );
     expect(await names('levelattempts')).not.toContain(
       'levelattempts_user_started',
+    );
+    expect(await names('levelattempts')).not.toContain(
+      'levelattempts_user_client_unique',
+    );
+    expect(await names('sandboxcircuits')).not.toContain(
+      'sandbox_user_client_unique',
     );
 
     await db.dropDatabase();

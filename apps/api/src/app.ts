@@ -15,6 +15,7 @@ import { ZodError } from 'zod';
 import { config } from './config.js';
 import { authRoutes } from './routes/auth.js';
 import { groupRoutes } from './routes/groups.js';
+import { meRoutes } from './routes/me.js';
 import { studentRoutes } from './routes/students.js';
 import { userRoutes } from './routes/users.js';
 import { ApiError } from './services/errors.js';
@@ -85,6 +86,7 @@ export function buildApp({
   void app.register(groupRoutes, { cookies: { secure: secureCookies } });
   void app.register(studentRoutes, { cookies: { secure: secureCookies } });
   void app.register(userRoutes, { cookies: { secure: secureCookies } });
+  void app.register(meRoutes, { cookies: { secure: secureCookies } });
 
   app.setErrorHandler(
     (error: unknown, request: FastifyRequest, reply: FastifyReply) => {

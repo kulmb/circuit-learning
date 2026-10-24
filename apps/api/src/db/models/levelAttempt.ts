@@ -9,11 +9,14 @@ import mongoose, {
 export interface LevelAttempt {
   userId: Types.ObjectId;
   groupId: Types.ObjectId | null;
+  /** Client-generated id so an offline attempt can be replayed idempotently. */
+  clientId: string | null;
   levelId: string;
   startedAt: Date;
   endedAt: Date | null;
   success: boolean;
   hintsUsed: number;
+  durationMs: number;
   errorsDetected: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -33,11 +36,13 @@ const levelAttemptSchema = new Schema<LevelAttempt>(
       ref: 'Group',
       default: null,
     },
+    clientId: { type: String, default: null, trim: true, maxlength: 80 },
     levelId: { type: String, required: true, trim: true, maxlength: 80 },
     startedAt: { type: Date, required: true, default: Date.now },
     endedAt: { type: Date, default: null },
     success: { type: Boolean, default: false },
     hintsUsed: { type: Number, default: 0, min: 0 },
+    durationMs: { type: Number, default: 0, min: 0 },
     errorsDetected: { type: [String], default: [] },
   },
   {
@@ -55,6 +60,14 @@ levelAttemptSchema.index(
 levelAttemptSchema.index(
   { groupId: 1, levelId: 1 },
   { name: 'levelattempts_group_level' },
+);
+levelAttemptSchema.index(
+  { userId: 1, clientId: 1 },
+  {
+    name: 'levelattempts_user_client_unique',
+    unique: true,
+    partialFilterExpression: { clientId: { $type: 'string' } },
+  },
 );
 
 export const LevelAttemptModel: Model<LevelAttempt> =

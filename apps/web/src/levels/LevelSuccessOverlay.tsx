@@ -9,6 +9,7 @@ export interface LevelSuccessOverlayProps {
   level: LevelDefinition;
   stars: number;
   hasNext: boolean;
+  saveError?: boolean;
   onNext: () => void;
   onMap: () => void;
 }
@@ -17,6 +18,7 @@ export function LevelSuccessOverlay({
   level,
   stars,
   hasNext,
+  saveError = false,
   onNext,
   onMap,
 }: LevelSuccessOverlayProps) {
@@ -66,6 +68,12 @@ export function LevelSuccessOverlay({
 
         {!hasNext ? (
           <p className="level-complete-chapter">{getText('map.final')}</p>
+        ) : null}
+
+        {saveError ? (
+          <p className="level-complete-save-error" role="status">
+            {getText('progress.saveError')}
+          </p>
         ) : null}
 
         {step === 'stars' ? (

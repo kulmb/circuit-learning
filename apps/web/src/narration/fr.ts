@@ -106,6 +106,20 @@ export const texts = {
   'map.level': 'Niveau',
   'map.transition': 'Transition',
   'map.final': 'Chapitre terminé !',
+  'map.guestNotice':
+    'Tu joues en invité. Ta progression ne sera pas gardée.',
+
+  'progress.saveError':
+    'Oups, je n’arrive pas à sauvegarder. On réessaie plus tard !',
+  'progress.mergeAdult': 'Pour l’adulte',
+  'progress.mergeTitle': 'Progression d’invité',
+  'progress.mergeQuestion':
+    'Cet appareil a une progression d’invité. La fusionner avec ce compte ?',
+  'progress.mergeYes': 'Oui, fusionner',
+  'progress.mergeNo': 'Non, garder le compte',
+  'progress.mergeBusy': 'Fusion en cours…',
+  'progress.mergeError':
+    'La fusion n’a pas marché. Réessaie plus tard.',
 
   'level.01.title': 'Allume l’ampoule',
   'level.01.goal': 'Relie la pile à l’ampoule.',

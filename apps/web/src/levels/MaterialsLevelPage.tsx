@@ -61,6 +61,7 @@ export function MaterialsLevelPage({
   const [hintIndex, setHintIndex] = useState(0);
   const [expression, setExpression] = useState<ZapExpression>('content');
   const [completionStars, setCompletionStars] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hoveredZone, setHoveredZone] = useState<DropZone | null>(null);
   const completedRef = useRef(false);
@@ -127,6 +128,7 @@ export function MaterialsLevelPage({
     }
 
     completedRef.current = true;
+    setSaveError(false);
     playSuccessFanfare();
     setExpression('content');
     narration.say('zap.successGeneric');
@@ -135,11 +137,19 @@ export function MaterialsLevelPage({
     void session
       .completeSuccess()
       .then((progress) => {
+        if (progress === null) {
+          setSaveError(true);
+          narration.say('progress.saveError');
+        }
         setCompletionStars(
           progress?.levels[level.id]?.stars ?? fallbackStars,
         );
       })
-      .catch(() => setCompletionStars(fallbackStars));
+      .catch(() => {
+        setSaveError(true);
+        narration.say('progress.saveError');
+        setCompletionStars(fallbackStars);
+      });
   }, [
     allSorted,
     level.id,
@@ -472,6 +482,7 @@ export function MaterialsLevelPage({
           level={level}
           stars={completionStars}
           hasNext={level.nextLevelId !== null}
+          saveError={saveError}
           onNext={onNextLevel ?? onBack}
           onMap={onBack}
         />

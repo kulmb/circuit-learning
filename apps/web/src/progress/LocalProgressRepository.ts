@@ -14,7 +14,7 @@ import {
 
 const STORAGE_KEY = 'circuits-de-zap:progress:v1';
 
-interface StoredAttempt {
+export interface StoredAttempt {
   id: string;
   levelId: string;
   success: boolean;
@@ -139,6 +139,49 @@ export class LocalProgressRepository implements ProgressRepository {
 
   async listSandbox(): Promise<SandboxCircuit[]> {
     return this.readState().sandbox.map(cloneSandbox);
+  }
+
+  /** Guest attempts can be replayed into a student account after login. */
+  getAttemptHistory(): StoredAttempt[] {
+    return this.readState().attempts.map((attempt) => ({
+      ...attempt,
+      errorsDetected: [...attempt.errorsDetected],
+    }));
+  }
+
+  hasGuestProgress(): boolean {
+    const state = this.readState();
+
+    return (
+      state.attempts.length > 0 ||
+      state.sandbox.length > 0 ||
+      Object.values(state.levels).some(
+        (progress) => progress.status === 'completed',
+      )
+    );
+  }
+
+  /**
+   * Changes when the guest data changes, so a declined merge can be asked
+   * again only after new guest progress appears.
+   */
+  guestFingerprint(): string {
+    const state = this.readState();
+    const completed = Object.values(state.levels).filter(
+      (progress) => progress.status === 'completed',
+    ).length;
+
+    return `${state.attempts.length}:${completed}:${state.sandbox.length}`;
+  }
+
+  clearGuestData(): void {
+    this.memoryFallback = createInitialState();
+
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Storage is unavailable: the in-memory reset still applies.
+    }
   }
 
   private readState(): StoredState {

@@ -11,6 +11,8 @@ export const MAX_SANDBOX_DATA_BYTES = 200 * 1024;
 
 export interface SandboxCircuit {
   userId: Types.ObjectId;
+  /** Client-generated id used by PUT /api/me/sandbox/:id. */
+  clientId: string | null;
   name: string;
   data: unknown;
   thumbnail: string | null;
@@ -47,6 +49,7 @@ const sandboxCircuitSchema = new Schema<SandboxCircuit>(
       ref: 'User',
       required: true,
     },
+    clientId: { type: String, default: null, trim: true, maxlength: 80 },
     name: { type: String, required: true, trim: true, maxlength: 80 },
     data: {
       type: Schema.Types.Mixed,
@@ -63,6 +66,15 @@ const sandboxCircuitSchema = new Schema<SandboxCircuit>(
     timestamps: true,
     strict: 'throw',
     autoIndex: false,
+  },
+);
+
+sandboxCircuitSchema.index(
+  { userId: 1, clientId: 1 },
+  {
+    name: 'sandbox_user_client_unique',
+    unique: true,
+    partialFilterExpression: { clientId: { $type: 'string' } },
   },
 );
 

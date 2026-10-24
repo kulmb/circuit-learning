@@ -137,4 +137,33 @@ describe('LocalProgressRepository', () => {
     expect(updated.name).toBe('Mon circuit modifié');
     expect(list[0]?.id).toBe(saved.id);
   });
+
+  it('exposes, fingerprints and clears guest data', async () => {
+    const repository = new LocalProgressRepository();
+    expect(repository.hasGuestProgress()).toBe(false);
+    expect(repository.guestFingerprint()).toBe('0:0:0');
+
+    const attempt = await repository.startAttempt('light-01');
+    await repository.finishAttempt(attempt, {
+      success: true,
+      hintsUsed: 0,
+      durationMs: 1000,
+      errorsDetected: ['open_circuit'],
+    });
+
+    expect(repository.hasGuestProgress()).toBe(true);
+    expect(repository.guestFingerprint()).toBe('1:1:0');
+    expect(repository.getAttemptHistory()[0]).toMatchObject({
+      id: attempt.id,
+      levelId: 'light-01',
+      success: true,
+      errorsDetected: ['open_circuit'],
+    });
+
+    repository.clearGuestData();
+    expect(repository.hasGuestProgress()).toBe(false);
+    expect((await repository.getProgress()).levels['light-01']?.status).toBe(
+      'unlocked',
+    );
+  });
 });
