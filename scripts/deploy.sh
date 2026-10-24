@@ -14,4 +14,4 @@ fi
 "$root_dir/scripts/deploy-web.sh"
 
 echo "Déploiement terminé."
-echo "Vérifiez : curl -fsS https://kulmb.87543362.xyz/circuit/api/health"
+echo "Vérifiez : curl -fsS https://circuit-learning.87543362.xyz/api/health"

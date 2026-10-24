@@ -100,6 +100,7 @@ Organisation du front :
 - Aucune dépendance qui n'a pas de version arm64 (vérifier avant d'ajouter un paquet natif
   ou une image Docker).
 - Reverse proxy : Caddy déjà installé sur l'hôte (hors compose).
+- L'URL de l'host: https://circuit-learning.87543362.xyz
 
 ## Langue
 Code, commentaires et noms de variables en anglais. Tout le texte visible par l'enfant et

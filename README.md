@@ -22,10 +22,10 @@ pnpm install
 pnpm dev
 ```
 
-- Front : http://127.0.0.1:5173/circuit/
+- Front : http://127.0.0.1:5173/
 - API de développement : http://127.0.0.1:3101/api/health
 
-Le serveur Vite redirige `/circuit/api` vers l'API locale (port 3101). L'API de
+Le serveur Vite redirige `/api` vers l'API locale (port 3101). L'API de
 production tourne séparément dans Docker sur le port 3100.
 
 ## Commandes
@@ -40,13 +40,15 @@ pnpm verify     # typecheck + tests + build
 
 ## Déploiement
 
-L'application est publiée sous `https://kulmb.87543362.xyz/circuit/`.
+L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
 
-- Le front est compilé avec le base path `/circuit/` puis copié dans
+- Le front est compilé pour la racine du domaine puis copié dans
   `/srv/circuits/web` (servi par Caddy).
 - L'API tourne dans Docker Compose et écoute uniquement sur `127.0.0.1:3100`.
-- Caddy expose `/circuit/*` en statique et `/circuit/api/*` en reverse proxy.
-  Le bloc à insérer dans le site est fourni dans `deploy/caddy/circuit.caddy`.
+- Caddy sert le front à la racine et `/api/*` en reverse proxy. Le bloc de site
+  est fourni dans `deploy/caddy/circuit-learning.caddy`.
+- Les anciennes URL `kulmb.87543362.xyz/circuit/*` redirigent en 301 vers le
+  nouveau domaine.
 
 ```bash
 # Une seule fois : créer le dossier servi par Caddy
@@ -59,7 +61,7 @@ sudo install -d -o "$(id -un)" -g "$(id -gn)" -m 755 /srv/circuits/web
 Vérification :
 
 ```bash
-curl -fsS https://kulmb.87543362.xyz/circuit/api/health
+curl -fsS https://circuit-learning.87543362.xyz/api/health
 ```
 
 ## Notes
