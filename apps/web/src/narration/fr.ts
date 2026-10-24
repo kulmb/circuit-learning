@@ -21,7 +21,7 @@ export const fr = {
   },
   components: {
     battery: { label: 'Pile', short: '+ −' },
-    bulb: { label: 'Ampoule', short: 'Ampoule' },
+    bulb: { label: 'Ampoule', short: 'Lampe' },
     switch: { label: 'Interrupteur', short: 'Inter.' },
     motor: { label: 'Moteur', short: 'Moteur' },
     buzzer: { label: 'Buzzer', short: 'Buzzer' },

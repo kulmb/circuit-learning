@@ -23,6 +23,7 @@ import {
   BOARD_WIDTH,
   CELL_SIZE,
   COMPACT_QUERY,
+  COMPONENT_HEIGHT,
   COMPONENT_WIDTH,
   GRID_COLUMNS,
   GRID_ROWS,
@@ -30,6 +31,7 @@ import {
 import {
   applyTouchOffset,
   buildWirePath,
+  clamp,
   clampGridPosition,
   clientToSvgPoint,
   COMPACT_SNAP_RADIUS_PX,
@@ -696,6 +698,7 @@ export function WorkbenchSvg({
       {selected !== null && selectedComponent !== undefined && dragPreview === null ? (
         <SelectionToolbar
           component={selectedComponent}
+          components={circuit.components}
           onRotate={() => onRotateComponent(selectedComponent.id)}
           onDelete={onDeleteSelection}
         />
@@ -729,12 +732,14 @@ export function WorkbenchSvg({
 
 interface SelectionToolbarProps {
   component: CircuitComponent;
+  components: CircuitComponent[];
   onRotate: () => void;
   onDelete: () => void;
 }
 
 function SelectionToolbar({
   component,
+  components,
   onRotate,
   onDelete,
 }: SelectionToolbarProps) {
@@ -743,27 +748,10 @@ function SelectionToolbar({
   const padding = 6;
   const width = padding * 2 + buttonSize * 2 + gap;
   const height = padding * 2 + buttonSize;
-  const centerX = component.position.x * CELL_SIZE;
-  const centerY = component.position.y * CELL_SIZE;
-  const halfWidth = COMPONENT_WIDTH / 2;
-
-  let left = centerX + halfWidth + 12;
-  if (left + width > BOARD_WIDTH - 8) {
-    left = centerX - halfWidth - 12 - width;
-  }
-  left = Math.max(8, left);
-
-  const top = Math.min(
-    Math.max(8, centerY - height / 2),
-    BOARD_HEIGHT - height - 8,
-  );
+  const { left, top } = chooseToolbarPosition(component, components, width, height);
 
   return (
-    <g
-      transform={`translate(${left} ${top})`}
-      data-toolbar="true"
-      onPointerDown={(event) => event.stopPropagation()}
-    >
+    <g transform={`translate(${left} ${top})`} data-toolbar="true">
       <rect
         width={width}
         height={height}
@@ -771,6 +759,7 @@ function SelectionToolbar({
         fill="#ffffff"
         stroke="#c7d8e8"
         strokeWidth={2}
+        pointerEvents="none"
       />
       <ToolbarButton
         x={padding}
@@ -806,16 +795,7 @@ function WireDeleteButton({ x, y, onDelete }: WireDeleteButtonProps) {
     <g
       transform={`translate(${clampToolbarPosition(x - size / 2, size, BOARD_WIDTH)} ${clampToolbarPosition(y - size / 2, size, BOARD_HEIGHT)})`}
       data-toolbar="true"
-      onPointerDown={(event) => event.stopPropagation()}
     >
-      <rect
-        width={size}
-        height={size}
-        rx={16}
-        fill="#ffffff"
-        stroke="#c7d8e8"
-        strokeWidth={2}
-      />
       <ToolbarButton
         x={0}
         y={0}
@@ -824,7 +804,6 @@ function WireDeleteButton({ x, y, onDelete }: WireDeleteButtonProps) {
         icon="trash"
         tone="danger"
         onActivate={onDelete}
-        transparent
       />
     </g>
   );
@@ -837,20 +816,10 @@ interface ToolbarButtonProps {
   label: string;
   icon: 'rotate' | 'trash';
   tone?: 'default' | 'danger';
-  transparent?: boolean;
   onActivate: () => void;
 }
 
-function ToolbarButton({
-  x,
-  y,
-  size,
-  label,
-  icon,
-  tone = 'default',
-  transparent = false,
-  onActivate,
-}: ToolbarButtonProps) {
+function ToolbarButton({ x, y, size, label, icon, tone = 'default', onActivate }: ToolbarButtonProps) {
   return (
     <g
       transform={`translate(${x} ${y})`}
@@ -866,16 +835,14 @@ function ToolbarButton({
         onActivate();
       }}
     >
-      {transparent ? null : (
-        <rect
-          width={size}
-          height={size}
-          rx={14}
-          fill={tone === 'danger' ? '#fff1f2' : '#f4f8fc'}
-          stroke={tone === 'danger' ? '#fecdd3' : '#d7e3ee'}
-          strokeWidth={2}
-        />
-      )}
+      <rect
+        width={size}
+        height={size}
+        rx={14}
+        fill={tone === 'danger' ? '#fff1f2' : '#f4f8fc'}
+        stroke={tone === 'danger' ? '#fecdd3' : '#d7e3ee'}
+        strokeWidth={2}
+      />
       <g
         transform={`translate(${size / 2} ${size / 2})`}
         fill="none"
@@ -939,6 +906,88 @@ function releaseCapture(svg: SVGSVGElement, pointerId: number): void {
   } catch {
     // Pointer capture may already be gone after a browser-level cancellation.
   }
+}
+
+interface Rect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+function chooseToolbarPosition(
+  component: CircuitComponent,
+  components: CircuitComponent[],
+  width: number,
+  height: number,
+): { left: number; top: number } {
+  const toolbarGap = 40;
+  const obstaclePadding = 36;
+  const centerX = component.position.x * CELL_SIZE;
+  const centerY = component.position.y * CELL_SIZE;
+  const halfWidth = COMPONENT_WIDTH / 2;
+  const halfHeight = COMPONENT_HEIGHT / 2;
+
+  const candidates = [
+    { left: centerX + halfWidth + toolbarGap, top: centerY - height / 2 },
+    { left: centerX - halfWidth - toolbarGap - width, top: centerY - height / 2 },
+    { left: centerX - width / 2, top: centerY - halfHeight - toolbarGap - height },
+    { left: centerX - width / 2, top: centerY + halfHeight + toolbarGap },
+  ].map((candidate) => ({
+    left: clamp(candidate.left, 8, BOARD_WIDTH - width - 8),
+    top: clamp(candidate.top, 8, BOARD_HEIGHT - height - 8),
+  }));
+
+  const obstacles: Rect[] = components.map((item) => {
+    const itemX = item.position.x * CELL_SIZE;
+    const itemY = item.position.y * CELL_SIZE;
+
+    return {
+      left: itemX - halfWidth - obstaclePadding,
+      right: itemX + halfWidth + obstaclePadding,
+      top: itemY - halfHeight - obstaclePadding,
+      bottom: itemY + halfHeight + obstaclePadding,
+    };
+  });
+
+  const first = candidates[0];
+  if (first === undefined) {
+    return { left: 8, top: 8 };
+  }
+
+  let best = first;
+  let bestOverlap = Number.POSITIVE_INFINITY;
+
+  for (const candidate of candidates) {
+    const rectangle: Rect = {
+      left: candidate.left,
+      top: candidate.top,
+      right: candidate.left + width,
+      bottom: candidate.top + height,
+    };
+    const overlap = obstacles.reduce(
+      (total, obstacle) => total + intersectionArea(rectangle, obstacle),
+      0,
+    );
+
+    if (overlap < bestOverlap) {
+      best = candidate;
+      bestOverlap = overlap;
+    }
+
+    if (overlap === 0) {
+      break;
+    }
+  }
+
+  return best;
+}
+
+function intersectionArea(left: Rect, right: Rect): number {
+  const width = Math.min(left.right, right.right) - Math.max(left.left, right.left);
+  const height = Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top);
+
+  return width > 0 && height > 0 ? width * height : 0;
 }
 
 function clampToolbarPosition(value: number, size: number, limit: number): number {

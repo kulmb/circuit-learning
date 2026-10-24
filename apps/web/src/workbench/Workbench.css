@@ -148,18 +148,20 @@
 .palette-item__swatch {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 2px;
   flex: 0 0 auto;
   border-radius: 12px;
-  font-size: 0.78rem;
+  font-size: 0.66rem;
   font-weight: 900;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .palette-item__label {
-  overflow-wrap: anywhere;
+  font-size: 0.72rem;
+  overflow-wrap: normal;
 }
 
 .workbench-board-wrap {
@@ -332,6 +334,17 @@
     font-size: 1.25rem;
   }
 
+  .workbench-board-wrap {
+    justify-content: center;
+  }
+
+  .workbench-board {
+    flex: 0 1 auto;
+    width: min(100%, calc((100dvh - 230px) * 1.5));
+    aspect-ratio: 3 / 2;
+    max-height: 100%;
+  }
+
   .palette {
     flex: 0 0 auto;
     width: auto;
@@ -354,6 +367,7 @@
   .palette-item {
     flex: 0 0 auto;
     flex-direction: row;
+    width: auto;
     min-width: 104px;
     min-height: 56px;
     padding: 6px 8px;
@@ -364,11 +378,11 @@
   .palette-item__swatch {
     width: 36px;
     height: 36px;
-    font-size: 0.7rem;
+    font-size: 0.62rem;
   }
 
   .palette-item__label {
-    font-size: 0.85rem;
+    font-size: 0.78rem;
   }
 
   .workbench-status {

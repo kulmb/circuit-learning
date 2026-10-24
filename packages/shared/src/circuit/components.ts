@@ -64,8 +64,8 @@ function twoTerminals(): Terminal[] {
 
 const TERMINAL_LAYOUTS: Record<ComponentType, readonly Terminal[]> = {
   battery: [
-    { id: 'positive', label: '+', polarity: 'positive', offset: { x: 0.6, y: 0 } },
-    { id: 'negative', label: '−', polarity: 'negative', offset: { x: -0.6, y: 0 } },
+    { id: 'positive', label: '+', polarity: 'positive', offset: { x: -0.6, y: 0 } },
+    { id: 'negative', label: '−', polarity: 'negative', offset: { x: 0.6, y: 0 } },
   ],
   bulb: twoTerminals(),
   switch: twoTerminals(),

@@ -66,7 +66,7 @@ export function ComponentBlock({
           textAnchor="middle"
           dominantBaseline="central"
           fill={visual.textColor}
-          fontSize={20}
+          fontSize={16}
           fontWeight={900}
         >
           {visual.shortLabel}
