@@ -287,6 +287,8 @@ pnpm test       # tests de tous les paquets
 pnpm typecheck  # vérification TypeScript de tous les paquets
 pnpm build      # build de production de tous les paquets
 pnpm verify     # typecheck + tests + build
+pnpm test:e2e   # parcours Playwright sur 7 profils (voir TESTING.md)
+pnpm test:e2e:update  # régénère les captures de référence
 pnpm build:report  # build web + docs/build-size-report.md
 
 pnpm --filter @circuits/api db:migrate         # applique les migrations

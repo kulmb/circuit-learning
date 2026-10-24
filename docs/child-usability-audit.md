@@ -104,7 +104,9 @@ pour conserver 56 px à l’écran. Les icônes et espacements grandissent avec 
 - Aucune encoche réelle n’était disponible dans Chromium headless. Les marges
   `env(safe-area-inset-*)` ont été vérifiées dans les feuilles de style et aucun
   bouton n’était coupé aux cinq tailles testées.
-- Les tests sur iPad, Galaxy Tab et téléphones physiques relèvent du Prompt 19.
+- Les parcours multi-appareils sont couverts par Playwright (voir
+  `TESTING.md`). Les contrôles sur iPad, Galaxy Tab et téléphones physiques
+  restent manuels.
 
 ## Vérifications
 

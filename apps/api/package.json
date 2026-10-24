@@ -14,7 +14,8 @@
     "db:migrate:down": "migrate-mongo down",
     "db:seed": "tsx src/scripts/seed.ts",
     "admin:create": "tsx src/scripts/createAdmin.ts",
-    "admin:password": "tsx src/scripts/setPassword.ts"
+    "admin:password": "tsx src/scripts/setPassword.ts",
+    "e2e:server": "tsx test/e2e/server.ts"
   },
   "engines": {
     "node": ">=20.19.0"
