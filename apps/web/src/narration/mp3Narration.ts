@@ -9,6 +9,7 @@ export class RecordingUnavailableError extends Error {
 
 export class Mp3NarrationService implements NarrationService {
   private manifestPromise: Promise<Set<string>> | null = null;
+  private manifest: Set<string> | null = null;
   private lastTextId: string | null = null;
   private muted = false;
   private rate = 1;
@@ -18,11 +19,36 @@ export class Mp3NarrationService implements NarrationService {
   constructor(
     private readonly manifestUrl = `${import.meta.env.BASE_URL}audio/manifest.json`,
     private readonly audioBaseUrl = `${import.meta.env.BASE_URL}audio/`,
-  ) {}
+  ) {
+    if (import.meta.env.MODE !== 'test') {
+      void this.getManifest();
+    }
+  }
 
   unlock(): void {
     // The speech service primes the audio context; recorded audio is played
     // from a user gesture (a hint or a replay), so no extra unlock is needed.
+  }
+
+  hasRecording(textId: string): boolean {
+    return this.manifest?.has(textId) ?? false;
+  }
+
+  /**
+   * Starts a known recording synchronously. Returns null when the manifest is
+   * not ready or has no file, so the caller can speak in the same gesture.
+   */
+  playIfAvailable(textId: string): Promise<void> | null {
+    if (
+      this.muted ||
+      textId === '' ||
+      typeof Audio === 'undefined' ||
+      !this.hasRecording(textId)
+    ) {
+      return null;
+    }
+
+    return this.playFile(textId);
   }
 
   async speak(textId: string): Promise<void> {
@@ -42,6 +68,10 @@ export class Mp3NarrationService implements NarrationService {
       throw new RecordingUnavailableError(textId);
     }
 
+    return this.playFile(textId);
+  }
+
+  private playFile(textId: string): Promise<void> {
     this.stop();
 
     return new Promise<void>((resolve, reject) => {
@@ -118,7 +148,11 @@ export class Mp3NarrationService implements NarrationService {
               : [],
           );
         })
-        .catch(() => new Set<string>());
+        .catch(() => new Set<string>())
+        .then((files) => {
+          this.manifest = files;
+          return files;
+        });
     }
 
     return this.manifestPromise;

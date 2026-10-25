@@ -27,10 +27,10 @@ describe('App', () => {
   it('stores and displays the application version', () => {
     render(<App />);
 
-    expect(screen.getByText('Version 0.1.0')).toBeInTheDocument();
+    expect(screen.getByText('Version 0.2.0')).toBeInTheDocument();
     expect(
       window.localStorage.getItem(APP_VERSION_STORAGE_KEY),
-    ).toBe('0.1.0');
+    ).toBe('0.2.0');
   });
 
   it('opens the level map and starts the first level', async () => {

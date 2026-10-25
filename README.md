@@ -319,6 +319,9 @@ Le bouton « Jouer » ouvre la carte des niveaux ; chaque niveau lance le plan d
 travail :
 
 - palette de composants avec glisser-déposer et aimantation à la grille ;
+- lorsqu'un composant de la palette est déposé sur un fil, le fil est coupé et
+  ses deux extrémités sont raccordées aux deux bornes du composant (insertion
+  en série), avec rotation automatique dans le sens du fil ;
 - câblage par deux appuis sur des bornes, ou en glissant d'une borne à l'autre ;
 - sélection d'un composant avec rotation et suppression, interrupteurs activables
   d'un simple appui ;
@@ -358,7 +361,9 @@ niveaux. Il reprend le plan de travail, sans objectif ni étoile :
 
 Le panneau est plein écran sur téléphone en paysage ; sur tablette et ordinateur,
 il reste une boîte centrée. La photo est rendue depuis une copie SVG hors écran
-(`SandboxSnapshot`), sans sélection, bornes ni contrôles.
+(`SandboxSnapshot`), sans sélection, bornes ni contrôles. Elle réutilise le même
+routage de fils que le plan de travail (détours sur la grille de 16 px et
+contour blanc), pour que le PNG et la vignette restent identiques à l'écran.
 
 ## Performance et retour haptique
 
@@ -424,8 +429,17 @@ identifiant (`zap.hint.open.1`, `workbench.statusClosed`, etc.).
 - Si un enregistrement existe, `/audio/{textId}.mp3` est préféré à la synthèse.
   Pour l'activer, déposer le MP3 dans `apps/web/public/audio/` et ajouter son
   identifiant dans `apps/web/public/audio/manifest.json`.
-- Sans voix française, la bulle de texte reste visible.
-- Le premier appui sur « Jouer » débloque l'audio (son silencieux + `speak('')`).
+- Sans voix française, la bulle de texte reste visible. Si la liste des voix
+  n'est pas encore chargée (fréquent au premier geste sur mobile), le texte est
+  tout de même confié au moteur avec `lang="fr-FR"`.
+- Le premier geste sur n'importe quel écran débloque l'audio et la synthèse :
+  un `pointerdown` global déclenche un son silencieux et une courte amorce de
+  parole. Le déblocage est retenté au geste suivant tant que le moteur n'a pas
+  confirmé son démarrage.
+- La première phrase est lancée sans attendre le manifeste MP3, dans le même
+  geste que l'appui : iOS et Android refusent une parole programmée hors geste.
+  Une narration en cours n'est interrompue qu'après un court délai (140 ms),
+  car Android ignore parfois un `cancel()` suivi immédiatement d'un `speak()`.
 - Zap est dans le coin du plan de travail : appuyer sur le robot donne un indice
   de plus en plus précis. Le troisième indice surligne les bornes ou le composant
   concerné. Le bouton 🔊 permet de réécouter, et le bouton haut-parleur coupe
@@ -442,6 +456,11 @@ dupliquer. Les définitions complètes sont chargées avec l’écran de jeu
 (`@circuits/shared/levels`), tandis que les règles de progression n’utilisent
 que `CHAPTER_1_LEVEL_METADATA` (identifiants, ordre, niveau suivant,
 vocabulaire).
+
+Une réussite affiche un bandeau non modal en bas de l'écran : étoiles, puis
+vocabulaire dans un panneau limité en hauteur. Il n'y a ni voile sombre ni
+arrière-plan flouté, donc le plan de travail, les cartes de matériaux ou les
+paires restent visibles et utilisables.
 
 La progression est enregistrée dans `localStorage` derrière l’interface
 `ProgressRepository` (`apps/web/src/progress`). Un niveau réussi débloque le
@@ -561,12 +580,14 @@ Le mode d'affichage est choisi d'après la taille réelle mesurée par
 - `large` : au moins 1100 × 700 px (ordinateur) ;
 - `medium` : tout le reste (tablette).
 
-En compact, la palette devient une barre d'icônes en bas, l'annulation et la
-corbeille sont regroupées dans un rail à droite, les consignes se replient
+En compact, la palette devient une barre d'icônes verticale à gauche, l'annulation
+et la corbeille sont regroupées dans un rail à droite, les consignes se replient
 derrière un bouton ❓ et la bulle de Zap s'affiche en surimpression puis
-disparaît après trois secondes. Sur tablette en portrait, la palette passe en
-bas et Zap se place en haut à gauche. Un téléphone tenu verticalement affiche
-« Tourne ton téléphone ! » à la place du plan de travail.
+disparaît après trois secondes. La barre est masquée quand le niveau ne propose
+aucun composant, et Zap se place à sa droite pour ne jamais couvrir un bouton.
+Sur tablette en portrait, la palette reste en bas et Zap se place en haut à
+gauche : un rail latéral réduirait la largeur du plan. Un téléphone tenu
+verticalement affiche « Tourne ton téléphone ! » à la place du plan de travail.
 
 Les points de rupture sont exposés sur `.app-root` (`data-layout` et
 `data-orientation`) et réutilisés par les feuilles de style ; la carte des
@@ -625,7 +646,7 @@ Le front est une PWA générée par `vite-plugin-pwa` (Workbox, mode `generateSW
   s’affiche ensuite sur toutes les pages. Aucune vérification périodique n’est
   lancée, pour ne jamais interrompre une partie ouverte.
 - La version applicative vient de `apps/web/package.json` (actuellement
-  `0.1.0`). Elle est écrite dans `localStorage` sous
+  `0.2.0`). Elle est écrite dans `localStorage` sous
   `circuits-de-zap:app-version:v1`, affichée en haut à droite de l’accueil et
   dans le pied de page de l’espace adulte.
 - Le service worker n’est enregistré qu’en build de production

@@ -286,6 +286,12 @@
   min-height: 56px;
 }
 
+/* Phones keep the component rail on the left; Zap moves beside it so the
+   avatar never covers a component button. */
+.workbench-page.has-palette .zap-panel--compact {
+  left: calc(max(8px, env(safe-area-inset-left)) + 84px);
+}
+
 .zap-bubble--overlay {
   position: fixed;
   top: max(66px, calc(env(safe-area-inset-top) + 58px));

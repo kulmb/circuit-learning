@@ -44,6 +44,10 @@ export class SpeechNarrationService implements NarrationService {
   private pendingResolve: (() => void) | null = null;
   private audioContext: AudioContext | null = null;
   private voices: SpeechSynthesisVoice[] = [];
+  private unlocked = false;
+  private priming = false;
+  private primeWatchdog: number | null = null;
+  private startTimer: number | null = null;
 
   private readonly handleVoicesChanged = (): void => {
     this.voices = this.getVoices();
@@ -51,6 +55,10 @@ export class SpeechNarrationService implements NarrationService {
 
   private readonly handleVisibilityChange = (): void => {
     if (typeof document !== 'undefined' && document.hidden) {
+      // Mobile engines often need a fresh gesture after returning from the
+      // background, so let the next tap prime the synthesizer again.
+      this.unlocked = false;
+      this.priming = false;
       this.stop();
     }
   };
@@ -66,18 +74,50 @@ export class SpeechNarrationService implements NarrationService {
   }
 
   unlock(): void {
-    this.playSilentAudio();
-
     const synthesis = this.getSynthesis();
     const Utterance = this.getUtteranceConstructor();
     if (!synthesis || !Utterance) {
       return;
     }
 
-    const utterance = new Utterance('');
-    utterance.volume = 0;
-    utterance.rate = 1;
+    if (this.unlocked || this.priming) {
+      return;
+    }
+
+    this.playSilentAudio();
+    this.priming = true;
+
+    const utterance = new Utterance(' ');
+    utterance.lang = 'fr-FR';
+    utterance.volume = 0.01;
+    utterance.rate = 2;
+
+    const confirm = (): void => {
+      this.unlocked = true;
+      this.priming = false;
+      this.clearPrimeWatchdog();
+    };
+
+    utterance.onstart = confirm;
+    utterance.onend = confirm;
+    utterance.onerror = () => {
+      this.priming = false;
+      this.clearPrimeWatchdog();
+    };
+
+    // The silent prime must run inside the user gesture, before any await.
     synthesis.speak(utterance);
+
+    // Some engines never fire onstart for a silent utterance. Clear the
+    // state and let the next tap prime again rather than blocking forever.
+    this.primeWatchdog = window.setTimeout(() => {
+      this.primeWatchdog = null;
+      if (this.unlocked) {
+        return;
+      }
+      this.priming = false;
+      this.getSynthesis()?.cancel();
+    }, 1500);
   }
 
   async speak(textId: string): Promise<void> {
@@ -101,40 +141,81 @@ export class SpeechNarrationService implements NarrationService {
     }
 
     const voice = pickFrenchVoice(this.voices);
-    if (!voice) {
-      // The bubble text is still shown by the UI; never speak French with an
-      // unrelated fallback voice.
+    if (this.voices.length > 0 && voice === null) {
+      // A known voice list without French keeps the text bubble only; an
+      // empty list is different: the device has not reported its voices yet,
+      // so let the engine pick a French voice from `lang`.
       return;
     }
 
-    this.stop();
+    this.clearStartTimer();
+    this.resolvePending();
 
     return new Promise<void>((resolve) => {
       let settled = false;
-      this.pendingResolve = () => {
+      let watchdog: number | null = null;
+      const finish = (): void => {
         if (settled) {
           return;
         }
         settled = true;
-        this.pendingResolve = null;
+        if (watchdog !== null) {
+          window.clearTimeout(watchdog);
+          watchdog = null;
+        }
+        if (this.pendingResolve === finish) {
+          this.pendingResolve = null;
+        }
         resolve();
       };
 
+      this.pendingResolve = finish;
+
       const utterance = new Utterance(text);
-      utterance.lang = voice.lang || 'fr-FR';
-      utterance.voice = voice;
+      utterance.lang = voice?.lang || 'fr-FR';
+      if (voice !== undefined) {
+        utterance.voice = voice;
+      }
       utterance.rate = this.rate;
       utterance.pitch = 1.1;
       utterance.volume = 1;
-      utterance.onend = this.pendingResolve;
-      utterance.onerror = this.pendingResolve;
-      synthesis.speak(utterance);
+      utterance.onstart = () => {
+        this.unlocked = true;
+      };
+      utterance.onend = finish;
+      utterance.onerror = finish;
+
+      const begin = (): void => {
+        // A silently dropped utterance may never fire onend; release the UI
+        // after a generous delay instead of animating forever.
+        watchdog = window.setTimeout(finish, 12_000);
+        synthesis.speak(utterance);
+      };
+
+      const busy = synthesis.speaking || synthesis.pending;
+
+      if (!busy || this.priming) {
+        // Queue behind the silent prime when it is still pending: cancelling
+        // it would lose the mobile unlock.
+        begin();
+        return;
+      }
+
+      // Android can drop an utterance spoken in the same tick as cancel().
+      synthesis.cancel();
+      this.startTimer = window.setTimeout(() => {
+        this.startTimer = null;
+        begin();
+      }, 140);
     });
   }
 
   stop(): void {
+    this.clearStartTimer();
+    this.clearPrimeWatchdog();
+    this.priming = false;
     this.getSynthesis()?.cancel();
-    this.pendingResolve?.();
+    this.resolvePending();
   }
 
   async replay(): Promise<void> {
@@ -155,13 +236,37 @@ export class SpeechNarrationService implements NarrationService {
   }
 
   destroy(): void {
+    this.clearStartTimer();
+    this.clearPrimeWatchdog();
     this.stop();
+    this.unlocked = false;
+    this.priming = false;
     this.getSynthesis()?.removeEventListener?.('voiceschanged', this.handleVoicesChanged);
     if (typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     }
     void this.audioContext?.close();
     this.audioContext = null;
+  }
+
+  private resolvePending(): void {
+    const resolve = this.pendingResolve;
+    this.pendingResolve = null;
+    resolve?.();
+  }
+
+  private clearStartTimer(): void {
+    if (this.startTimer !== null) {
+      window.clearTimeout(this.startTimer);
+      this.startTimer = null;
+    }
+  }
+
+  private clearPrimeWatchdog(): void {
+    if (this.primeWatchdog !== null) {
+      window.clearTimeout(this.primeWatchdog);
+      this.primeWatchdog = null;
+    }
   }
 
   private getSynthesis(): SpeechSynthesis | null {

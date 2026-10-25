@@ -1,6 +1,4 @@
 import {
-  getTerminalWorldPosition,
-  terminalKey,
   type Circuit,
   type CircuitSimulation,
 } from '@circuits/shared';
@@ -8,7 +6,7 @@ import {
 import { ComponentBlock } from './ComponentBlock';
 import { CELL_SIZE, type BoardDimensions } from './constants';
 import type { DisplayMode } from './displayMode';
-import { buildWirePath, type Point } from './pointer';
+import { renderAllWires, terminalPointMap } from './wireLayout';
 
 export interface SandboxSnapshotProps {
   circuit: Circuit;
@@ -30,45 +28,19 @@ export function SandboxSnapshot({
   board,
   svgRef,
 }: SandboxSnapshotProps) {
-  const points = new Map<string, Point>();
-
-  for (const component of circuit.components) {
-    for (const terminal of component.terminals) {
-      const world = getTerminalWorldPosition(component, terminal.id);
-      points.set(
-        terminalKey({ componentId: component.id, terminalId: terminal.id }),
-        { x: world.x * CELL_SIZE, y: world.y * CELL_SIZE },
-      );
-    }
-  }
-
+  const points = terminalPointMap(circuit.components);
   const shortWireIds = new Set(simulation.shortCircuitInfo?.wireIds ?? []);
-  const wires = circuit.wires.flatMap((wire) => {
-    const from = points.get(terminalKey(wire.from));
-    const to = points.get(terminalKey(wire.to));
-
-    if (from === undefined || to === undefined) {
-      return [];
-    }
-
-    const isLoop = wire.from.componentId === wire.to.componentId;
-    const isShort =
+  const wires = renderAllWires(
+    circuit.wires,
+    circuit.components,
+    points,
+    board,
+  ).map((wire) => ({
+    ...wire,
+    isShort:
       simulation.shortCircuit &&
-      (shortWireIds.size === 0 || shortWireIds.has(wire.id));
-
-    return [
-      {
-        id: wire.id,
-        path: buildWirePath(
-          from,
-          to,
-          isLoop ? 96 : 36,
-          isLoop ? 0.75 : 0.25,
-        ),
-        isShort,
-      },
-    ];
-  });
+      (shortWireIds.size === 0 || shortWireIds.has(wire.wire.id)),
+  }));
 
   return (
     <div className="sandbox-snapshot" aria-hidden="true">
@@ -104,14 +76,26 @@ export function SandboxSnapshot({
         />
 
         {wires.map((wire) => (
-          <path
-            key={wire.id}
-            d={wire.path}
-            fill="none"
-            stroke={wire.isShort ? '#ef4444' : '#355070'}
-            strokeWidth={8}
-            strokeLinecap="round"
-          />
+          <g key={wire.wire.id} data-snapshot-wire-id={wire.wire.id}>
+            {/* Match the live board: a light casing keeps the cable readable
+                over the grid and separates crossing wires. */}
+            <path
+              d={wire.path}
+              fill="none"
+              stroke="#f7fbff"
+              strokeWidth={15}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d={wire.path}
+              fill="none"
+              stroke={wire.isShort ? '#ef4444' : '#355070'}
+              strokeWidth={8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
         ))}
 
         {circuit.components.map((component) => (

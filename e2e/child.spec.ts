@@ -23,6 +23,11 @@ test('un enfant se connecte, câble au doigt et gagne ses étoiles', async ({
     'aria-label',
     '3 / 3',
   );
+  await expect(page.locator('.workbench-svg')).toBeVisible();
+  await expect(page.locator('.level-complete-card')).toHaveAttribute(
+    'aria-modal',
+    'false',
+  );
 
   await press(
     page.getByRole('button', { name: 'Continuer', exact: true }),
