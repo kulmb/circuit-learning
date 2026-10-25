@@ -1,6 +1,7 @@
 import type {
   CircuitComponent,
   ComponentType,
+  MeterId,
   QualitativeState,
   Wire,
 } from '../circuit';
@@ -40,6 +41,24 @@ export type SuccessCondition =
       switchId: string;
       onComponentId: string;
       unaffectedComponentId: string;
+    }
+  | {
+      type: 'switch_cuts';
+      switchId: string;
+      componentIds: string[];
+    }
+  | {
+      type: 'components_series';
+      componentIds: [string, string];
+    }
+  | {
+      type: 'components_parallel';
+      componentIds: [string, string];
+    }
+  | {
+      type: 'brighter_than';
+      componentId: string;
+      thanComponentId: string;
     };
 
 export type MaterialVisualKind = 'metal' | 'gum' | 'spoon' | 'pencil' | 'aluminum';
@@ -67,6 +86,13 @@ export interface MatchingChallenge {
   pairs: MatchingPairDefinition[];
 }
 
+export interface ChallengeConfig {
+  /** Difficulty tier, one-based. */
+  tier: number;
+  /** Exact number of electrical components the challenge may use. */
+  budget: number;
+}
+
 export interface LevelDefinition {
   id: string;
   chapterId: string;
@@ -85,6 +111,10 @@ export interface LevelDefinition {
   hintTextIds: string[];
   vocabularyIds: string[];
   nextLevelId: string | null;
+  /** Qualitative gauges shown next to the board. */
+  meters?: MeterId[];
+  /** Challenge tiers are generated from a seed before they are played. */
+  challenge?: ChallengeConfig;
   materialsChallenge?: MaterialsChallenge;
   matchingChallenge?: MatchingChallenge;
 }

@@ -141,7 +141,7 @@ le comportement.
 
 ### 2 bis. Tablette — variateur à glissière
 
-1. Ouvrir le niveau 5 du chapitre 2 (ou le niveau 6 après avoir construit la
+1. Ouvrir le niveau 5 du chapitre 2 (Le variateur) ou le niveau 6 (La
    veilleuse) sur iPad et sur tablette Android.
 2. Taper le variateur : un grand curseur horizontal apparaît dans la barre
    d’outils, avec une cible tactile d’au moins 56 px de haut.
@@ -151,6 +151,26 @@ le comportement.
 5. Vérifier qu’un seul appui sur « Annuler » revient à la position précédente
    du curseur, et que le composant verrouillé ne peut pas être supprimé.
 6. Vérifier qu’aucun chiffre de tension, de courant ou de résistance n’apparaît.
+
+### 2 ter. Tablette et téléphone — Zap-mètre, chapitres 3 et 4
+
+1. Ouvrir `current-02`, `current-03`, `current-04` : un seul nouvel
+   indicateur doit apparaître à chaque fois (Tension, Courant, Résistance).
+2. Ouvrir `current-07` : les quatre indicateurs sont visibles, chacun avec
+   trois segments au maximum et aucun chiffre. Glisser le variateur vers la
+   gauche doit faire monter Courant et Puissance et allumer l’ampoule.
+3. Vérifier que le panneau du Zap-mètre ne masque pas le plan en compact et
+   que les quatre indicateurs tiennent sur une ligne (ou défilent
+   horizontalement sans casser la page).
+4. Ouvrir `assembly-03` sur iPad et téléphone : câbler la combinaison, puis
+   vérifier que `assembly-04` demande bien une commande principale et une
+   commande de branche.
+5. Ouvrir `defi-01` : le circuit généré doit être différent à chaque appui sur
+   « Nouveau défi », avec un nombre de composants fixe (le compteur de la
+   palette le montre). Recommencer sur plusieurs graines, y compris en
+   réparant une panne et en construisant un circuit.
+6. Vérifier qu’aucun composant généré ne se cache sous la bulle de Zap, sur
+   ordinateur comme sur téléphone en paysage.
 
 ### 3. Téléphone — invitation à tourner
 

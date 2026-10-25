@@ -943,4 +943,34 @@ describe('workbench responsive layout', () => {
       screen.getByRole('button', { name: getText('workbench.back') }),
     ).toBeInTheDocument();
   });
+
+  it('shows only the qualitative meters requested by the level', () => {
+    const level = getLevelById('current-02');
+    if (!level) throw new Error('Level missing');
+
+    render(<WorkbenchPage level={level} onBack={() => undefined} />);
+
+    expect(document.querySelector('.workbench-meters')).not.toBeNull();
+    expect(document.querySelectorAll('[data-meter-id]')).toHaveLength(1);
+    expect(
+      document
+        .querySelector('[data-meter-id="tension"]')
+        ?.getAttribute('aria-label'),
+    ).toContain('Tension');
+    expect(document.querySelector('.workbench-page')?.classList).toContain(
+      'has-meters',
+    );
+  });
+
+  it('does not show meters on a level that does not measure anything', () => {
+    const level = getLevelById('light-01');
+    if (!level) throw new Error('Level missing');
+
+    render(<WorkbenchPage level={level} onBack={() => undefined} />);
+
+    expect(document.querySelector('.workbench-meters')).toBeNull();
+    expect(document.querySelector('.workbench-page')?.classList).not.toContain(
+      'has-meters',
+    );
+  });
 });

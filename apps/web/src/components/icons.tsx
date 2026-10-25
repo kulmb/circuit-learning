@@ -11,6 +11,7 @@ export type IconName =
   | 'rotate'
   | 'trash'
   | 'eye'
+  | 'shuffle'
   | 'close';
 
 export interface IconProps {
@@ -89,6 +90,16 @@ export function IconPaths({ name }: { name: IconName }) {
         <>
           <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
           <circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none" />
+        </>
+      );
+    case 'shuffle':
+      return (
+        <>
+          <path d="M4 7h3l10 10h3" />
+          <path d="M17 4l3 3-3 3" />
+          <path d="M4 17h3l3-3" />
+          <path d="M13 10l4-3h3" />
+          <path d="M17 14l3 3-3 3" />
         </>
       );
     case 'close':

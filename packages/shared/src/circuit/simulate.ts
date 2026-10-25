@@ -333,6 +333,7 @@ function buildComponentState(
       return {
         current,
         voltage,
+        power: Math.abs(current * voltage),
         intensity: 0,
         state: on ? 'normal' : 'off',
         on,
@@ -349,6 +350,7 @@ function buildComponentState(
       return {
         current,
         voltage,
+        power: Math.abs(current * voltage),
         intensity,
         state,
         on: state !== 'off',
@@ -363,6 +365,7 @@ function buildComponentState(
         return {
           current: 0,
           voltage,
+          power: 0,
           intensity: 0,
           state: 'off',
           on: false,
@@ -376,6 +379,7 @@ function buildComponentState(
       return {
         current,
         voltage,
+        power: Math.abs(current * voltage),
         intensity,
         state,
         on: state !== 'off',
@@ -389,6 +393,7 @@ function buildComponentState(
       return {
         current,
         voltage,
+        power: Math.abs(current * voltage),
         intensity: 0,
         state: on ? 'normal' : 'off',
         on,
@@ -402,6 +407,7 @@ function buildComponentState(
       return {
         current,
         voltage,
+        power: Math.abs(current * voltage),
         intensity: 0,
         state: on ? 'normal' : 'off',
         on,
@@ -414,6 +420,7 @@ function buildComponentState(
       return {
         current,
         voltage,
+        power: Math.abs(current * voltage),
         intensity: 0,
         state:
           component.closed && Math.abs(current) > ACTIVE_CURRENT ? 'normal' : 'off',
@@ -429,6 +436,7 @@ function buildComponentState(
       return {
         current,
         voltage,
+        power: Math.abs(current * voltage),
         intensity: 0,
         state:
           component.conductive && Math.abs(current) > ACTIVE_CURRENT ? 'normal' : 'off',
@@ -440,6 +448,7 @@ function buildComponentState(
       return {
         current: 0,
         voltage,
+        power: 0,
         intensity: 0,
         state: 'off',
         on: true,
@@ -457,6 +466,7 @@ function createEmptyStates(
     states[component.id] = {
       current: 0,
       voltage: 0,
+      power: 0,
       intensity: 0,
       state: 'off',
       on:

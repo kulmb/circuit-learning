@@ -299,7 +299,7 @@ export async function gotoGuestMap(page: Page): Promise<void> {
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.locator('.level-node')).toHaveCount(17);
+  await expect(page.locator('.level-node')).toHaveCount(26);
 }
 
 export async function nextPaint(page: Page): Promise<void> {

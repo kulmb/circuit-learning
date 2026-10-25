@@ -1,3 +1,4 @@
+import { PROGRESS_CONCEPTS } from '@circuits/shared';
 import { ALL_LEVELS } from '@circuits/shared/levels';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
@@ -89,6 +90,8 @@ beforeEach(async () => {
     'courant',
     'resistance',
     'variateur',
+    'puissance',
+    'combinaison',
   ]);
   noe = await createStudent('Noé', 'panda', ['circuitFerme']);
   await createAdult('parent', 'parent', { parentOf: [lina._id] });
@@ -363,7 +366,7 @@ describe('student dashboard', () => {
       errorsDetected: ['short_circuit'],
     });
     expect(body.timeline).toHaveLength(3);
-    expect(body.concepts).toHaveLength(12);
+    expect(body.concepts).toHaveLength(PROGRESS_CONCEPTS.length);
     expect(body.concepts.every((concept: { mastered: boolean }) => concept.mastered))
       .toBe(true);
     expect(body.sandbox).toEqual([

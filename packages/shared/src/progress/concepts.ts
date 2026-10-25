@@ -66,4 +66,14 @@ export const PROGRESS_CONCEPTS: readonly ProgressConcept[] = [
     label: 'Variateur',
     vocabularyIds: ['variateur'],
   },
+  {
+    id: 'puissance',
+    label: 'Puissance',
+    vocabularyIds: ['puissance'],
+  },
+  {
+    id: 'combinaison',
+    label: 'Circuit combiné',
+    vocabularyIds: ['combinaison'],
+  },
 ];

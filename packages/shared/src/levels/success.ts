@@ -1,7 +1,13 @@
-import type { Circuit, CircuitComponent, CircuitSimulation } from '../circuit';
+import type {
+  Circuit,
+  CircuitComponent,
+  CircuitSimulation,
+  ComponentState,
+} from '../circuit';
 import { cloneComponent } from '../circuit/components';
 import { cloneWire } from '../circuit/components';
 import { simulateCircuit } from '../circuit/simulate';
+import { areInParallel, areInSeries } from '../circuit/topology';
 import type { LevelDefinition, SuccessCondition } from './types';
 
 export function evaluateLevelSuccess(
@@ -41,6 +47,27 @@ function evaluateCondition(
         condition.onComponentId,
         condition.unaffectedComponentId,
       );
+    case 'switch_cuts':
+      return switchCuts(circuit, condition.switchId, condition.componentIds);
+    case 'components_series':
+      return areInSeries(
+        circuit,
+        condition.componentIds[0],
+        condition.componentIds[1],
+      );
+    case 'components_parallel':
+      return areInParallel(
+        circuit,
+        condition.componentIds[0],
+        condition.componentIds[1],
+      );
+    case 'brighter_than':
+      return isBrighterThan(
+        circuit,
+        simulation,
+        condition.componentId,
+        condition.thanComponentId,
+      );
   }
 }
 
@@ -75,6 +102,85 @@ function switchIsolates(
     unaffectedClosed !== undefined &&
     unaffectedClosed.state !== 'off'
   );
+}
+
+function switchCuts(
+  circuit: Circuit,
+  switchId: string,
+  componentIds: string[],
+): boolean {
+  const switchComponent = circuit.components.find(
+    (component) => component.id === switchId,
+  );
+
+  if (switchComponent?.type !== 'switch' || componentIds.length === 0) {
+    return false;
+  }
+
+  const open = simulateCircuit(withSwitchState(circuit, switchId, false));
+  const closed = simulateCircuit(withSwitchState(circuit, switchId, true));
+
+  return (
+    closed.ok &&
+    componentIds.every((componentId) => {
+      const openState = open.states[componentId];
+      const closedState = closed.states[componentId];
+
+      return (
+        openState !== undefined &&
+        openState.state === 'off' &&
+        closedState !== undefined &&
+        closedState.state !== 'off'
+      );
+    })
+  );
+}
+
+function isBrighterThan(
+  circuit: Circuit,
+  simulation: CircuitSimulation,
+  componentId: string,
+  thanComponentId: string,
+): boolean {
+  const component = circuit.components.find(
+    (item) => item.id === componentId,
+  );
+  const other = circuit.components.find(
+    (item) => item.id === thanComponentId,
+  );
+  const state = simulation.states[componentId];
+  const otherState = simulation.states[thanComponentId];
+
+  if (
+    component === undefined ||
+    other === undefined ||
+    state === undefined ||
+    otherState === undefined ||
+    !state.on ||
+    !otherState.on
+  ) {
+    return false;
+  }
+
+  const value = outputIntensity(component, state);
+  const otherValue = outputIntensity(other, otherState);
+
+  return value > otherValue * 1.25;
+}
+
+function outputIntensity(
+  component: CircuitComponent,
+  state: ComponentState,
+): number {
+  switch (component.type) {
+    case 'bulb':
+    case 'motor':
+    case 'buzzer':
+    case 'led':
+      return state.intensity;
+    default:
+      return state.power;
+  }
 }
 
 function withSwitchState(circuit: Circuit, switchId: string, closed: boolean): Circuit {

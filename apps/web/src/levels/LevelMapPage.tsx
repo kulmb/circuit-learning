@@ -176,6 +176,7 @@ function LevelNode({ level, progress, onSelect }: LevelNodeProps) {
   const locked = status === 'locked';
   const completed = status === 'completed';
   const isTransition = level.kind === 'matching';
+  const isChallenge = level.challenge !== undefined;
 
   return (
     <button
@@ -202,7 +203,9 @@ function LevelNode({ level, progress, onSelect }: LevelNodeProps) {
         <span className="level-node__label">
           {isTransition
             ? getText('map.transition')
-            : `${getText('map.level')} ${level.number ?? ''}`}
+            : isChallenge
+              ? `${getText('challenge.badge')} ${level.number ?? ''}`
+              : `${getText('map.level')} ${level.number ?? ''}`}
         </span>
         <span className="level-node__title">
           {getText(level.titleTextId)}

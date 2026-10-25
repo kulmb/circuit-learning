@@ -1,7 +1,11 @@
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
+
+// The API suite runs in parallel with the web suite and can starve the CPU.
+// Give lazy-loaded screens a little more room than the one-second default.
+configure({ asyncUtilTimeout: 5000 });
 
 afterEach(() => {
   cleanup();

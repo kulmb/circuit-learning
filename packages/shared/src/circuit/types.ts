@@ -124,6 +124,8 @@ export type QualitativeState = 'off' | 'dim' | 'normal' | 'bright';
 export interface ComponentState {
   current: number;
   voltage: number;
+  /** Absolute electrical power consumed or supplied, in watts. */
+  power: number;
   intensity: number;
   state: QualitativeState;
   on: boolean;

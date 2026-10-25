@@ -103,6 +103,8 @@ describe('circuit simulation', () => {
     expect(bulb.current).toBeGreaterThan(0);
     expect(bulb.intensity).toBeCloseTo(1.0714, 3);
     expect(bulb.state).toBe('normal');
+    expect(bulb.power).toBeCloseTo(1.8367, 3);
+    expect(battery.power).toBeCloseTo(1.8367, 3);
     expect(battery.current).toBeCloseTo(bulb.current, 3);
   });
 
