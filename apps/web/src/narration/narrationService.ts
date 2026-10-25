@@ -15,14 +15,23 @@ class PreferredNarrationService implements NarrationService {
       return;
     }
 
-    this.recordings.stop();
-    this.speech.stop();
+    // Never await the manifest before speaking: mobile browsers only allow
+    // the first utterance inside the user gesture. A ready recording starts
+    // synchronously; otherwise the synthesizer speaks right away.
+    const recording = this.recordings.playIfAvailable(textId);
 
-    try {
-      await this.recordings.speak(textId);
-    } catch {
-      await this.speech.speak(textId);
+    if (recording !== null) {
+      this.speech.stop();
+      try {
+        await recording;
+      } catch {
+        await this.speech.speak(textId);
+      }
+      return;
     }
+
+    this.recordings.stop();
+    await this.speech.speak(textId);
   }
 
   stop(): void {

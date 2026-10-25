@@ -4,8 +4,7 @@ import {
   type PlayerProgress,
 } from '@circuits/shared';
 import {
-  CHAPTER_1_LEVELS,
-  CHAPTER_1_TITLE_ID,
+  CHAPTERS,
   type LevelDefinition,
 } from '@circuits/shared/levels';
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
@@ -75,7 +74,7 @@ export function LevelMapPage({
         </button>
 
         <div className="level-map__heading">
-          <h1>{getText(CHAPTER_1_TITLE_ID)}</h1>
+          <h1>{getText('map.title')}</h1>
           <p>{getText('map.subtitle')}</p>
         </div>
 
@@ -135,20 +134,31 @@ export function LevelMapPage({
       {!ready || progress === null ? (
         <div className="level-map__loading" aria-hidden="true" />
       ) : (
-        <ol className="level-map__path">
-          {CHAPTER_1_LEVELS.map((level) => {
-            const levelProgress = progress.levels[level.id];
-            return (
-              <li key={level.id} className="level-map__item">
-                <LevelNode
-                  level={level}
-                  progress={levelProgress}
-                  onSelect={onSelectLevel}
-                />
-              </li>
-            );
-          })}
-        </ol>
+        CHAPTERS.map((chapter) => (
+          <section
+            key={chapter.id}
+            className="level-map__chapter"
+            data-chapter-id={chapter.id}
+          >
+            <h2 className="level-map__chapter-title">
+              {getText(chapter.titleTextId)}
+            </h2>
+            <ol className="level-map__path">
+              {chapter.levels.map((level) => {
+                const levelProgress = progress.levels[level.id];
+                return (
+                  <li key={level.id} className="level-map__item">
+                    <LevelNode
+                      level={level}
+                      progress={levelProgress}
+                      onSelect={onSelectLevel}
+                    />
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        ))
       )}
     </div>
   );

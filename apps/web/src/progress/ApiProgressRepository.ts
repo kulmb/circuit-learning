@@ -5,6 +5,7 @@ import {
   finishAttemptResponseSchema,
   initialPlayerProgress,
   playerProgressResponseSchema,
+  reconcileProgress,
   sandboxListResponseSchema,
   sandboxResponseSchema,
   serializeCircuit,
@@ -729,7 +730,7 @@ function toPlayerProgress(response: PlayerProgressResponse): PlayerProgress {
 
   progress.vocabulary = [...new Set(response.vocabulary)];
 
-  return progress;
+  return reconcileProgress(progress);
 }
 
 function normalizeProgress(progress: PlayerProgress): PlayerProgress {
@@ -749,7 +750,7 @@ function normalizeProgress(progress: PlayerProgress): PlayerProgress {
     ? progress.vocabulary.filter((id): id is string => typeof id === 'string')
     : [];
 
-  return base;
+  return reconcileProgress(base);
 }
 
 function toSandboxCircuit(dto: SandboxCircuitDto): SandboxCircuit {

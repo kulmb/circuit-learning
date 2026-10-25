@@ -4,7 +4,7 @@ export interface ProgressConcept {
   readonly vocabularyIds: readonly string[];
 }
 
-/** The eight concepts tracked on the adult dashboards. */
+/** The concepts tracked on the adult dashboards. */
 export const PROGRESS_CONCEPTS: readonly ProgressConcept[] = [
   {
     id: 'circuit_ferme',
@@ -45,5 +45,25 @@ export const PROGRESS_CONCEPTS: readonly ProgressConcept[] = [
     id: 'polarite',
     label: 'Polarité',
     vocabularyIds: ['polarite'],
+  },
+  {
+    id: 'tension',
+    label: 'Tension',
+    vocabularyIds: ['tension'],
+  },
+  {
+    id: 'courant',
+    label: 'Courant',
+    vocabularyIds: ['courant'],
+  },
+  {
+    id: 'resistance',
+    label: 'Résistance',
+    vocabularyIds: ['resistance'],
+  },
+  {
+    id: 'variateur',
+    label: 'Variateur',
+    vocabularyIds: ['variateur'],
   },
 ];

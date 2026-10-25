@@ -5,7 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LayoutContext } from '../layout/LayoutContext';
 import type { LayoutMode } from '../layout/layoutMode';
 import { getText, getVocabulary } from '../narration/fr';
+import { DEFAULT_BOARD } from './constants';
+import { boardToScreen, defaultView } from './viewport';
 import { WorkbenchPage } from './WorkbenchPage';
+import { renderAllWires, terminalPointMap } from './wireLayout';
 import { useWorkbenchStore } from './workbenchStore';
 
 function mockSvg(svg: SVGSVGElement): void {
@@ -172,7 +175,93 @@ describe('workbench interactions', () => {
     expect(useWorkbenchStore.getState().circuit.components).toHaveLength(3);
   });
 
-  it('swipes the palette horizontally instead of dragging', () => {
+  it('splices a palette component dropped on an existing wire', () => {
+    const rect = {
+      left: 0,
+      top: 0,
+      width: 320,
+      height: 200,
+      right: 320,
+      bottom: 200,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect;
+    vi.spyOn(SVGSVGElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      rect,
+    );
+
+    const store = useWorkbenchStore.getState();
+    store.addWire(
+      { componentId: 'battery-1', terminalId: 'positive' },
+      { componentId: 'bulb-1', terminalId: 'a' },
+    );
+    const wired = useWorkbenchStore.getState();
+    const routes = renderAllWires(
+      wired.circuit.wires,
+      wired.circuit.components,
+      terminalPointMap(wired.circuit.components),
+      DEFAULT_BOARD,
+    );
+    const midpoint = routes[0]?.mid;
+    if (midpoint === undefined) {
+      throw new Error('Wire route missing');
+    }
+    const target = boardToScreen(
+      midpoint,
+      rect,
+      defaultView(DEFAULT_BOARD),
+      DEFAULT_BOARD,
+    );
+
+    render(<WorkbenchPage onBack={() => undefined} />);
+    getSvg();
+
+    const button = screen.getByRole('button', { name: /interrupteur/i });
+    Object.assign(button, {
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+    });
+    const down = {
+      pointerId: 19,
+      pointerType: 'mouse',
+      button: 0,
+      clientX: 600,
+      clientY: 500,
+    };
+
+    fireEvent.pointerDown(button, down);
+    fireEvent.pointerMove(button, {
+      ...down,
+      clientX: target.x,
+      clientY: target.y,
+    });
+    fireEvent.pointerUp(button, {
+      ...down,
+      clientX: target.x,
+      clientY: target.y,
+    });
+
+    const state = useWorkbenchStore.getState();
+    const inserted = state.circuit.components.find(
+      (component) => component.type === 'switch',
+    );
+
+    expect(inserted).toBeDefined();
+    expect(state.circuit.wires).toHaveLength(2);
+    expect(
+      state.circuit.wires.some((wire) => wire.id === 'wire-1'),
+    ).toBe(false);
+    expect(
+      state.circuit.wires.filter(
+        (wire) =>
+          wire.from.componentId === inserted?.id ||
+          wire.to.componentId === inserted?.id,
+      ),
+    ).toHaveLength(2);
+  });
+
+  it('scrolls the palette instead of dragging when it overflows', () => {
     render(<WorkbenchPage onBack={() => undefined} />);
 
     const palette = document.querySelector('.palette');
@@ -442,6 +531,60 @@ describe('workbench interactions', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: getText('success.next') }),
+    ).toBeInTheDocument();
+  });
+
+  it('dims the bulb with the rheostat slider on a locked variator', async () => {
+    const level = getLevelById('current-05');
+    if (!level) throw new Error('Level missing');
+
+    render(
+      <WorkbenchPage level={level} onBack={() => undefined} />,
+    );
+    getSvg();
+
+    expect(useWorkbenchStore.getState().simulation.states['bulb-1']?.state)
+      .toBe('normal');
+
+    tap(getComponent('rheostat-1'), 200, 200);
+
+    const slider = document.querySelector(
+      '[data-rheostat-slider="rheostat-1"]',
+    );
+    expect(slider).not.toBeNull();
+    if (!(slider instanceof Element)) throw new Error('Slider missing');
+
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      width: 144,
+      height: 56,
+      right: 144,
+      bottom: 56,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    fireEvent.pointerDown(slider, {
+      pointerId: 2,
+      pointerType: 'mouse',
+      button: 0,
+      clientX: 144,
+      clientY: 28,
+    });
+    fireEvent.pointerUp(slider, {
+      pointerId: 2,
+      pointerType: 'mouse',
+      button: 0,
+      clientX: 144,
+      clientY: 28,
+    });
+
+    expect(useWorkbenchStore.getState().simulation.states['bulb-1']?.state)
+      .toBe('dim');
+    expect(
+      await screen.findByRole('heading', { name: getText('success.title') }),
     ).toBeInTheDocument();
   });
 
@@ -746,6 +889,40 @@ describe('workbench responsive layout', () => {
     expect(
       screen.queryByText(getText(level.goalTextId)),
     ).not.toBeInTheDocument();
+  });
+
+  it('keeps the component rail on the left and hides an empty palette', () => {
+    const level = getLevelById('light-01');
+    if (!level) throw new Error('Level missing');
+
+    const sandboxLike = render(
+      <LayoutContext.Provider value={compactLandscape}>
+        <WorkbenchPage onBack={() => undefined} />
+      </LayoutContext.Provider>,
+    );
+    getSvg();
+
+    expect(
+      document.querySelector('.workbench-page')?.classList.contains(
+        'has-palette',
+      ),
+    ).toBe(true);
+    expect(document.querySelector('.palette')).not.toBeNull();
+
+    sandboxLike.unmount();
+
+    render(
+      <LayoutContext.Provider value={compactLandscape}>
+        <WorkbenchPage level={level} onBack={() => undefined} />
+      </LayoutContext.Provider>,
+    );
+
+    expect(
+      document.querySelector('.workbench-page')?.classList.contains(
+        'has-palette',
+      ),
+    ).toBe(false);
+    expect(document.querySelector('.palette')).toBeNull();
   });
 
   it('asks the child to rotate a phone held upright', () => {

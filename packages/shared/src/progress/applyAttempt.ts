@@ -1,5 +1,5 @@
 import {
-  CHAPTER_1_LEVEL_METADATA,
+  ALL_LEVEL_METADATA,
   getLevelMetadata,
 } from '../levels/metadata';
 import { starsForHints } from '../levels/stars';
@@ -25,17 +25,52 @@ function emptyLevelProgress(
   };
 }
 
-/** A fresh chapter: only the first level is playable. */
+/** A fresh game: only the first level is playable. */
 export function initialPlayerProgress(): PlayerProgress {
   return {
     levels: Object.fromEntries(
-      CHAPTER_1_LEVEL_METADATA.map((level, index) => [
+      ALL_LEVEL_METADATA.map((level, index) => [
         level.id,
         emptyLevelProgress(level.id, index === 0 ? 'unlocked' : 'locked'),
       ]),
     ),
     vocabulary: [],
   };
+}
+
+/**
+ * Adds levels introduced after a player last saved progress, then unlocks the
+ * next level of every completed level. This lets a player who finished the
+ * previous chapter continue without replaying it.
+ */
+export function reconcileProgress(progress: PlayerProgress): PlayerProgress {
+  const levels = { ...progress.levels };
+
+  for (const level of ALL_LEVEL_METADATA) {
+    if (levels[level.id] === undefined) {
+      levels[level.id] = emptyLevelProgress(level.id, 'locked');
+    }
+  }
+
+  for (const level of ALL_LEVEL_METADATA) {
+    if (levels[level.id]?.status !== 'completed') {
+      continue;
+    }
+
+    const nextId = level.nextLevelId;
+
+    if (nextId === null) {
+      continue;
+    }
+
+    const next = levels[nextId];
+
+    if (next !== undefined && next.status === 'locked') {
+      levels[nextId] = { ...next, status: 'unlocked' };
+    }
+  }
+
+  return { levels, vocabulary: [...progress.vocabulary] };
 }
 
 /**

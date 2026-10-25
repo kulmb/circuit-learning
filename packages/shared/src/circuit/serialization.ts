@@ -176,6 +176,22 @@ function parseComponent(raw: unknown, path: string): CircuitComponent {
         type,
         resistance: readPositiveNumber(raw, 'resistance', path),
       };
+    case 'rheostat': {
+      const minResistance = readPositiveNumber(raw, 'minResistance', path);
+      const maxResistance = readPositiveNumber(raw, 'maxResistance', path);
+
+      if (maxResistance <= minResistance) {
+        fail(`${path}.maxResistance must exceed minResistance`);
+      }
+
+      return {
+        ...base,
+        type,
+        minResistance,
+        maxResistance,
+        wiperPosition: readUnitInterval(raw, 'wiperPosition', path),
+      };
+    }
     case 'material':
       return {
         ...base,
@@ -335,6 +351,20 @@ function readNonNegativeNumber(
 
   if (value < 0) {
     fail(`${path}.${key} must be zero or positive`);
+  }
+
+  return value;
+}
+
+function readUnitInterval(
+  record: Record<string, unknown>,
+  key: string,
+  path: string,
+): number {
+  const value = readNumber(record, key, path);
+
+  if (value < 0 || value > 1) {
+    fail(`${path}.${key} must be between zero and one`);
   }
 
   return value;

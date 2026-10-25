@@ -4,7 +4,9 @@ import {
   type StudentDashboardResponse,
 } from '@circuits/shared';
 import {
-  CHAPTER_1_LEVELS,
+  CHAPTERS,
+  getChapterForLevel,
+  getLevelById,
   type LevelDefinition,
 } from '@circuits/shared/levels';
 import { useCallback, useEffect, useState } from 'react';
@@ -20,7 +22,16 @@ import {
 import { adminTexts } from './fr';
 
 function levelFor(id: string): LevelDefinition | undefined {
-  return CHAPTER_1_LEVELS.find((level) => level.id === id);
+  return getLevelById(id);
+}
+
+function levelPrefix(level: LevelDefinition): string {
+  const chapter = getChapterForLevel(level.id);
+  const index = chapter === undefined
+    ? 0
+    : CHAPTERS.findIndex((entry) => entry.id === chapter.id) + 1;
+
+  return index > 0 ? `${index}·` : '';
 }
 
 function levelLabel(levelId: string): string {
@@ -32,7 +43,7 @@ function levelLabel(levelId: string): string {
 
   return level.number === null
     ? getText(level.titleTextId)
-    : `${adminTexts.dashboard.level} ${level.number} · ${getText(level.titleTextId)}`;
+    : `${adminTexts.dashboard.level} ${levelPrefix(level)}${level.number} · ${getText(level.titleTextId)}`;
 }
 
 export function StudentProgressSections({ studentId }: { studentId: string }) {

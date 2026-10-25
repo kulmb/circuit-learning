@@ -12,8 +12,8 @@ describe('application version', () => {
     window.localStorage.clear();
   });
 
-  it('exposes the 0.1.0 build version', () => {
-    expect(APP_VERSION).toBe('0.1.0');
+  it('exposes the 0.2.0 build version', () => {
+    expect(APP_VERSION).toBe('0.2.0');
   });
 
   it('writes the version to local storage', () => {

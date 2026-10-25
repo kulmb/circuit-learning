@@ -6,7 +6,8 @@ test.describe('atelier libre', () => {
   }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Atelier libre' }).click();
-    await expect(page.locator('.palette-item')).toHaveCount(8);
+    await expect(page.locator('.palette-item')).toHaveCount(9);
+    await expect(page.locator('[data-component-id]')).toHaveCount(0);
 
     const overflow = await page
       .locator('.palette')

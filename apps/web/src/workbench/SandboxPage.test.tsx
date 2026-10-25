@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ProgressProvider } from '../progress/ProgressContext';
@@ -40,7 +46,15 @@ describe('sandbox page', () => {
     expect(
       await screen.findByRole('heading', { name: 'Atelier libre' }),
     ).toBeInTheDocument();
-    expect(useWorkbenchStore.getState().circuit.components).toHaveLength(2);
+    expect(useWorkbenchStore.getState().circuit.components).toHaveLength(0);
+
+    act(() => {
+      useWorkbenchStore
+        .getState()
+        .addComponent('battery', {}, { x: 3, y: 4 });
+    });
+
+    expect(useWorkbenchStore.getState().circuit.components).toHaveLength(1);
 
     press(screen.getByRole('button', { name: 'Mon atelier' }));
 
@@ -93,7 +107,7 @@ describe('sandbox page', () => {
     press(screen.getByRole('button', { name: 'Non, je garde' }));
     expect(
       useWorkbenchStore.getState().circuit.components,
-    ).toHaveLength(2);
+    ).toHaveLength(1);
 
     press(screen.getByRole('button', { name: 'Mon atelier' }));
     press(screen.getByRole('button', { name: 'Tout effacer' }));
@@ -111,7 +125,7 @@ describe('sandbox page', () => {
     );
 
     await waitFor(() => {
-      expect(useWorkbenchStore.getState().circuit.components).toHaveLength(2);
+      expect(useWorkbenchStore.getState().circuit.components).toHaveLength(1);
     });
     expect(
       screen.queryByRole('heading', { name: 'Mon atelier' }),

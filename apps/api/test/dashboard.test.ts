@@ -1,4 +1,4 @@
-import { CHAPTER_1_LEVELS } from '@circuits/shared/levels';
+import { ALL_LEVELS } from '@circuits/shared/levels';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
@@ -85,6 +85,10 @@ beforeEach(async () => {
     'courtCircuit',
     'moteur',
     'polarite',
+    'tension',
+    'courant',
+    'resistance',
+    'variateur',
   ]);
   noe = await createStudent('Noé', 'panda', ['circuitFerme']);
   await createAdult('parent', 'parent', { parentOf: [lina._id] });
@@ -287,7 +291,7 @@ describe('group dashboard', () => {
     expect(body.totalStudents).toBe(2);
     expect(body.activeStudents).toBe(2);
     expect(body.students).toHaveLength(2);
-    expect(body.students[0].levels).toHaveLength(CHAPTER_1_LEVELS.length);
+    expect(body.students[0].levels).toHaveLength(ALL_LEVELS.length);
 
     const level1 = body.levels.find(
       (entry: { levelId: string }) => entry.levelId === 'light-01',
@@ -359,7 +363,7 @@ describe('student dashboard', () => {
       errorsDetected: ['short_circuit'],
     });
     expect(body.timeline).toHaveLength(3);
-    expect(body.concepts).toHaveLength(8);
+    expect(body.concepts).toHaveLength(12);
     expect(body.concepts.every((concept: { mastered: boolean }) => concept.mastered))
       .toBe(true);
     expect(body.sandbox).toEqual([

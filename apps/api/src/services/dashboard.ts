@@ -1,12 +1,13 @@
 import {
   PROGRESS_CONCEPTS,
   initialPlayerProgress,
+  reconcileProgress,
   type GroupDashboardResponse,
   type GroupDifficulty,
   type GroupLevelStats,
   type StudentDashboardResponse,
 } from '@circuits/shared';
-import { CHAPTER_1_LEVELS } from '@circuits/shared/levels';
+import { ALL_LEVELS } from '@circuits/shared/levels';
 import { Types } from 'mongoose';
 
 import {
@@ -76,7 +77,7 @@ export async function buildGroupDashboard(
       totalStudents: 0,
       activeStudents: 0,
       students: [],
-      levels: CHAPTER_1_LEVELS.map((level) => ({
+      levels: ALL_LEVELS.map((level) => ({
         levelId: level.id,
         totalStudents: 0,
         completed: 0,
@@ -211,12 +212,14 @@ export async function buildGroupDashboard(
       }
     }
 
+    const reconciled = reconcileProgress(progress);
+
     return {
       id: student._id.toString(),
       displayName: student.displayName,
       avatarId: student.avatarId ?? null,
-      levels: CHAPTER_1_LEVELS.flatMap((level) => {
-        const entry = progress.levels[level.id];
+      levels: ALL_LEVELS.flatMap((level) => {
+        const entry = reconciled.levels[level.id];
 
         return entry === undefined
           ? []
@@ -240,7 +243,7 @@ export async function buildGroupDashboard(
 
   const statsByLevel = new Map(statRows.map((row) => [row.levelId, row]));
   const totalStudents = authStudents.length;
-  const levels: GroupLevelStats[] = CHAPTER_1_LEVELS.map((level) => {
+  const levels: GroupLevelStats[] = ALL_LEVELS.map((level) => {
     const row = statsByLevel.get(level.id);
     const completed = row?.completed ?? 0;
     const started = row?.started ?? 0;
@@ -373,10 +376,11 @@ export async function buildStudentDashboard(
   const knownVocabulary = new Set(
     (student.vocabulary ?? []).map((entry) => entry.wordId),
   );
+  const reconciled = reconcileProgress(progress);
 
   return {
-    levels: CHAPTER_1_LEVELS.flatMap((level) => {
-      const entry = progress.levels[level.id];
+    levels: ALL_LEVELS.flatMap((level) => {
+      const entry = reconciled.levels[level.id];
 
       return entry === undefined
         ? []

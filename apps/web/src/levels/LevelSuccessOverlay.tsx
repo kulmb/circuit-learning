@@ -30,40 +30,60 @@ export function LevelSuccessOverlay({
   });
 
   return (
-    <div
-      className="level-complete-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="level-complete-title"
-    >
+    <div className="level-complete-overlay">
       <motion.div
         className="level-complete-card"
-        initial={reduceMotion ? false : { opacity: 0, scale: 0.94, y: 18 }}
+        role="dialog"
+        aria-modal={false}
+        aria-labelledby="level-complete-title"
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 18 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: reduceMotion ? 0 : 0.35, ease: 'easeOut' }}
       >
-        <p className="level-complete-eyebrow">{getText(level.titleTextId)}</p>
-        <h2 id="level-complete-title" className="level-complete-title">
-          {getText('success.title')}
-        </h2>
-
-        <div className="level-complete-stars" aria-label={`${stars} / 3`}>
-          {[0, 1, 2].map((index) => (
-            <motion.span
-              key={index}
-              initial={reduceMotion ? false : { scale: 0, rotate: -18 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{
-                duration: reduceMotion ? 0 : 0.3,
-                delay: reduceMotion ? 0 : 0.15 + index * 0.15,
-                type: 'spring',
-                stiffness: 240,
-                damping: 16,
-              }}
+        <div className="level-complete-summary">
+          <div className="level-complete-summary__text">
+            <p className="level-complete-eyebrow">
+              {getText(level.titleTextId)}
+            </p>
+            <h2
+              id="level-complete-title"
+              className="level-complete-title"
+              aria-live="polite"
             >
-              <StarIcon filled={index < stars} />
-            </motion.span>
-          ))}
+              {getText('success.title')}
+            </h2>
+
+            <div className="level-complete-stars" aria-label={`${stars} / 3`}>
+              {[0, 1, 2].map((index) => (
+                <motion.span
+                  key={index}
+                  initial={reduceMotion ? false : { scale: 0, rotate: -18 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    duration: reduceMotion ? 0 : 0.3,
+                    delay: reduceMotion ? 0 : 0.15 + index * 0.15,
+                    type: 'spring',
+                    stiffness: 240,
+                    damping: 16,
+                  }}
+                >
+                  <StarIcon filled={index < stars} />
+                </motion.span>
+              ))}
+            </div>
+          </div>
+
+          {step === 'stars' ? (
+            <button
+              type="button"
+              className="level-complete-button level-complete-button--primary"
+              onPointerDown={(event) =>
+                activate(event, () => setStep('vocabulary'))
+              }
+            >
+              {getText('success.continue')}
+            </button>
+          ) : null}
         </div>
 
         {!hasNext ? (
@@ -76,17 +96,7 @@ export function LevelSuccessOverlay({
           </p>
         ) : null}
 
-        {step === 'stars' ? (
-          <button
-            type="button"
-            className="level-complete-button level-complete-button--primary"
-            onPointerDown={(event) =>
-              activate(event, () => setStep('vocabulary'))
-            }
-          >
-            {getText('success.continue')}
-          </button>
-        ) : (
+        {step === 'vocabulary' ? (
           <>
             <h3 className="level-complete-learned">
               {getText('success.learned')}
@@ -121,7 +131,7 @@ export function LevelSuccessOverlay({
               </button>
             </div>
           </>
-        )}
+        ) : null}
       </motion.div>
     </div>
   );

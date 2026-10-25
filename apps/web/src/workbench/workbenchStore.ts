@@ -66,9 +66,22 @@ export interface WorkbenchState {
     position: Vec2,
     paletteKey?: string,
   ) => void;
+  addComponentOnWire: (
+    type: ComponentType,
+    options: ComponentOptions,
+    position: Vec2,
+    paletteKey: string | undefined,
+    wireId: string,
+    rotation: Rotation,
+  ) => void;
   moveComponent: (componentId: string, position: Vec2) => void;
   rotateComponent: (componentId: string) => void;
   toggleSwitch: (componentId: string) => void;
+  setRheostatWiper: (
+    componentId: string,
+    wiperPosition: number,
+    recordHistory: boolean,
+  ) => void;
   deleteComponent: (componentId: string) => void;
   deleteSelection: () => void;
   addWire: (from: TerminalRef, to: TerminalRef) => void;
@@ -208,6 +221,76 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
     });
   },
 
+  addComponentOnWire(type, options, position, paletteKey, wireId, rotation) {
+    const state = get();
+
+    if (state.availableCounts !== null) {
+      if (paletteKey === undefined) {
+        return;
+      }
+
+      const remaining = state.availableCounts[paletteKey] ?? 0;
+      if (remaining <= 0) {
+        return;
+      }
+    }
+
+    const targetWire = state.circuit.wires.find((wire) => wire.id === wireId);
+    if (targetWire === undefined) {
+      return;
+    }
+
+    const id = nextId(type, state.circuit);
+    const component = createComponent(type, {
+      id,
+      position,
+      rotation,
+      ...options,
+    });
+    const firstTerminal = component.terminals[0];
+    const secondTerminal = component.terminals[1];
+
+    if (firstTerminal === undefined || secondTerminal === undefined) {
+      return;
+    }
+
+    // Both new wires keep the original from → to direction, so the current
+    // animation keeps flowing the same way through the inserted component.
+    const used = collectIds(state.circuit);
+    used.add(id);
+    const incoming = createWire(
+      nextIdFrom(used, 'wire'),
+      targetWire.from,
+      { componentId: id, terminalId: firstTerminal.id },
+    );
+    const outgoing = createWire(
+      nextIdFrom(used, 'wire'),
+      { componentId: id, terminalId: secondTerminal.id },
+      targetWire.to,
+    );
+    const circuit: Circuit = {
+      components: [...state.circuit.components, component],
+      wires: [
+        ...state.circuit.wires.filter((wire) => wire.id !== wireId),
+        incoming,
+        outgoing,
+      ],
+    };
+    const availableCounts =
+      state.availableCounts !== null && paletteKey !== undefined
+        ? {
+            ...state.availableCounts,
+            [paletteKey]: (state.availableCounts[paletteKey] ?? 0) - 1,
+          }
+        : state.availableCounts;
+
+    set({
+      ...nextCircuitState(state, circuit, availableCounts),
+      selected: { kind: 'component', id },
+      pendingTerminal: null,
+    });
+  },
+
   moveComponent(componentId, position) {
     const state = get();
     const target = state.circuit.components.find(
@@ -283,6 +366,47 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
     set({
       ...nextCircuitState(state, { components, wires: state.circuit.wires }),
       selected: { kind: 'component', id: componentId },
+      pendingTerminal: null,
+    });
+  },
+
+  setRheostatWiper(componentId, wiperPosition, recordHistory) {
+    const state = get();
+    const target = state.circuit.components.find(
+      (component) => component.id === componentId,
+    );
+
+    if (target?.type !== 'rheostat') {
+      return;
+    }
+
+    const clamped = Math.min(1, Math.max(0, wiperPosition));
+
+    if (Math.abs(target.wiperPosition - clamped) < 1e-9) {
+      return;
+    }
+
+    const components = state.circuit.components.map((component) =>
+      component.id === componentId && component.type === 'rheostat'
+        ? { ...component, wiperPosition: clamped }
+        : component,
+    );
+    const circuit: Circuit = { components, wires: state.circuit.wires };
+    const selection = { kind: 'component' as const, id: componentId };
+
+    if (recordHistory) {
+      set({
+        ...nextCircuitState(state, circuit),
+        selected: selection,
+        pendingTerminal: null,
+      });
+      return;
+    }
+
+    set({
+      circuit,
+      simulation: simulateCircuit(circuit),
+      selected: selection,
       pendingTerminal: null,
     });
   },
@@ -517,7 +641,7 @@ function cloneCircuit(circuit: Circuit): Circuit {
   };
 }
 
-function nextId(prefix: string, circuit: Circuit): string {
+function collectIds(circuit: Circuit): Set<string> {
   const used = new Set<string>();
 
   for (const component of circuit.components) {
@@ -527,12 +651,22 @@ function nextId(prefix: string, circuit: Circuit): string {
     used.add(wire.id);
   }
 
+  return used;
+}
+
+function nextId(prefix: string, circuit: Circuit): string {
+  return nextIdFrom(collectIds(circuit), prefix);
+}
+
+function nextIdFrom(used: Set<string>, prefix: string): string {
   let index = 1;
   while (used.has(`${prefix}-${index}`)) {
     index += 1;
   }
 
-  return `${prefix}-${index}`;
+  const id = `${prefix}-${index}`;
+  used.add(id);
+  return id;
 }
 
 function nextRotation(rotation: Rotation): Rotation {

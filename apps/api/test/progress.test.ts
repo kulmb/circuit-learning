@@ -1,5 +1,6 @@
 import { serializeCircuit } from '@circuits/shared';
 import {
+  ALL_LEVELS,
   CHAPTER_1_LEVELS,
   type LevelDefinition,
 } from '@circuits/shared/levels';
@@ -187,7 +188,7 @@ describe('progress API', () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json();
-    expect(body.levels).toHaveLength(CHAPTER_1_LEVELS.length);
+    expect(body.levels).toHaveLength(ALL_LEVELS.length);
     expect(body.levels[0]).toMatchObject({
       levelId: level(1).id,
       status: 'unlocked',
@@ -195,8 +196,32 @@ describe('progress API', () => {
       attempts: 0,
     });
     expect(body.levels[1].status).toBe('locked');
+    expect(
+      body.levels.find(
+        (entry: { levelId: string }) => entry.levelId === 'current-01',
+      )?.status,
+    ).toBe('locked');
     expect(body.vocabulary).toEqual([]);
     expect(response.headers['cache-control']).toBe('no-store');
+  });
+
+  it('unlocks chapter 2 for an account that finished chapter 1 before it existed', async () => {
+    await LevelProgressModel.create({
+      userId: lina._id,
+      levelId: 'light-10',
+      status: 'completed',
+      stars: 3,
+      attempts: 1,
+      hintsUsed: 0,
+      bestTimeMs: 1000,
+      firstCompletedAt: new Date(),
+      lastPlayedAt: new Date(),
+    });
+
+    const response = await start(linaCookie, 'current-01');
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({ levelId: 'current-01' });
   });
 
   it('refuses locked and unknown levels', async () => {

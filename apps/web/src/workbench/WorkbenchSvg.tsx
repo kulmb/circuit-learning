@@ -4,6 +4,7 @@ import {
   type Circuit,
   type CircuitComponent,
   type CircuitSimulation,
+  type RheostatComponent,
   type TerminalRef,
   type Vec2,
 } from '@circuits/shared';
@@ -32,8 +33,6 @@ import { isInsideBodyHitZone } from './hitTarget';
 import {
   applyTouchOffset,
   buildStraightWirePath,
-  buildWireMidpoint,
-  buildWirePath,
   clamp,
   clampGridPosition,
   COMPACT_SNAP_RADIUS_PX,
@@ -62,17 +61,15 @@ import {
   type BoardView,
 } from './viewport';
 import {
-  buildWireObstacles,
-  markRouteOccupied,
-  polylineMidpoint,
-  roundedPolylinePath,
-  routeWire,
-  wireEndpoint,
-} from './wireRouting';
+  renderAllWires,
+  terminalPointMap,
+} from './wireLayout';
 import type { DisplayMode } from './displayMode';
 import {
   toolbarButtonSize,
   toolbarIconSize,
+  toolbarSliderHeight,
+  toolbarSliderWidth,
 } from './toolbarLayout';
 import type { Selection } from './workbenchStore';
 
@@ -85,6 +82,8 @@ export interface WorkbenchSvgProps {
   hintHighlight: HintHighlight | null;
   lockedComponentIds: string[];
   previewComponent: CircuitComponent | null;
+  /** Wire that will be split if the palette component is dropped here. */
+  spliceWireId: string | null;
   board: BoardDimensions;
   view: BoardView;
   scale: number;
@@ -105,6 +104,11 @@ export interface WorkbenchSvgProps {
   onDeleteSelection: () => void;
   onDeleteComponent: (componentId: string) => void;
   onToggleSwitch: (componentId: string) => void;
+  onSetRheostatWiper: (
+    componentId: string,
+    wiperPosition: number,
+    recordHistory: boolean,
+  ) => void;
   onAddWire: (from: TerminalRef, to: TerminalRef) => void;
 }
 
@@ -142,12 +146,21 @@ interface PanGesture extends BaseGesture {
   anchorBoard: Point;
 }
 
+interface RheostatGesture extends BaseGesture {
+  kind: 'rheostat';
+  componentId: string;
+  sliderLeft: number;
+  sliderWidth: number;
+  historyPushed: boolean;
+}
+
 type BoardGesture =
   | ComponentGesture
   | TerminalGesture
   | WireGesture
   | BlankGesture
-  | PanGesture;
+  | PanGesture
+  | RheostatGesture;
 
 interface PinchGesture {
   startView: BoardView;
@@ -167,114 +180,6 @@ interface WirePreview {
   target: TerminalRef | null;
 }
 
-interface RenderedWire {
-  wire: Circuit['wires'][number];
-  from: Point;
-  to: Point;
-  path: string;
-  mid: Point;
-}
-
-function fallbackWireVisual(
-  wire: Circuit['wires'][number],
-  from: Point,
-  to: Point,
-): Pick<RenderedWire, 'path' | 'mid'> {
-  // A wire joining two terminals of the same component (a direct short)
-  // would otherwise run straight under the component body and stay
-  // invisible and impossible to select. Bow it wide enough to be seen.
-  const isLoop = wire.from.componentId === wire.to.componentId;
-  const curve = isLoop ? 96 : 36;
-  const control = isLoop ? 0.75 : 0.25;
-
-  return {
-    path: buildWirePath(from, to, curve, control),
-    mid: buildWireMidpoint(from, to, curve, control),
-  };
-}
-
-function terminalPointMap(
-  components: readonly CircuitComponent[],
-): Map<string, Point> {
-  const points = new Map<string, Point>();
-
-  for (const component of components) {
-    for (const terminal of component.terminals) {
-      const world = getTerminalWorldPosition(component, terminal.id);
-      points.set(
-        terminalKey({ componentId: component.id, terminalId: terminal.id }),
-        gridToSvg(world, CELL_SIZE),
-      );
-    }
-  }
-
-  return points;
-}
-
-/**
- * Routes every wire from the settled component positions. While a component
- * moves, this base result keeps the other wires exactly as they were; only
- * the wires attached to the dragged component are recomputed.
- */
-function renderAllWires(
-  wires: ReadonlyArray<Circuit['wires'][number]>,
-  components: readonly CircuitComponent[],
-  points: ReadonlyMap<string, Point>,
-  board: BoardDimensions,
-): RenderedWire[] {
-  const rendered: RenderedWire[] = [];
-  const componentsById = new Map(
-    components.map((component) => [component.id, component]),
-  );
-  const obstacles = buildWireObstacles(components);
-  const occupied = new Set<string>();
-
-  for (const wire of wires) {
-    const from = points.get(terminalKey(wire.from));
-    const to = points.get(terminalKey(wire.to));
-
-    if (from === undefined || to === undefined) {
-      continue;
-    }
-
-    const fallback = fallbackWireVisual(wire, from, to);
-    const fromComponent = componentsById.get(wire.from.componentId);
-    const toComponent = componentsById.get(wire.to.componentId);
-
-    if (fromComponent === undefined || toComponent === undefined) {
-      rendered.push({ wire, from, to, ...fallback });
-      continue;
-    }
-
-    const route = routeWire(
-      wireEndpoint(fromComponent, wire.from.terminalId, from),
-      wireEndpoint(toComponent, wire.to.terminalId, to),
-      {
-        boardWidth: board.width,
-        boardHeight: board.height,
-        obstacles,
-        occupied,
-      },
-    );
-
-    if (route.fallback) {
-      rendered.push({ wire, from, to, ...fallback });
-      continue;
-    }
-
-    markRouteOccupied(route.points, occupied);
-    rendered.push({
-      wire,
-      from,
-      to,
-      path: roundedPolylinePath(route.points),
-      mid: polylineMidpoint(route.points),
-    });
-  }
-
-  return rendered;
-}
-
 export const WorkbenchSvg = memo(function WorkbenchSvg({
   circuit,
   simulation,
@@ -284,6 +189,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
   hintHighlight,
   lockedComponentIds,
   previewComponent,
+  spliceWireId,
   board,
   view,
   scale,
@@ -301,6 +207,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
   onDeleteSelection,
   onDeleteComponent,
   onToggleSwitch,
+  onSetRheostatWiper,
   onAddWire,
 }: WorkbenchSvgProps) {
   const isCompact = useLayout().size === 'compact';
@@ -671,6 +578,55 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
       element?.closest('[data-terminal-component]') ?? null;
     const componentElement = element?.closest('[data-component-id]') ?? null;
     const wireElement = element?.closest('[data-wire-id]') ?? null;
+    const rheostatElement =
+      element?.closest('[data-rheostat-slider]') ?? null;
+
+    if (rheostatElement !== null) {
+      const componentId = rheostatElement.getAttribute(
+        'data-rheostat-slider',
+      );
+      const rheostat =
+        componentId === null
+          ? undefined
+          : circuit.components.find(
+              (item) => item.id === componentId,
+            );
+
+      if (rheostat?.type === 'rheostat' && componentId !== null) {
+        const sliderRect = rheostatElement.getBoundingClientRect();
+
+        if (sliderRect.width > 0) {
+          const position = clamp(
+            (client.x - sliderRect.left) / sliderRect.width,
+            0,
+            1,
+          );
+          const changed =
+            Math.abs(rheostat.wiperPosition - position) >= 1e-9;
+
+          gestureRef.current = {
+            kind: 'rheostat',
+            pointerId,
+            startClient,
+            pointerType,
+            dragged: false,
+            view: startView,
+            componentId,
+            sliderLeft: sliderRect.left,
+            sliderWidth: sliderRect.width,
+            historyPushed: changed,
+          };
+          onSelect({ kind: 'component', id: componentId });
+          onSetPendingTerminal(null);
+
+          if (changed) {
+            onSetRheostatWiper(componentId, position, true);
+          }
+
+          return;
+        }
+      }
+    }
 
     if (terminalElement !== null) {
       const componentId = terminalElement.getAttribute('data-terminal-component');
@@ -789,6 +745,35 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
       return;
     }
 
+    if (gesture.kind === 'rheostat') {
+      if (gesture.sliderWidth <= 0) {
+        return;
+      }
+
+      const position = clamp(
+        (client.x - gesture.sliderLeft) / gesture.sliderWidth,
+        0,
+        1,
+      );
+      const rheostat = circuit.components.find(
+        (item) => item.id === gesture.componentId,
+      );
+
+      if (
+        rheostat?.type === 'rheostat' &&
+        Math.abs(rheostat.wiperPosition - position) >= 1e-9
+      ) {
+        onSetRheostatWiper(
+          gesture.componentId,
+          position,
+          !gesture.historyPushed,
+        );
+        gesture.historyPushed = true;
+      }
+
+      return;
+    }
+
     const dragged =
       gesture.dragged || isDragGesture(gesture.startClient, client);
 
@@ -898,6 +883,11 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
 
     gestureRef.current = null;
     updateTrashHover(false);
+
+    if (gesture.kind === 'rheostat') {
+      releaseAcquiredPointerIfDone();
+      return;
+    }
 
     const wasDragged = gesture.dragged;
     const rect = measureElementRect(event.currentTarget, board);
@@ -1123,6 +1113,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
             showCurrent={showCurrent}
             isShort={isShort}
             isHinted={isHinted}
+            spliceTarget={wire.id === spliceWireId}
             duration={duration}
           />
         );
@@ -1243,16 +1234,29 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
       {selected !== null &&
       selectedComponent !== undefined &&
       dragPreview === null &&
-      !lockedComponentIds.includes(selectedComponent.id) ? (
-        <SelectionToolbar
-          component={selectedComponent}
-          components={circuit.components}
-          board={board}
-          compact={isCompact}
-          viewportScale={scale}
-          onRotate={() => onRotateComponent(selectedComponent.id)}
-          onDelete={onDeleteSelection}
-        />
+      (selectedComponent.type === 'rheostat' ||
+        !lockedComponentIds.includes(selectedComponent.id)) ? (
+        selectedComponent.type === 'rheostat' ? (
+          <RheostatToolbar
+            component={selectedComponent}
+            components={circuit.components}
+            board={board}
+            compact={isCompact}
+            viewportScale={scale}
+            locked={lockedComponentIds.includes(selectedComponent.id)}
+            onDelete={onDeleteSelection}
+          />
+        ) : (
+          <SelectionToolbar
+            component={selectedComponent}
+            components={circuit.components}
+            board={board}
+            compact={isCompact}
+            viewportScale={scale}
+            onRotate={() => onRotateComponent(selectedComponent.id)}
+            onDelete={onDeleteSelection}
+          />
+        )
       ) : null}
 
       {selectedWire !== undefined && dragPreview === null ? (
@@ -1292,6 +1296,7 @@ interface WirePathProps {
   showCurrent: boolean;
   isShort: boolean;
   isHinted: boolean;
+  spliceTarget: boolean;
   duration: number;
 }
 
@@ -1307,6 +1312,7 @@ const WirePath = memo(function WirePath({
   showCurrent,
   isShort,
   isHinted,
+  spliceTarget,
   duration,
 }: WirePathProps) {
   return (
@@ -1330,6 +1336,18 @@ const WirePath = memo(function WirePath({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {spliceTarget ? (
+        <path
+          d={path}
+          fill="none"
+          stroke="#f97316"
+          strokeWidth={16}
+          strokeDasharray="12 10"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          pointerEvents="none"
+        />
+      ) : null}
       {showCurrent ? (
         <path
           d={path}
@@ -1428,6 +1446,157 @@ function SelectionToolbar({
         tone="danger"
         onActivate={onDelete}
       />
+    </g>
+  );
+}
+
+interface RheostatToolbarProps {
+  component: RheostatComponent;
+  components: CircuitComponent[];
+  board: BoardDimensions;
+  compact: boolean;
+  viewportScale: number;
+  locked: boolean;
+  onDelete: () => void;
+}
+
+function RheostatToolbar({
+  component,
+  components,
+  board,
+  compact,
+  viewportScale,
+  locked,
+  onDelete,
+}: RheostatToolbarProps) {
+  const buttonSize = toolbarButtonSize(compact, viewportScale);
+  const sliderWidth = toolbarSliderWidth(viewportScale);
+  const sliderHeight = toolbarSliderHeight(viewportScale);
+  const visualScale = buttonSize / 56;
+  const gap = 8 * visualScale;
+  const padding = 6 * visualScale;
+  const width =
+    padding * 2 + sliderWidth + (locked ? 0 : gap + buttonSize);
+  const height = padding * 2 + Math.max(sliderHeight, buttonSize);
+  const { left, top } = chooseToolbarPosition(
+    component,
+    components,
+    width,
+    height,
+    board,
+  );
+  const trackPadding = sliderHeight * 0.22;
+  const trackX = padding + trackPadding;
+  const trackWidth = sliderWidth - trackPadding * 2;
+  const trackY = padding + sliderHeight / 2;
+  const trackHeight = Math.max(4, sliderHeight * 0.14);
+  const thumbRadius = sliderHeight * 0.22;
+  const thumbX = trackX + trackWidth * component.wiperPosition;
+  const buttonY = padding + (sliderHeight - buttonSize) / 2;
+
+  return (
+    <g transform={`translate(${left} ${top})`} data-toolbar="true">
+      <rect
+        width={width}
+        height={height}
+        rx={18}
+        fill="#ffffff"
+        stroke="#c7d8e8"
+        strokeWidth={2}
+        pointerEvents="none"
+      />
+
+      <g
+        data-rheostat-slider={component.id}
+        role="slider"
+        aria-label={fr.components.rheostat.label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(component.wiperPosition * 100)}
+      >
+        <rect
+          x={padding}
+          y={padding}
+          width={sliderWidth}
+          height={sliderHeight}
+          fill="transparent"
+          pointerEvents="all"
+        />
+        <rect
+          x={trackX}
+          y={trackY - trackHeight / 2}
+          width={trackWidth}
+          height={trackHeight}
+          rx={trackHeight / 2}
+          fill="#e2e8f0"
+          pointerEvents="none"
+        />
+        <rect
+          x={trackX}
+          y={trackY - trackHeight / 2}
+          width={Math.max(0, thumbX - trackX)}
+          height={trackHeight}
+          rx={trackHeight / 2}
+          fill="#f59e0b"
+          pointerEvents="none"
+        />
+        <circle
+          cx={thumbX}
+          cy={trackY}
+          r={thumbRadius}
+          fill="#ffffff"
+          stroke="#b45309"
+          strokeWidth={2.5}
+          pointerEvents="none"
+        />
+        <line
+          x1={thumbX}
+          y1={trackY - thumbRadius * 0.45}
+          x2={thumbX}
+          y2={trackY + thumbRadius * 0.45}
+          stroke="#b45309"
+          strokeWidth={2}
+          strokeLinecap="round"
+          pointerEvents="none"
+        />
+        <line
+          x1={thumbX - thumbRadius * 0.28}
+          y1={trackY - thumbRadius * 0.45}
+          x2={thumbX - thumbRadius * 0.28}
+          y2={trackY + thumbRadius * 0.45}
+          stroke="#b45309"
+          strokeWidth={1.4}
+          strokeLinecap="round"
+          pointerEvents="none"
+          opacity={0.55}
+        />
+        <line
+          x1={thumbX + thumbRadius * 0.28}
+          y1={trackY - thumbRadius * 0.45}
+          x2={thumbX + thumbRadius * 0.28}
+          y2={trackY + thumbRadius * 0.45}
+          stroke="#b45309"
+          strokeWidth={1.4}
+          strokeLinecap="round"
+          pointerEvents="none"
+          opacity={0.55}
+        />
+      </g>
+
+      {locked ? null : (
+        <g transform={`translate(${padding + sliderWidth + gap} ${buttonY})`}>
+          <ToolbarButton
+            x={0}
+            y={0}
+            size={buttonSize}
+            viewportScale={viewportScale}
+            label={fr.workbench.delete}
+            icon="trash"
+            tone="danger"
+            onActivate={onDelete}
+          />
+        </g>
+      )}
     </g>
   );
 }

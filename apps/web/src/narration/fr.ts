@@ -101,6 +101,7 @@ export const texts = {
   'component.buzzer.label': 'Sonnerie',
   'component.led.label': 'LED',
   'component.resistor.label': 'Résistance',
+  'component.rheostat.label': 'Variateur',
   'component.wire.label': 'Fil',
   'component.metal.label': 'Métal',
   'component.gum.label': 'Gomme',
@@ -132,8 +133,8 @@ export const texts = {
   'zap.hint.insulator.2': 'Ce matériau bloque le courant.',
   'zap.hint.insulator.3': 'Essaie un matériau qui laisse passer le courant.',
   'zap.hint.led.1': 'Une LED a un sens.',
-  'zap.hint.led.2': 'La LED est à l’envers.',
-  'zap.hint.led.3': 'Tourne la LED pour la retourner.',
+  'zap.hint.led.2': 'Le + de la pile va sur A.',
+  'zap.hint.led.3': 'Le − de la pile va sur K.',
   'zap.hint.battery.1': 'Il manque quelque chose pour donner de l’énergie.',
   'zap.hint.battery.2': 'Ajoute une pile au circuit.',
   'zap.hint.battery.3': 'Prends une pile dans la palette.',
@@ -145,6 +146,8 @@ export const texts = {
   'zap.hint.error.3': 'Vérifie les bornes du circuit.',
 
   'chapter.light.title': 'Chapitre 1 : La lumière',
+  'chapter.current.title': 'Chapitre 2 : La force du courant',
+  'map.title': 'Carte des niveaux',
   'map.subtitle': 'Choisis un niveau.',
   'map.back': 'Accueil',
   'map.locked': 'Verrouillé',
@@ -334,6 +337,54 @@ export const texts = {
   'level.10.hint.2': 'Fais deux chemins séparés.',
   'level.10.hint.3': 'Chaque interrupteur contrôle son appareil.',
 
+  'level.current.01.title': 'Les deux bornes',
+  'level.current.01.goal': 'Allume la LED.',
+  'level.current.01.intro': 'Le courant sort par + et revient par −.',
+  'level.current.01.hint.1': 'Regarde les signes + et −.',
+  'level.current.01.hint.2': 'Le + de la pile va sur A.',
+  'level.current.01.hint.3': 'Le − de la pile va sur K.',
+
+  'level.current.02.title': 'La force de la pile',
+  'level.current.02.goal': 'Fais briller l’ampoule plus fort.',
+  'level.current.02.intro':
+    'Avec une pile, l’ampoule brille. Avec deux, elle brille fort !',
+  'level.current.02.hint.1': 'Prends une pile dans la palette.',
+  'level.current.02.hint.2': 'Pose la pile sur le fil du +.',
+  'level.current.02.hint.3':
+    'Annule, puis recommence sur le fil du +.',
+
+  'level.current.03.title': 'Le courant',
+  'level.current.03.goal': 'Mets l’ampoule sur le chemin du moteur.',
+  'level.current.03.intro': 'Le même courant traverse tout le circuit.',
+  'level.current.03.hint.1': 'Prends une ampoule dans la palette.',
+  'level.current.03.hint.2': 'Pose-la sur un fil.',
+  'level.current.03.hint.3': 'Le courant doit passer par les deux.',
+
+  'level.current.04.title': 'La résistance',
+  'level.current.04.goal': 'Fais briller l’ampoule faiblement.',
+  'level.current.04.intro': 'La résistance freine le courant.',
+  'level.current.04.hint.1': 'Prends la résistance dans la palette.',
+  'level.current.04.hint.2': 'Pose-la sur un fil.',
+  'level.current.04.hint.3': 'Le courant passe par la résistance.',
+
+  'level.current.05.title': 'Le variateur',
+  'level.current.05.goal': 'Baisse la lumière.',
+  'level.current.05.intro':
+    'Touche le variateur, puis glisse le curseur.',
+  'level.current.05.hint.1': 'Touche le variateur.',
+  'level.current.05.hint.2': 'Glisse le curseur vers la droite.',
+  'level.current.05.hint.3': 'L’ampoule doit briller faiblement.',
+
+  'level.current.06.title': 'La veilleuse',
+  'level.current.06.goal': 'Allume la veilleuse doucement.',
+  'level.current.06.intro':
+    'Un interrupteur et un variateur pour la veilleuse.',
+  'level.current.06.hint.1':
+    'Place l’interrupteur, l’ampoule et le variateur.',
+  'level.current.06.hint.2': 'Relie-les en file avec la pile.',
+  'level.current.06.hint.3':
+    'Ferme l’interrupteur et baisse la lumière.',
+
   'symbols.title': 'Les symboles',
   'symbols.goal': 'Associe chaque dessin à son symbole.',
   'symbols.intro':
@@ -391,6 +442,16 @@ export const texts = {
   'vocab.moteur.definition': 'Le courant le fait tourner.',
   'vocab.polarite.word': 'Polarité',
   'vocab.polarite.definition': 'Une LED a un côté A et un côté K.',
+  'vocab.borne.word': 'Borne',
+  'vocab.borne.definition': 'Le + et le − de la pile.',
+  'vocab.tension.word': 'Tension',
+  'vocab.tension.definition': 'C’est la force qui pousse le courant.',
+  'vocab.courant.word': 'Courant',
+  'vocab.courant.definition': 'C’est ce qui coule dans les fils.',
+  'vocab.resistance.word': 'Résistance',
+  'vocab.resistance.definition': 'Elle freine le courant.',
+  'vocab.variateur.word': 'Variateur',
+  'vocab.variateur.definition': 'Il règle la force du courant.',
   'vocab.symbole.word': 'Symbole',
   'vocab.symbole.definition': 'Un dessin simple pour un composant.',
 } as const;
@@ -505,6 +566,9 @@ export const fr = {
     },
     resistor: {
       label: texts['component.resistor.label'],
+    },
+    rheostat: {
+      label: texts['component.rheostat.label'],
     },
     wire: {
       label: texts['component.wire.label'],

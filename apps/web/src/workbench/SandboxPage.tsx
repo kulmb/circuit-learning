@@ -16,7 +16,7 @@ import { fr } from '../narration/fr';
 import { useProgress } from '../progress/ProgressContext';
 import { DEFAULT_BOARD } from './constants';
 import {
-  createSandboxStarter,
+  createEmptySandbox,
   nextSandboxName,
   sandboxFingerprint,
   sandboxPaletteItems,
@@ -136,13 +136,13 @@ export function SandboxPage({
               );
             } catch {
               loadSandboxCircuit(
-                createSandboxStarter(),
+                createEmptySandbox(),
                 null,
                 ownerKey,
               );
             }
           } else {
-            loadSandboxCircuit(createSandboxStarter(), null, ownerKey);
+            loadSandboxCircuit(createEmptySandbox(), null, ownerKey);
           }
         }
       } finally {

@@ -79,6 +79,7 @@ Les enfants de test utilisent la suite d’images Renard, Pomme, Ballon.
 | `e2e/offline.spec.ts` | Niveau terminé hors ligne, étoiles visibles depuis le cache, file d’attente locale, retour du réseau, progression `completed` sur le serveur et file vidée. |
 | `e2e/parent.spec.ts` | Connexion parente sur téléphone, deux niveaux terminés, cinq étoiles, groupe et fiche de l’enfant accessibles. |
 | `e2e/permissions.spec.ts` | L’encadrante B reçoit `403 forbidden` et un message d’accès refusé sur la fiche d’un élève du groupe A. |
+| `e2e/chapter2.spec.ts` | Chapitre 2 : sélection du variateur verrouillé et glissement du grand curseur jusqu’à obtenir une ampoule faible, sur les sept profils. |
 | `e2e/screenshots.spec.ts` | Capture de la carte et de l’écran de niveau sur chaque appareil, avec contrôle du point de rupture. |
 
 ### Captures de référence
@@ -137,6 +138,19 @@ le comportement.
 6. Activer « Mode faible performance » dans « Réglages parents » et refaire le
    geste : l’interface doit rester fluide et les animations réduites.
 7. Vérifier qu’un appui long ne sélectionne pas le texte ou une image.
+
+### 2 bis. Tablette — variateur à glissière
+
+1. Ouvrir le niveau 5 du chapitre 2 (ou le niveau 6 après avoir construit la
+   veilleuse) sur iPad et sur tablette Android.
+2. Taper le variateur : un grand curseur horizontal apparaît dans la barre
+   d’outils, avec une cible tactile d’au moins 56 px de haut.
+3. Glisser le curseur de gauche à droite : l’ampoule doit faiblir
+   progressivement, sans déplacer le composant.
+4. Revenir à gauche : l’ampoule doit briller de nouveau.
+5. Vérifier qu’un seul appui sur « Annuler » revient à la position précédente
+   du curseur, et que le composant verrouillé ne peut pas être supprimé.
+6. Vérifier qu’aucun chiffre de tension, de courant ou de résistance n’apparaît.
 
 ### 3. Téléphone — invitation à tourner
 

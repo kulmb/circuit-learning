@@ -25,8 +25,32 @@ export function unlockAudio(): void {
     }
   }
 
+  if (audioContext.state === 'running') {
+    return;
+  }
+
   if (audioContext.state === 'suspended') {
-    void audioContext.resume().catch(() => undefined);
+    const context = audioContext;
+    void context
+      .resume()
+      .then(() => {
+        if (context.state === 'running') {
+          primeSilentAudio(context);
+        }
+      })
+      .catch(() => undefined);
+  }
+}
+
+function primeSilentAudio(context: AudioContext): void {
+  try {
+    const buffer = context.createBuffer(1, 1, 22050);
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(context.destination);
+    source.start(0);
+  } catch {
+    // Audio is a bonus; the visual feedback remains the primary channel.
   }
 }
 

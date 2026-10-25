@@ -2,6 +2,7 @@ import type {
   CircuitComponent,
   ComponentState,
   MaterialComponent,
+  RheostatComponent,
   SwitchComponent,
 } from '@circuits/shared';
 
@@ -40,6 +41,8 @@ export function RealisticArt({ component, state, short }: ComponentArtProps) {
       return <RealisticLed state={state} />;
     case 'resistor':
       return <RealisticResistor />;
+    case 'rheostat':
+      return <RealisticRheostat component={component} />;
     case 'material':
       return <RealisticMaterial component={component} />;
     case 'wire':
@@ -63,6 +66,8 @@ export function SymbolArt({ component, state, short }: ComponentArtProps) {
       return <SymbolLed state={state} />;
     case 'resistor':
       return <SymbolResistor />;
+    case 'rheostat':
+      return <SymbolRheostat component={component} />;
     case 'material':
       return <SymbolMaterial component={component} />;
     case 'wire':
@@ -597,6 +602,109 @@ function SymbolResistor() {
       <line x1={-LEAD_X} y1={0} x2={-18} y2={0} stroke={INK} strokeWidth={3} />
       <line x1={18} y1={0} x2={LEAD_X} y2={0} stroke={INK} strokeWidth={3} />
       <rect x={-18} y={-8} width={36} height={16} fill="#ffffff" stroke={INK} strokeWidth={3} />
+    </>
+  );
+}
+
+function RealisticRheostat({ component }: { component: RheostatComponent }) {
+  const trackStart = -28;
+  const trackEnd = 28;
+  const trackY = 10;
+  const wiperX =
+    trackStart + (trackEnd - trackStart) * component.wiperPosition;
+
+  return (
+    <>
+      <line x1={-LEAD_X} y1={0} x2={-34} y2={0} stroke="#92400e" strokeWidth={4} />
+      <line x1={34} y1={0} x2={LEAD_X} y2={0} stroke="#92400e" strokeWidth={4} />
+      <rect
+        x={-34}
+        y={-18}
+        width={68}
+        height={26}
+        rx={8}
+        fill="#e7d3b0"
+        stroke="#a16207"
+        strokeWidth={2.5}
+      />
+      {[-24, -16, -8, 0, 8, 16, 24].map((x) => (
+        <line
+          key={x}
+          x1={x}
+          y1={-14}
+          x2={x}
+          y2={4}
+          stroke="#b45309"
+          strokeWidth={1.6}
+          opacity={0.65}
+        />
+      ))}
+      <line
+        x1={trackStart}
+        y1={trackY}
+        x2={trackEnd}
+        y2={trackY}
+        stroke="#92400e"
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+      <rect
+        x={wiperX - 6}
+        y={-7}
+        width={12}
+        height={26}
+        rx={4}
+        fill="#ffffff"
+        stroke="#92400e"
+        strokeWidth={2.5}
+      />
+      <line
+        x1={wiperX}
+        y1={-7}
+        x2={wiperX}
+        y2={19}
+        stroke="#d97706"
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+      <circle cx={wiperX} cy={-9} r={4} fill="#f59e0b" stroke="#92400e" strokeWidth={1.5} />
+    </>
+  );
+}
+
+function SymbolRheostat({ component }: { component: RheostatComponent }) {
+  const arrowX = -14 + 28 * component.wiperPosition;
+
+  return (
+    <>
+      <line x1={-LEAD_X} y1={0} x2={-18} y2={0} stroke={INK} strokeWidth={3} />
+      <line x1={18} y1={0} x2={LEAD_X} y2={0} stroke={INK} strokeWidth={3} />
+      <rect
+        x={-18}
+        y={-8}
+        width={36}
+        height={16}
+        fill="#ffffff"
+        stroke={INK}
+        strokeWidth={3}
+      />
+      <line
+        x1={arrowX}
+        y1={16}
+        x2={arrowX}
+        y2={-16}
+        stroke={INK}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+      />
+      <path
+        d={`M ${arrowX - 5} -9 L ${arrowX} -16 L ${arrowX + 5} -9`}
+        fill="none"
+        stroke={INK}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </>
   );
 }

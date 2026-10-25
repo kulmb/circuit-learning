@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 const webPackage = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version?: string };
-const appVersion = webPackage.version ?? '0.1.0';
+const appVersion = webPackage.version ?? '0.2.0';
 
 export default defineConfig({
   define: {
@@ -80,7 +80,8 @@ export default defineConfig({
         globIgnores: ['**/icons/icon-*.png', '**/manifest.webmanifest'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // `/technique` is a standalone document served outside the SPA.
+        navigateFallbackDenylist: [/^\/api\//, /^\/technique(?:\/|$)/],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

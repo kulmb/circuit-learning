@@ -68,6 +68,11 @@ import {
   screenToBoard,
 } from './viewport';
 import { WorkbenchSvg } from './WorkbenchSvg';
+import { renderAllWires, terminalPointMap } from './wireLayout';
+import {
+  findWireSpliceTarget,
+  rotationForTangent,
+} from './wireSplice';
 import { useWorkbenchStore } from './workbenchStore';
 import './Workbench.css';
 
@@ -98,7 +103,11 @@ interface PaletteDragState {
   gesture: PaletteGesture;
   scrollAxis: ScrollAxis | null;
   scrollStart: number;
-  placement: { position: Vec2; component: CircuitComponent } | null;
+  placement: {
+    position: Vec2;
+    component: CircuitComponent;
+    spliceWireId: string | null;
+  } | null;
 }
 
 interface ReturningGhost {
@@ -130,9 +139,11 @@ export const WorkbenchPage = memo(function WorkbenchPage({
     history,
     loadLevel,
     addComponent,
+    addComponentOnWire,
     moveComponent,
     rotateComponent,
     toggleSwitch,
+    setRheostatWiper,
     deleteComponent,
     deleteSelection,
     addWire,
@@ -154,6 +165,16 @@ export const WorkbenchPage = memo(function WorkbenchPage({
       : 'default';
   const reduceMotion = useReducedMotion() ?? false;
   const board = useMemo(() => boardForLevel(level?.board), [level]);
+  const settledWireRoutes = useMemo(
+    () =>
+      renderAllWires(
+        circuit.wires,
+        circuit.components,
+        terminalPointMap(circuit.components),
+        board,
+      ),
+    [board, circuit.components, circuit.wires],
+  );
   const paletteRef = useRef<HTMLElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [svgElement, setSvgElement] = useState<SVGSVGElement | null>(null);
@@ -213,6 +234,9 @@ export const WorkbenchPage = memo(function WorkbenchPage({
       return item === undefined ? [] : [item];
     });
   }, [level, sandbox]);
+  // On a phone in landscape the tray steals precious height. With no
+  // component to offer, the work area gets the whole width instead.
+  const paletteVisible = !(isCompact && paletteItems.length === 0);
   const levelSuccess = useMemo(
     () =>
       level === undefined
@@ -515,7 +539,11 @@ export const WorkbenchPage = memo(function WorkbenchPage({
     clientY: number,
     pointerType: string,
     item: PaletteItem,
-  ): { position: Vec2; component: CircuitComponent } | null {
+  ): {
+    position: Vec2;
+    component: CircuitComponent;
+    spliceWireId: string | null;
+  } | null {
     const svg = svgRef.current;
     if (!svg || isOverTrash(clientX, clientY)) {
       return null;
@@ -541,13 +569,31 @@ export const WorkbenchPage = memo(function WorkbenchPage({
 
     const gridPoint = snapToGrid(svgToGrid(adjustedPoint, CELL_SIZE));
     const position = clampGridPosition(gridPoint, board.columns, board.rows);
+    const center = {
+      x: position.x * CELL_SIZE,
+      y: position.y * CELL_SIZE,
+    };
+    const spliceRadiusPx = isCompact ? 44 : 36;
+    const spliceTarget = findWireSpliceTarget(
+      settledWireRoutes,
+      center,
+      spliceRadiusPx / scale,
+    );
+    const rotation = spliceTarget
+      ? rotationForTangent(spliceTarget.tangent)
+      : 0;
     const component = createComponent(item.type, {
       id: 'palette-preview',
       position,
+      rotation,
       ...(item.options ?? {}),
     });
 
-    return { position, component };
+    return {
+      position,
+      component,
+      spliceWireId: spliceTarget?.wireId ?? null,
+    };
   }
 
   function handlePalettePointerDown(
@@ -696,12 +742,23 @@ export const WorkbenchPage = memo(function WorkbenchPage({
     }
 
     if (drag.placement !== null) {
-      addComponent(
-        drag.item.type,
-        drag.item.options ?? {},
-        drag.placement.position,
-        drag.item.key,
-      );
+      if (drag.placement.spliceWireId !== null) {
+        addComponentOnWire(
+          drag.item.type,
+          drag.item.options ?? {},
+          drag.placement.position,
+          drag.item.key,
+          drag.placement.spliceWireId,
+          drag.placement.component.rotation,
+        );
+      } else {
+        addComponent(
+          drag.item.type,
+          drag.item.options ?? {},
+          drag.placement.position,
+          drag.item.key,
+        );
+      }
       setPaletteDrag(null);
       return;
     }
@@ -770,7 +827,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   return (
     <div
       ref={pageRef}
-      className="workbench-page"
+      className={`workbench-page${paletteVisible ? ' has-palette' : ''}`}
       aria-hidden={workbenchPaused ? true : undefined}
       onContextMenu={(event) => event.preventDefault()}
     >
@@ -888,58 +945,60 @@ export const WorkbenchPage = memo(function WorkbenchPage({
       ) : null}
 
       <div className="workbench-layout">
-        <aside
-          ref={paletteRef}
-          className="palette"
-          aria-label={fr.workbench.paletteTitle}
-        >
-          <h2>{fr.workbench.paletteTitle}</h2>
-          <div className="palette__items">
-            {level !== undefined && paletteItems.length === 0 ? (
-              <p className="palette__empty">{getText('level.noComponents')}</p>
-            ) : null}
-            {paletteItems.map((item) => {
-              const remaining =
-                availableCounts === null
-                  ? null
-                  : (availableCounts[item.key] ?? 0);
-              const unavailable = remaining !== null && remaining <= 0;
+        {paletteVisible ? (
+          <aside
+            ref={paletteRef}
+            className="palette"
+            aria-label={fr.workbench.paletteTitle}
+          >
+            <h2>{fr.workbench.paletteTitle}</h2>
+            <div className="palette__items">
+              {level !== undefined && paletteItems.length === 0 ? (
+                <p className="palette__empty">{getText('level.noComponents')}</p>
+              ) : null}
+              {paletteItems.map((item) => {
+                const remaining =
+                  availableCounts === null
+                    ? null
+                    : (availableCounts[item.key] ?? 0);
+                const unavailable = remaining !== null && remaining <= 0;
 
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={`palette-item${hintHighlight?.paletteKey === item.key ? ' is-hinted' : ''}`}
-                  data-palette-key={item.key}
-                  aria-label={item.label}
-                  onPointerDown={(event) => handlePalettePointerDown(event, item)}
-                  onPointerMove={handlePalettePointerMove}
-                  onPointerUp={handlePalettePointerUp}
-                  onPointerCancel={handlePalettePointerCancel}
-                  onLostPointerCapture={handlePaletteLostPointerCapture}
-                  disabled={unavailable}
-                >
-                  <span
-                    className="palette-item__swatch"
-                    style={{
-                      backgroundColor: `${item.color}24`,
-                      borderColor: `${item.color}66`,
-                    }}
-                    aria-hidden="true"
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`palette-item${hintHighlight?.paletteKey === item.key ? ' is-hinted' : ''}`}
+                    data-palette-key={item.key}
+                    aria-label={item.label}
+                    onPointerDown={(event) => handlePalettePointerDown(event, item)}
+                    onPointerMove={handlePalettePointerMove}
+                    onPointerUp={handlePalettePointerUp}
+                    onPointerCancel={handlePalettePointerCancel}
+                    onLostPointerCapture={handlePaletteLostPointerCapture}
+                    disabled={unavailable}
                   >
-                    <PaletteGlyph item={item} displayMode={displayMode} />
-                  </span>
-                  <span className="palette-item__label">{item.label}</span>
-                  {remaining !== null ? (
-                    <span className="palette-item__count" aria-hidden="true">
-                      {remaining}
+                    <span
+                      className="palette-item__swatch"
+                      style={{
+                        backgroundColor: `${item.color}24`,
+                        borderColor: `${item.color}66`,
+                      }}
+                      aria-hidden="true"
+                    >
+                      <PaletteGlyph item={item} displayMode={displayMode} />
                     </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+                    <span className="palette-item__label">{item.label}</span>
+                    {remaining !== null ? (
+                      <span className="palette-item__count" aria-hidden="true">
+                        {remaining}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+        ) : null}
 
         <div className="workbench-board-wrap">
           <div
@@ -955,6 +1014,9 @@ export const WorkbenchPage = memo(function WorkbenchPage({
               hintHighlight={hintHighlight}
               lockedComponentIds={lockedComponentIds}
               previewComponent={paletteDrag?.placement?.component ?? null}
+              spliceWireId={
+                paletteDrag?.placement?.spliceWireId ?? null
+              }
               board={board}
               view={viewport.view}
               scale={viewport.scale}
@@ -972,6 +1034,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
               onDeleteSelection={deleteSelection}
               onDeleteComponent={deleteComponent}
               onToggleSwitch={toggleSwitch}
+              onSetRheostatWiper={setRheostatWiper}
               onAddWire={addWire}
             />
 

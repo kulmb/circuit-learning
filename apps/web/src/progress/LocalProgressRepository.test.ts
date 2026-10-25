@@ -17,6 +17,38 @@ describe('LocalProgressRepository', () => {
     expect(progress.levels['light-01']?.status).toBe('unlocked');
     expect(progress.levels['light-02']?.status).toBe('locked');
     expect(progress.levels['light-10']?.status).toBe('locked');
+    expect(progress.levels['current-01']?.status).toBe('locked');
+  });
+
+  it('unlocks chapter 2 for a player who already finished chapter 1', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        levels: {
+          'light-10': {
+            levelId: 'light-10',
+            status: 'completed',
+            stars: 3,
+            attempts: 1,
+            hintsUsed: 0,
+            bestTimeMs: 1000,
+            firstCompletedAt: 1000,
+            lastPlayedAt: 1000,
+          },
+        },
+        attempts: [],
+        vocabulary: ['circuitFerme'],
+        sandbox: [],
+      }),
+    );
+
+    const repository = new LocalProgressRepository();
+    const progress = await repository.getProgress();
+
+    expect(progress.levels['light-10']?.status).toBe('completed');
+    expect(progress.levels['current-01']?.status).toBe('unlocked');
+    expect(progress.levels['current-02']?.status).toBe('locked');
   });
 
   it('completes a level, awards stars, unlocks the next and stores vocabulary', async () => {

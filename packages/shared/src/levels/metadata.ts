@@ -74,13 +74,57 @@ export const CHAPTER_1_LEVEL_METADATA: readonly LevelMetadata[] = [
   {
     id: 'light-10',
     order: 11,
-    nextLevelId: null,
+    nextLevelId: 'current-01',
     vocabularyIds: ['circuitFerme', 'interrupteur', 'moteur'],
   },
+];
+
+export const CHAPTER_2_LEVEL_METADATA: readonly LevelMetadata[] = [
+  {
+    id: 'current-01',
+    order: 12,
+    nextLevelId: 'current-02',
+    vocabularyIds: ['borne'],
+  },
+  {
+    id: 'current-02',
+    order: 13,
+    nextLevelId: 'current-03',
+    vocabularyIds: ['tension'],
+  },
+  {
+    id: 'current-03',
+    order: 14,
+    nextLevelId: 'current-04',
+    vocabularyIds: ['courant'],
+  },
+  {
+    id: 'current-04',
+    order: 15,
+    nextLevelId: 'current-05',
+    vocabularyIds: ['resistance'],
+  },
+  {
+    id: 'current-05',
+    order: 16,
+    nextLevelId: 'current-06',
+    vocabularyIds: ['variateur'],
+  },
+  {
+    id: 'current-06',
+    order: 17,
+    nextLevelId: null,
+    vocabularyIds: ['courant', 'resistance', 'variateur'],
+  },
+];
+
+export const ALL_LEVEL_METADATA: readonly LevelMetadata[] = [
+  ...CHAPTER_1_LEVEL_METADATA,
+  ...CHAPTER_2_LEVEL_METADATA,
 ];
 
 export function getLevelMetadata(
   levelId: string,
 ): LevelMetadata | undefined {
-  return CHAPTER_1_LEVEL_METADATA.find((level) => level.id === levelId);
+  return ALL_LEVEL_METADATA.find((level) => level.id === levelId);
 }

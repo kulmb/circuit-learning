@@ -1,7 +1,7 @@
 import { getLevelById } from '@circuits/shared/levels';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { createSandboxStarter } from './sandbox';
+import { createEmptySandbox } from './sandbox';
 import { useWorkbenchStore } from './workbenchStore';
 
 function store() {
@@ -50,6 +50,100 @@ describe('workbench store', () => {
 
     store().undo();
     expect(store().circuit.wires).toHaveLength(0);
+  });
+
+  it('inserts a component on a wire and keeps the current direction', () => {
+    store().addWire(
+      { componentId: 'battery-1', terminalId: 'positive' },
+      { componentId: 'bulb-1', terminalId: 'a' },
+    );
+
+    store().addComponentOnWire(
+      'switch',
+      { closed: true },
+      { x: 5, y: 4 },
+      'switch',
+      'wire-1',
+      0,
+    );
+
+    const state = store();
+    const added = state.circuit.components.find(
+      (component) => component.type === 'switch',
+    );
+
+    expect(added).toBeDefined();
+    if (added === undefined) {
+      throw new Error('Switch was not inserted');
+    }
+    expect(state.circuit.wires).toHaveLength(2);
+    expect(
+      state.circuit.wires.some((wire) => wire.id === 'wire-1'),
+    ).toBe(false);
+
+    const incoming = state.circuit.wires.find(
+      (wire) =>
+        wire.from.componentId === 'battery-1' &&
+        wire.to.componentId === added.id,
+    );
+    const outgoing = state.circuit.wires.find(
+      (wire) =>
+        wire.from.componentId === added.id &&
+        wire.to.componentId === 'bulb-1',
+    );
+
+    expect(incoming?.to.terminalId).toBe('a');
+    expect(outgoing?.from.terminalId).toBe('b');
+    expect(state.selected).toEqual({ kind: 'component', id: added.id });
+
+    store().undo();
+
+    expect(store().circuit.components).toHaveLength(2);
+    expect(store().circuit.wires).toHaveLength(1);
+  });
+
+  it('ignores an insert when the palette count is exhausted', () => {
+    const level = getLevelById('light-05');
+    if (level === undefined) {
+      throw new Error('Level missing');
+    }
+
+    store().loadLevel(level);
+    store().addWire(
+      { componentId: 'battery-1', terminalId: 'positive' },
+      { componentId: 'bulb-1', terminalId: 'a' },
+    );
+    const firstWireId = store().circuit.wires[0]?.id;
+    if (firstWireId === undefined) {
+      throw new Error('Wire missing');
+    }
+
+    store().addComponentOnWire('bulb', {}, { x: 4, y: 4 }, 'bulb', firstWireId, 0);
+    expect(store().availableCounts?.['bulb']).toBe(0);
+
+    store().addWire(
+      { componentId: 'battery-1', terminalId: 'positive' },
+      { componentId: 'bulb-1', terminalId: 'a' },
+    );
+    const wires = store().circuit.wires;
+    const secondWireId = wires[wires.length - 1]?.id;
+    if (secondWireId === undefined) {
+      throw new Error('Second wire missing');
+    }
+
+    const wireCount = store().circuit.wires.length;
+    const componentCount = store().circuit.components.length;
+    store().addComponentOnWire(
+      'bulb',
+      {},
+      { x: 4, y: 4 },
+      'bulb',
+      secondWireId,
+      0,
+    );
+
+    expect(store().circuit.wires).toHaveLength(wireCount);
+    expect(store().circuit.components).toHaveLength(componentCount);
   });
 
   it('adds, toggles and undoes a switch', () => {
@@ -213,6 +307,87 @@ describe('workbench store', () => {
     );
   });
 
+  it('inserts a second battery in series and brightens the bulb', () => {
+    const level = getLevelById('current-02');
+    expect(level).toBeDefined();
+    if (!level) throw new Error('Level missing');
+
+    store().loadLevel(level);
+    expect(store().simulation.states['bulb-1']?.state).toBe('normal');
+    expect(store().availableCounts).toEqual({ battery: 1 });
+
+    const topWire = store().circuit.wires.find(
+      (wire) => wire.id === 'current-02-wire-1',
+    );
+    expect(topWire).toBeDefined();
+    if (topWire === undefined) throw new Error('Top wire missing');
+
+    store().addComponentOnWire(
+      'battery',
+      {},
+      { x: 5, y: 4 },
+      'battery',
+      topWire.id,
+      180,
+    );
+
+    expect(store().simulation.states['bulb-1']?.state).toBe('bright');
+    expect(store().availableCounts).toEqual({ battery: 0 });
+  });
+
+  it('adjusts a locked rheostat and keeps one undo entry per drag', () => {
+    const level = getLevelById('current-05');
+    expect(level).toBeDefined();
+    if (!level) throw new Error('Level missing');
+
+    store().loadLevel(level);
+    expect(store().lockedComponentIds).toContain('rheostat-1');
+    expect(store().simulation.states['bulb-1']?.state).toBe('normal');
+
+    const historyBefore = store().history.length;
+
+    store().setRheostatWiper('rheostat-1', 0.5, true);
+    store().setRheostatWiper('rheostat-1', 1, false);
+
+    expect(store().history).toHaveLength(historyBefore + 1);
+    expect(store().simulation.states['bulb-1']?.state).toBe('dim');
+
+    store().undo();
+
+    const rheostat = store().circuit.components.find(
+      (component) => component.id === 'rheostat-1',
+    );
+    expect(
+      rheostat?.type === 'rheostat' ? rheostat.wiperPosition : null,
+    ).toBe(0);
+    expect(store().simulation.states['bulb-1']?.state).toBe('normal');
+  });
+
+  it('clamps the rheostat wiper between zero and one', () => {
+    const level = getLevelById('current-05');
+    expect(level).toBeDefined();
+    if (!level) throw new Error('Level missing');
+
+    store().loadLevel(level);
+    store().setRheostatWiper('rheostat-1', 3, true);
+
+    let rheostat = store().circuit.components.find(
+      (component) => component.id === 'rheostat-1',
+    );
+    expect(
+      rheostat?.type === 'rheostat' ? rheostat.wiperPosition : null,
+    ).toBe(1);
+
+    store().setRheostatWiper('rheostat-1', -2, true);
+
+    rheostat = store().circuit.components.find(
+      (component) => component.id === 'rheostat-1',
+    );
+    expect(
+      rheostat?.type === 'rheostat' ? rheostat.wiperPosition : null,
+    ).toBe(0);
+  });
+
   it('uses deterministic ids for the final level components', () => {
     const level = getLevelById('light-10');
     expect(level).toBeDefined();
@@ -253,7 +428,7 @@ describe('workbench store', () => {
       updatedAt: 1000,
     };
 
-    store().loadSandboxCircuit(createSandboxStarter(), work, 'guest');
+    store().loadSandboxCircuit(createEmptySandbox(), work, 'guest');
 
     expect(store().sandboxActive).toBe(true);
     expect(store().levelId).toBeNull();
@@ -265,7 +440,7 @@ describe('workbench store', () => {
     store().addComponent('bulb', {}, { x: 6, y: 2 }, 'bulb');
     store().addComponent('bulb', {}, { x: 7, y: 2 }, 'bulb');
 
-    expect(store().circuit.components).toHaveLength(5);
+    expect(store().circuit.components).toHaveLength(3);
     expect(store().availableCounts).toBeNull();
 
     store().clearSandboxCircuit();
@@ -276,7 +451,7 @@ describe('workbench store', () => {
   });
 
   it('leaves the sandbox when a level starts', () => {
-    store().loadSandboxCircuit(createSandboxStarter(), null, 'guest');
+    store().loadSandboxCircuit(createEmptySandbox(), null, 'guest');
     expect(store().sandboxActive).toBe(true);
 
     const level = getLevelById('light-01');

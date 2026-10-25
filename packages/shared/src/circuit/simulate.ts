@@ -1,5 +1,9 @@
 import { addDiagnostic, analyzeCircuit, sortDiagnostics } from './analysis';
-import { NOMINAL_CURRENTS, SHORT_CIRCUIT_CURRENT } from './components';
+import {
+  NOMINAL_CURRENTS,
+  SHORT_CIRCUIT_CURRENT,
+  rheostatResistance,
+} from './components';
 import { CircuitError } from './errors';
 import { solveLinearSystem } from './mna';
 import { buildCircuitModel, type CircuitModel } from './model';
@@ -264,6 +268,9 @@ function assembleSystem(
       case 'resistor':
         addConductance(1 / component.resistance, first, second);
         break;
+      case 'rheostat':
+        addConductance(1 / rheostatResistance(component), first, second);
+        break;
       case 'switch':
         if (component.closed) {
           addConductance(1 / component.resistanceWhenClosed, first, second);
@@ -377,6 +384,19 @@ function buildComponentState(
     }
     case 'resistor': {
       const current = voltage / component.resistance;
+      const on = Math.abs(current) > ACTIVE_CURRENT;
+
+      return {
+        current,
+        voltage,
+        intensity: 0,
+        state: on ? 'normal' : 'off',
+        on,
+        reverseBiased: false,
+      };
+    }
+    case 'rheostat': {
+      const current = voltage / rheostatResistance(component);
       const on = Math.abs(current) > ACTIVE_CURRENT;
 
       return {

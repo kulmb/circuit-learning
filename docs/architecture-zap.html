@@ -1,0 +1,1826 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zap 电路游戏架构</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Les Circuits de Zap 的分层架构：共享电路引擎、离线优先的进度与安全的单主机部署。">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #edf5f7;
+    --surface: #ffffff;
+    --surface-2: #e4eff2;
+    --surface-3: #f7fbfc;
+    --ink: #0b2a35;
+    --muted: #55707b;
+    --faint: #7b949e;
+    --line: #c7dbe1;
+    --line-strong: #8cb3be;
+    --kernel: #1c7456;
+    --kernel-soft: #e3f2eb;
+    --kernel-line: #86c4a8;
+    --copper: #a64e0a;
+    --copper-soft: #f8e7d4;
+    --current: #d9862a;
+    --blue: #14688c;
+    --danger: #a83c35;
+    --grid: rgba(11, 42, 53, 0.055);
+    --glow: rgba(28, 116, 86, 0.1);
+    --shadow: 0 28px 70px -48px rgba(11, 42, 53, 0.55);
+    --radius: 12px;
+    --font-display: "Noto Serif SC", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
+    --font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #061a21;
+      --surface: #0b2530;
+      --surface-2: #103440;
+      --surface-3: #0d2b36;
+      --ink: #e2f1f5;
+      --muted: #96b5bf;
+      --faint: #6f919d;
+      --line: #1c4553;
+      --line-strong: #356b7b;
+      --kernel: #6fd3a8;
+      --kernel-soft: #0b3027;
+      --kernel-line: #2d6b54;
+      --copper: #f0a64a;
+      --copper-soft: #3a2a16;
+      --current: #ffc166;
+      --blue: #6fc3e6;
+      --danger: #ff8a7e;
+      --grid: rgba(226, 241, 245, 0.045);
+      --glow: rgba(111, 211, 168, 0.07);
+      --shadow: 0 30px 80px -50px rgba(0, 0, 0, 0.9);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #061a21;
+    --surface: #0b2530;
+    --surface-2: #103440;
+    --surface-3: #0d2b36;
+    --ink: #e2f1f5;
+    --muted: #96b5bf;
+    --faint: #6f919d;
+    --line: #1c4553;
+    --line-strong: #356b7b;
+    --kernel: #6fd3a8;
+    --kernel-soft: #0b3027;
+    --kernel-line: #2d6b54;
+    --copper: #f0a64a;
+    --copper-soft: #3a2a16;
+    --current: #ffc166;
+    --blue: #6fc3e6;
+    --danger: #ff8a7e;
+    --grid: rgba(226, 241, 245, 0.045);
+    --glow: rgba(111, 211, 168, 0.07);
+    --shadow: 0 30px 80px -50px rgba(0, 0, 0, 0.9);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    margin: 0;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(1100px 520px at 50% -8%, var(--glow), transparent 70%),
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: auto, 30px 30px, 30px 30px;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--copper);
+    text-underline-offset: 3px;
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--copper);
+    outline-offset: 3px;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+  }
+
+  .shell {
+    width: min(1180px, 100%);
+    margin-inline: auto;
+  }
+
+  .skip {
+    position: absolute;
+    left: 16px;
+    top: -80px;
+    z-index: 50;
+    padding: 10px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.82rem;
+  }
+
+  .skip:focus {
+    top: 16px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-block: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+  }
+
+  .brand strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .topbar__meta {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--copper);
+    white-space: nowrap;
+  }
+
+  .hero {
+    padding-block: clamp(40px, 7vw, 84px) clamp(36px, 6vw, 72px);
+  }
+
+  .hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+    gap: clamp(28px, 5vw, 64px);
+    align-items: end;
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--copper);
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 26px;
+    height: 1px;
+    background: var(--copper);
+    flex: none;
+  }
+
+  h1 {
+    margin: 18px 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5.4vw, 4.7rem);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 60ch;
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: clamp(1rem, 1.5vw, 1.14rem);
+    line-height: 1.85;
+  }
+
+  .lede strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .specs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: clamp(32px, 5vw, 52px);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .spec {
+    min-width: 0;
+    padding: 14px 16px 16px 0;
+  }
+
+  .spec + .spec {
+    border-left: 1px solid var(--line);
+    padding-left: 16px;
+  }
+
+  .spec strong {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 1.35rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+
+  .spec span {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .titleblock {
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    border-radius: 2px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .titleblock__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+  }
+
+  .titleblock__robot {
+    display: flex;
+    justify-content: center;
+    padding: 16px 16px 8px;
+    background: var(--surface-3);
+  }
+
+  .titleblock__robot svg {
+    width: 128px;
+    height: 110px;
+  }
+
+  .robot-antenna {
+    fill: var(--copper);
+  }
+
+  .robot-line {
+    stroke: var(--ink);
+    stroke-width: 2.4;
+  }
+
+  .robot-head,
+  .robot-ear {
+    fill: var(--surface-2);
+    stroke: var(--ink);
+    stroke-width: 2.4;
+  }
+
+  .robot-eye {
+    fill: var(--ink);
+  }
+
+  .robot-glint {
+    fill: var(--surface);
+  }
+
+  .robot-smile {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+  }
+
+  .titleblock dl {
+    margin: 0;
+  }
+
+  .titleblock dl > div {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--line);
+    font-size: 0.76rem;
+  }
+
+  .titleblock dt {
+    color: var(--faint);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .titleblock dd {
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .section {
+    padding-block: clamp(44px, 7vw, 86px);
+    border-top: 1px solid var(--line);
+    scroll-margin-top: 24px;
+  }
+
+  .section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: clamp(20px, 4vw, 56px);
+    align-items: start;
+    margin-bottom: clamp(24px, 4vw, 40px);
+  }
+
+  .section-head h2 {
+    margin: 10px 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 3.3vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1.22;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .section-head__lede {
+    max-width: 64ch;
+    color: var(--muted);
+    font-size: clamp(0.95rem, 1.4vw, 1.05rem);
+    line-height: 1.85;
+  }
+
+  .drawing {
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .drawing__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .drawing__top b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .legend i {
+    display: inline-block;
+    width: 20px;
+    height: 0;
+    border-top: 2px solid var(--copper);
+  }
+
+  .legend i.dashed {
+    border-top: 2px dashed var(--kernel);
+  }
+
+  .drawing__scroll {
+    overflow-x: auto;
+    padding: clamp(8px, 1.4vw, 16px);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .drawing__scroll svg {
+    display: block;
+    width: 100%;
+    min-width: 940px;
+    height: auto;
+  }
+
+  .drawing__body {
+    padding: clamp(18px, 3vw, 30px);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .drawing__foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.76rem;
+    line-height: 1.55;
+  }
+
+  .drawing__foot .mono {
+    color: var(--faint);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+  }
+
+  .scroll-hint {
+    display: none;
+    padding: 0 14px 10px;
+    color: var(--faint);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+  }
+
+  .map-svg text {
+    font-family: var(--font-body);
+    fill: var(--ink);
+  }
+
+  .map-svg .eyebrow-text {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    fill: var(--muted);
+  }
+
+  .map-svg .thesis {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    fill: var(--kernel);
+  }
+
+  .map-svg .card-bg {
+    fill: var(--surface);
+    stroke: var(--line);
+    stroke-width: 1.2;
+  }
+
+  .map-svg .kernel-bg {
+    fill: var(--kernel-soft);
+    stroke: var(--kernel-line);
+    stroke-width: 1.4;
+  }
+
+  .map-svg .card-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    fill: var(--ink);
+  }
+
+  .map-svg .hairline {
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+
+  .map-svg .pad {
+    fill: var(--surface);
+    stroke: var(--line-strong);
+    stroke-width: 1.2;
+  }
+
+  .map-svg .pad-kernel {
+    fill: var(--kernel-soft);
+    stroke: var(--kernel);
+    stroke-width: 1.2;
+  }
+
+  .map-svg .row-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    fill: var(--ink);
+  }
+
+  .map-svg .row-detail {
+    font-size: 11px;
+    fill: var(--muted);
+  }
+
+  .map-svg .footnote {
+    font-size: 10.5px;
+    fill: var(--muted);
+  }
+
+  .map-svg .footnote-kernel {
+    font-size: 10.5px;
+    font-weight: 600;
+    fill: var(--kernel);
+  }
+
+  .map-svg .wire-label {
+    font-size: 10.5px;
+    fill: var(--muted);
+  }
+
+  .map-svg .wire-code {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    fill: var(--faint);
+  }
+
+  .map-svg .net-line {
+    fill: none;
+    stroke: var(--copper);
+    stroke-width: 1.6;
+  }
+
+  .map-svg .current {
+    fill: none;
+    stroke: var(--current);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-dasharray: 2 17;
+    animation: current-flow 2.8s linear infinite;
+  }
+
+  .map-svg .arrow-kernel {
+    fill: none;
+    stroke: var(--kernel);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 4;
+  }
+
+  .map-svg .badge {
+    fill: var(--surface);
+    stroke: var(--copper);
+    stroke-width: 1.1;
+  }
+
+  .map-svg .badge-text {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    fill: var(--copper);
+  }
+
+  .map-svg .mongo-panel {
+    fill: var(--surface-2);
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+
+  .map-svg .panel-title {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    fill: var(--ink);
+  }
+
+  .map-svg .trace-kernel {
+    fill: none;
+    stroke: var(--kernel-line);
+    stroke-width: 1.2;
+  }
+
+  .map-svg .marker-line {
+    fill: var(--line-strong);
+  }
+
+  .map-svg .marker-kernel {
+    fill: var(--kernel);
+  }
+
+  .map-svg .marker-copper {
+    fill: var(--copper);
+  }
+
+  @keyframes current-flow {
+    to {
+      stroke-dashoffset: -57;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .map-svg .current {
+      animation: none;
+    }
+  }
+
+  .flow {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 18px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .flow::before {
+    content: "";
+    position: absolute;
+    top: 21px;
+    left: 5%;
+    right: 5%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--line-strong), var(--copper));
+  }
+
+  .flow__step {
+    position: relative;
+    min-width: 0;
+    padding-top: 52px;
+  }
+
+  .flow__index {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 1.5px solid var(--copper);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--copper);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .flow__step h3 {
+    margin: 0 0 7px;
+    font-size: 0.98rem;
+    line-height: 1.45;
+  }
+
+  .flow__step p {
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+
+  code {
+    padding: 0.1em 0.34em;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    overflow-wrap: anywhere;
+  }
+
+  .flow-note {
+    margin-top: 24px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.7;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .card--kernel {
+    border-top: 2px solid var(--kernel);
+  }
+
+  .card__label {
+    color: var(--copper);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .card--kernel .card__label {
+    color: var(--kernel);
+  }
+
+  .card h3 {
+    margin: 10px 0 8px;
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+
+  .card p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.75;
+  }
+
+  .card p + p {
+    margin-top: 10px;
+  }
+
+  .card strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .note {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-left: 2px solid var(--kernel);
+    background: var(--kernel-soft);
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+
+  .note strong {
+    color: var(--kernel);
+    font-weight: 600;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    margin-top: 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  table {
+    width: 100%;
+    min-width: 660px;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  th,
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: var(--surface-2);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  td {
+    line-height: 1.6;
+  }
+
+  td:first-child {
+    white-space: nowrap;
+  }
+
+  .table-note {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.7;
+  }
+
+  .host {
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .host__bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px 24px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+  }
+
+  .env-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .env {
+    min-width: 0;
+    padding: 20px;
+  }
+
+  .env + .env {
+    border-left: 1px solid var(--line);
+  }
+
+  .env header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px 10px;
+    margin-bottom: 14px;
+  }
+
+  .env header strong {
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border: 1px solid var(--copper);
+    border-radius: 2px;
+    background: var(--copper-soft);
+    color: var(--copper);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+
+  .env--dev .tag {
+    border-color: var(--kernel-line);
+    background: var(--kernel-soft);
+    color: var(--kernel);
+  }
+
+  .route {
+    display: grid;
+    grid-template-columns: 72px 18px minmax(0, 1fr);
+    gap: 6px;
+    align-items: baseline;
+    padding: 8px 0;
+    border-top: 1px dashed var(--line);
+    font-size: 0.8rem;
+  }
+
+  .route__key {
+    color: var(--ink);
+    font-family: var(--font-mono);
+  }
+
+  .route__arrow {
+    color: var(--faint);
+    text-align: center;
+  }
+
+  .route__val {
+    color: var(--muted);
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
+  .route__val code {
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .env__note {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.65;
+  }
+
+  .host__note {
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+    background: var(--surface-3);
+    color: var(--muted);
+    font-size: 0.76rem;
+    line-height: 1.6;
+  }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .badge {
+    padding: 5px 9px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.04em;
+  }
+
+  .quality-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 22px;
+  }
+
+  .quality {
+    min-width: 0;
+    padding-top: 14px;
+    border-top: 2px solid var(--line-strong);
+  }
+
+  .quality:nth-child(3) {
+    border-top-color: var(--kernel);
+  }
+
+  .quality:nth-child(4) {
+    border-top-color: var(--copper);
+  }
+
+  .quality h3 {
+    margin: 0 0 6px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .quality p {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+
+  .decisions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 40px;
+  }
+
+  .decision {
+    min-width: 0;
+    padding-left: 18px;
+    border-left: 1px solid var(--line-strong);
+  }
+
+  .decision h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .decision p {
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.75;
+  }
+
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px 40px;
+    padding-block: 30px 40px;
+    border-top: 1px solid var(--line);
+  }
+
+  .footer p {
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.7;
+  }
+
+  .footer__brand {
+    color: var(--ink) !important;
+    font-family: var(--font-mono);
+    font-size: 10px !important;
+    letter-spacing: 0.14em;
+  }
+
+  .footer__meta {
+    text-align: right;
+  }
+
+  .footer__meta a {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+
+  .footer__meta .mono {
+    margin-top: 6px;
+    color: var(--faint);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+  }
+
+  @media (max-width: 1000px) {
+    .hero__grid,
+    .section-head {
+      grid-template-columns: 1fr;
+    }
+
+    .hero__grid {
+      align-items: start;
+    }
+
+    .titleblock {
+      max-width: 420px;
+    }
+
+    .quality-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .flow {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .flow::before {
+      top: 0;
+      bottom: 0;
+      left: 21px;
+      right: auto;
+      width: 1px;
+      height: auto;
+      background: linear-gradient(180deg, var(--line-strong), var(--copper));
+    }
+
+    .flow__step {
+      padding: 0 0 26px 60px;
+    }
+
+    .flow__step:last-child {
+      padding-bottom: 0;
+    }
+  }
+
+  @media (max-width: 820px) {
+    .drawing__top {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .drawing__foot {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .scroll-hint {
+      display: block;
+    }
+
+    .env-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .env + .env {
+      border-top: 1px solid var(--line);
+      border-left: none;
+    }
+  }
+
+  @media (max-width: 700px) {
+    body {
+      font-size: 15px;
+    }
+
+    .route {
+      grid-template-columns: 62px minmax(0, 1fr);
+      gap: 4px;
+      padding: 10px 0;
+    }
+
+    .route__arrow {
+      display: none;
+    }
+
+    .topbar {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .specs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .spec:nth-child(3) {
+      border-top: 1px solid var(--line);
+      border-left: none;
+      padding-left: 0;
+    }
+
+    .spec:nth-child(4) {
+      border-top: 1px solid var(--line);
+    }
+
+    .card-grid,
+    .decisions {
+      grid-template-columns: 1fr;
+    }
+
+    .quality-grid {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .card {
+      padding: 18px;
+    }
+
+    .footer__meta {
+      text-align: left;
+    }
+  }
+</style>
+
+<a class="skip" href="#system">跳到系统地图</a>
+
+<div class="shell">
+  <header class="topbar">
+    <span class="brand mono"><strong>LES CIRCUITS DE ZAP</strong> / 技术架构</span>
+    <span class="topbar__meta mono">ARCHITECTURE · 2026-10-25</span>
+  </header>
+
+  <section class="hero" aria-labelledby="page-title">
+    <div class="hero__grid">
+      <div>
+        <p class="eyebrow">Circuit game · monorepo</p>
+        <h1 id="page-title">从一根导线到一次事务</h1>
+        <p class="lede">
+          一个给 8 岁孩子的电路游戏，怎样把<strong>触摸、仿真、进度与隐私</strong>串成一条可靠的回路。
+          浏览器负责即时反馈，API 负责权威状态，同一份纯 TypeScript 内核在两端运行。
+        </p>
+      </div>
+
+      <aside class="titleblock" aria-label="项目快照">
+        <div class="titleblock__top">
+          <span>PROJECT SNAPSHOT</span>
+          <span>v0.1.0</span>
+        </div>
+        <div class="titleblock__robot">
+          <svg viewBox="0 0 140 120" role="img" aria-label="Zap 机器人头像">
+            <circle cx="70" cy="10" r="4" class="robot-antenna"></circle>
+            <line x1="70" y1="14" x2="70" y2="30" class="robot-line"></line>
+            <rect x="18" y="50" width="10" height="22" rx="5" class="robot-ear"></rect>
+            <rect x="112" y="50" width="10" height="22" rx="5" class="robot-ear"></rect>
+            <rect x="30" y="30" width="80" height="62" rx="20" class="robot-head"></rect>
+            <circle cx="55" cy="58" r="7" class="robot-eye"></circle>
+            <circle cx="85" cy="58" r="7" class="robot-eye"></circle>
+            <circle cx="57" cy="55" r="2" class="robot-glint"></circle>
+            <circle cx="87" cy="55" r="2" class="robot-glint"></circle>
+            <path d="M55 76 Q70 88 85 76" class="robot-smile"></path>
+          </svg>
+        </div>
+        <dl>
+          <div><dt>项目</dt><dd>Les Circuits de Zap</dd></div>
+          <div><dt>受众</dt><dd>8 岁 · CE2 · 法语</dd></div>
+          <div><dt>形态</dt><dd>PWA · 平板优先</dd></div>
+          <div><dt>主机</dt><dd>OCI Ampere A1 · arm64</dd></div>
+          <div><dt>快照</dt><dd>2026-10-25 · 08a0659</dd></div>
+        </dl>
+      </aside>
+    </div>
+
+    <div class="specs" aria-label="关键数字">
+      <div class="spec"><strong>3</strong><span>工作区：web / api / shared</span></div>
+      <div class="spec"><strong>1</strong><span>份共享电路内核</span></div>
+      <div class="spec"><strong>7</strong><span>种设备端 E2E 配置</span></div>
+      <div class="spec"><strong>0</strong><span>第三方追踪器</span></div>
+    </div>
+  </section>
+
+  <section class="section" id="system" aria-labelledby="system-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Fig. 01 · System map</p>
+        <h2 id="system-title">同一份内核，两种运行时</h2>
+      </div>
+      <p class="section-head__lede">
+        共享内核分别编译进浏览器和 API，不经过网络。工作台用它在本地点亮灯泡；服务端用同一套关卡与计分规则，
+        校验关卡状态、重算星星，并把进度写进 MongoDB。
+      </p>
+    </div>
+
+    <figure class="drawing">
+      <div class="drawing__top">
+        <span><b>ARCH-01</b> · 系统地图</span>
+        <span class="legend" aria-label="图例">
+          <span><i></i>运行时调用</span>
+          <span><i class="dashed"></i>共享代码</span>
+        </span>
+      </div>
+      <p class="scroll-hint">图较宽，可左右滑动查看完整拓扑。</p>
+      <div class="drawing__scroll">
+        <svg class="map-svg" viewBox="0 0 1180 660" role="img" aria-labelledby="map-title map-desc">
+          <title id="map-title">系统地图：客户端、共享内核、服务端与 MongoDB 的关系</title>
+          <desc id="map-desc">
+            浏览器 PWA 与 Fastify API 都使用同一份 @circuits/shared 纯 TypeScript 内核。
+            客户端通过 HTTPS /api 经 Caddy 访问 API，API 通过 Mongoose 事务写入 MongoDB 7。
+          </desc>
+
+          <defs>
+            <marker id="arrow-line" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" class="marker-line"></path>
+            </marker>
+            <marker id="arrow-kernel" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" class="marker-kernel"></path>
+            </marker>
+            <marker id="arrow-copper" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" class="marker-copper"></path>
+            </marker>
+          </defs>
+
+          <text x="590" y="24" text-anchor="middle" class="thesis">同一份纯 TypeScript 内核，编译进两端</text>
+
+          <!-- Client -->
+          <rect x="10" y="44" width="330" height="410" rx="10" class="card-bg"></rect>
+          <text x="32" y="76" class="eyebrow-text">CLIENT · PWA</text>
+          <text x="32" y="106" class="card-title">React 18 + Vite</text>
+          <line x1="32" y1="124" x2="318" y2="124" class="hairline"></line>
+
+          <circle cx="37" cy="155" r="4" class="pad"></circle>
+          <text x="50" y="160" class="row-title">GameShell</text>
+          <text x="50" y="178" class="row-detail">地图 · 关卡 · 成功界面</text>
+
+          <circle cx="37" cy="207" r="4" class="pad"></circle>
+          <text x="50" y="212" class="row-title">WorkbenchSvg</text>
+          <text x="50" y="230" class="row-detail">SVG · Pointer Events · 磁吸</text>
+
+          <circle cx="37" cy="259" r="4" class="pad"></circle>
+          <text x="50" y="264" class="row-title">ProgressRepository</text>
+          <text x="50" y="282" class="row-detail">本地缓存 · 离线队列</text>
+
+          <circle cx="37" cy="311" r="4" class="pad"></circle>
+          <text x="50" y="316" class="row-title">Workbox</text>
+          <text x="50" y="334" class="row-detail">预缓存 · 个人数据 no-store</text>
+
+          <line x1="32" y1="362" x2="318" y2="362" class="hairline"></line>
+          <text x="32" y="386" class="footnote">断点按真实尺寸判断</text>
+          <text x="32" y="404" class="footnote">已加载的关卡可离线游玩</text>
+
+          <!-- Shared kernel -->
+          <rect x="430" y="44" width="310" height="410" rx="10" class="kernel-bg"></rect>
+          <text x="452" y="76" class="eyebrow-text">SHARED · 纯 TypeScript</text>
+          <text x="452" y="106" class="card-title">@circuits/shared</text>
+          <line x1="452" y1="124" x2="718" y2="124" class="hairline"></line>
+
+          <circle cx="457" cy="155" r="4" class="pad-kernel"></circle>
+          <text x="470" y="160" class="row-title">电路引擎</text>
+          <text x="470" y="178" class="row-detail">MNA · 高斯消元 · LED 迭代</text>
+
+          <circle cx="457" cy="207" r="4" class="pad-kernel"></circle>
+          <text x="470" y="212" class="row-title">关卡定义</text>
+          <text x="470" y="230" class="row-detail">10 关 · 3 类玩法 · 符号过渡</text>
+
+          <circle cx="457" cy="259" r="4" class="pad-kernel"></circle>
+          <text x="470" y="264" class="row-title">进度规则</text>
+          <text x="470" y="282" class="row-detail">星星 · 解锁 · 词汇</text>
+
+          <circle cx="457" cy="311" r="4" class="pad-kernel"></circle>
+          <text x="470" y="316" class="row-title">契约</text>
+          <text x="470" y="334" class="row-detail">zod schema · DTO</text>
+
+          <line x1="452" y1="362" x2="718" y2="362" class="hairline"></line>
+          <text x="452" y="386" class="footnote">无 React · 无 DOM</text>
+          <text x="452" y="406" class="footnote-kernel">同一份源码，两端运行</text>
+          <path d="M452 430 H530 V416 H604" class="trace-kernel"></path>
+          <circle cx="530" cy="430" r="3" class="pad-kernel"></circle>
+          <circle cx="604" cy="416" r="3" class="pad-kernel"></circle>
+          <circle cx="680" cy="430" r="3" class="pad-kernel"></circle>
+          <path d="M604 416 H680 V430 H718" class="trace-kernel"></path>
+
+          <!-- Server -->
+          <rect x="830" y="44" width="340" height="410" rx="10" class="card-bg"></rect>
+          <text x="852" y="76" class="eyebrow-text">SERVER · Node 20</text>
+          <text x="852" y="106" class="card-title">Fastify 4</text>
+          <line x1="852" y1="124" x2="1148" y2="124" class="hairline"></line>
+
+          <circle cx="857" cy="155" r="4" class="pad"></circle>
+          <text x="870" y="160" class="row-title">认证</text>
+          <text x="870" y="178" class="row-detail">argon2id · 会话 Cookie · 权限</text>
+
+          <circle cx="857" cy="207" r="4" class="pad"></circle>
+          <text x="870" y="212" class="row-title">服务</text>
+          <text x="870" y="230" class="row-detail">routes · services · 守卫</text>
+
+          <circle cx="857" cy="259" r="4" class="pad"></circle>
+          <text x="870" y="264" class="row-title">校验</text>
+          <text x="870" y="282" class="row-detail">zod · DTO · 事务</text>
+
+          <circle cx="857" cy="311" r="4" class="pad"></circle>
+          <text x="870" y="316" class="row-title">审计</text>
+          <text x="870" y="334" class="row-detail">pino · 操作日志</text>
+
+          <line x1="852" y1="352" x2="1148" y2="352" class="hairline"></line>
+          <rect x="852" y="366" width="296" height="62" rx="8" class="mongo-panel"></rect>
+          <text x="868" y="391" class="panel-title">MongoDB 7 · rs0</text>
+          <text x="868" y="410" class="row-detail">Mongoose · 事务 · 8 collections</text>
+
+          <!-- Shared code links -->
+          <path d="M 340 160 H 424" class="arrow-kernel" marker-end="url(#arrow-kernel)"></path>
+          <text x="385" y="150" text-anchor="middle" class="wire-label">本地仿真</text>
+          <text x="385" y="178" text-anchor="middle" class="wire-code">simulate()</text>
+
+          <path d="M 830 264 H 746" class="arrow-kernel" marker-end="url(#arrow-kernel)"></path>
+          <text x="788" y="254" text-anchor="middle" class="wire-label">重新校验</text>
+          <text x="788" y="282" text-anchor="middle" class="wire-code">zod · 星星</text>
+
+          <!-- Network path -->
+          <path d="M 175 448 V 560 H 1000 V 454" class="net-line" marker-end="url(#arrow-copper)"></path>
+          <path d="M 175 448 V 560 H 1000 V 454" class="current"></path>
+          <circle cx="175" cy="448" r="3.5" class="pad"></circle>
+          <circle cx="1000" cy="448" r="3.5" class="pad"></circle>
+          <rect x="548" y="547" width="84" height="26" rx="13" class="badge"></rect>
+          <text x="590" y="564" text-anchor="middle" class="badge-text">Caddy</text>
+          <text x="590" y="534" text-anchor="middle" class="wire-label">HTTPS /api · Cookie 会话</text>
+          <text x="590" y="594" text-anchor="middle" class="wire-code">TLS · CSP · 静态文件 + 反代</text>
+
+          <text x="590" y="632" text-anchor="middle" class="footnote">客户端不直连数据库；进度写入在 API 内以单个 Mongo 事务完成。</text>
+        </svg>
+      </div>
+      <figcaption class="drawing__foot">
+        <span>共享内核负责规则与仿真，API 负责身份、校验与事务。客户端每次改动先在本地重算。</span>
+        <span class="mono">FIG. 01</span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="section" id="write-path" aria-labelledby="write-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Fig. 02 · Write path</p>
+        <h2 id="write-title">一次通关，如何落库</h2>
+      </div>
+      <p class="section-head__lede">
+        进度写入不依赖网络在线。客户端先完成判定，再把尝试放进仓库；断网时排队，恢复后重放。
+        服务端只管最后一步：校验、重算、事务。
+      </p>
+    </div>
+
+    <figure class="drawing">
+      <div class="drawing__top">
+        <span><b>ARCH-02</b> · 写入路径</span>
+        <span>ONLINE / OFFLINE / REPLAY</span>
+      </div>
+      <div class="drawing__body">
+        <ol class="flow">
+          <li class="flow__step">
+            <span class="flow__index">01</span>
+            <h3>本地判定</h3>
+            <p>每次改动调用 <code>simulateCircuit()</code>，灯泡亮不亮、电路是否闭合，先在浏览器里算出来。</p>
+          </li>
+          <li class="flow__step">
+            <span class="flow__index">02</span>
+            <h3>尝试入队</h3>
+            <p>完成时调用 <code>finishAttempt</code>。在线直接发，断网进入 <code>localStorage</code> 队列。</p>
+          </li>
+          <li class="flow__step">
+            <span class="flow__index">03</span>
+            <h3>服务端校验</h3>
+            <p>zod 校验请求；关卡必须存在且已解锁；星星按提示次数重算，不接受客户端自报。</p>
+          </li>
+          <li class="flow__step">
+            <span class="flow__index">04</span>
+            <h3>事务落库</h3>
+            <p>尝试、进度、下一关解锁、词汇，四项写入包在同一个 Mongo 事务里。</p>
+          </li>
+          <li class="flow__step">
+            <span class="flow__index">05</span>
+            <h3>幂等重放</h3>
+            <p>客户端 <code>attemptId</code> 唯一。离线请求重复到达，也只记一次。</p>
+          </li>
+        </ol>
+        <p class="flow-note">
+          队列按顺序重放；同步完成后发出 <code>circuits:progress-synced</code>，关卡地图随即刷新。
+          访客进度在登录后由成年人确认合并，同样使用确定性 ID 防止重复。
+        </p>
+      </div>
+      <figcaption class="drawing__foot">
+        <span>离线队列是 <code>ProgressRepository</code> 的一部分，从第一天就参与写入。</span>
+        <span class="mono">FIG. 02</span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="section" id="kernel" aria-labelledby="kernel-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Shared kernel</p>
+        <h2 id="kernel-title">规则只写一遍</h2>
+      </div>
+      <p class="section-head__lede">
+        <code>@circuits/shared</code> 不依赖 React、DOM 或 Node。它既是电路求解器，也是关卡、计分和 API 契约的单一来源。
+      </p>
+    </div>
+
+    <div class="card-grid">
+      <article class="card card--kernel">
+        <p class="card__label">SIMULATION</p>
+        <h3>电路引擎</h3>
+        <p>
+          MNA 节点分析 + 高斯消元与部分主元；LED 用最多 12 次迭代收敛。
+          输出 <strong>off / dim / normal / bright</strong> 四档状态、每根导线的有向电流，以及短路、断路、反接等诊断。
+        </p>
+      </article>
+      <article class="card card--kernel">
+        <p class="card__label">LEVELS</p>
+        <h3>关卡定义</h3>
+        <p>
+          第一章「光」有 10 个关卡和 1 个符号过渡。关卡分 <strong>circuit / materials / matching</strong> 三类，
+          成功条件、提示和词汇都通过文本 ID 引用，不把法语写死在逻辑里。
+        </p>
+      </article>
+      <article class="card card--kernel">
+        <p class="card__label">PROGRESSION</p>
+        <h3>进度规则</h3>
+        <p>
+          <code>starsForHints</code> 决定星星，成功解锁下一关，<code>applyAttempt</code> 统一合并尝试。
+          前端即时反馈，服务端用同一套规则重算，避免两套计分逻辑漂移。
+        </p>
+      </article>
+      <article class="card card--kernel">
+        <p class="card__label">CONTRACTS</p>
+        <h3>zod 契约</h3>
+        <p>
+          请求、响应和 DTO 都用 zod 描述；电路 JSON 带版本号，可序列化、可回放。
+          API 输出从不携带 <code>_id</code>、<code>__v</code> 或密码哈希。
+        </p>
+      </article>
+    </div>
+
+    <p class="note">
+      <span><strong>关键边界：</strong>共享的是代码和规则，不是数据库。浏览器永远拿不到 Mongoose 模型；星星与解锁由 API 重算入账。</span>
+    </p>
+  </section>
+
+  <section class="section" id="client" aria-labelledby="client-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Client</p>
+        <h2 id="client-title">把反馈留在手指边</h2>
+      </div>
+      <p class="section-head__lede">
+        孩子每拖一下、每接一根线，工作台都要立刻回应。网络可以慢，灯泡不能等。
+      </p>
+    </div>
+
+    <div class="card-grid">
+      <article class="card">
+        <p class="card__label">WORKBENCH</p>
+        <h3>SVG 工作台</h3>
+        <p>
+          组件、导线和端子全部是 SVG。交互只走 <code>Pointer Events</code>，鼠标、手指和触控笔共用一套逻辑；
+          磁吸网格、两次点按接线、拖进垃圾桶删除、50 步撤销。
+        </p>
+        <p>写实、符号、并排三种显示模式，让孩子从真实元件逐步过渡到标准符号。</p>
+      </article>
+      <article class="card">
+        <p class="card__label">PROGRESS</p>
+        <h3>离线优先的仓库</h3>
+        <p>
+          <code>ProgressRepository</code> 有两个实现：访客写 <code>localStorage</code>，学生走 API。
+          网络失败时操作进入本地队列，恢复后按顺序重放。
+        </p>
+        <p>访客进度可以合并到账号；确定性 <code>attemptId</code> 让中断的合并不会产生重复记录。</p>
+      </article>
+      <article class="card">
+        <p class="card__label">SCREENS &amp; SOUND</p>
+        <h3>屏幕、字号与声音</h3>
+        <p>
+          <code>ResizeObserver</code> 按真实宽高选择 compact / medium / large，不看设备类型。
+          Nunito 字体自托管，按钮最小 48 px，紧凑模式 56 px。
+        </p>
+        <p>旁白优先播放 MP3，缺失时回退 Web Speech API；首次触摸解锁音频。</p>
+      </article>
+      <article class="card">
+        <p class="card__label">PWA</p>
+        <h3>离线也要能玩</h3>
+        <p>
+          Workbox 预缓存应用、字体、图标、音频和关卡模块。导航回退到 <code>index.html</code>，
+          已加载的关卡断网也能打开。
+        </p>
+        <p>API 走 NetworkFirst，但只有 <code>Cache-Control: public</code> 的响应能进缓存；个人数据统一 <code>no-store</code>。</p>
+      </article>
+    </div>
+
+    <p class="note">
+      <span><strong>体积预算：</strong>首屏 JS 约 125 KB gzip；管理后台、游戏壳和完整关卡定义都按需加载。</span>
+    </p>
+  </section>
+
+  <section class="section" id="server" aria-labelledby="server-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Server &amp; data</p>
+        <h2 id="server-title">权威状态放在服务端</h2>
+      </div>
+      <p class="section-head__lede">
+        Fastify 负责身份、权限、校验和事务。Mongoose 模型严格，输出经过 DTO；孩子只留下昵称、头像、群组和进度。
+      </p>
+    </div>
+
+    <div class="card-grid">
+      <article class="card">
+        <p class="card__label">IDENTITY</p>
+        <h3>两种登录，两种节奏</h3>
+        <p>
+          成人用短用户名 + argon2id 密码，30 天滑动会话；连续失败会锁定，认证路由有限流。
+        </p>
+        <p>
+          孩子用 6 位群组码 + 3 张有序图片；会话固定 8 小时。设备固定 Cookie 记住群组 30 天，免去每次输码。
+        </p>
+      </article>
+      <article class="card">
+        <p class="card__label">AUTHORITY</p>
+        <h3>进度由服务端重算</h3>
+        <p>
+          关卡必须存在且已解锁；星星按提示数重算；尝试、进度、解锁和词汇在同一个事务里完成。
+          <code>$inc</code>、<code>$max</code>、<code>$min</code> 合并统计，客户端 ID 保证幂等。
+        </p>
+      </article>
+      <article class="card">
+        <p class="card__label">HARDENING</p>
+        <h3>默认防护</h3>
+        <p>
+          Cookie 为 <code>httpOnly · SameSite=Lax · Secure</code>；会话与邀请令牌只存 SHA-256；TTL 索引自动过期。
+        </p>
+        <p>zod 校验所有输入，<code>sanitizeFilter</code> 防 NoSQL 注入，Mongoose 严格模式拒绝未知字段。</p>
+      </article>
+      <article class="card">
+        <p class="card__label">PRIVACY</p>
+        <h3>儿童数据最小化</h3>
+        <p>
+          学生没有邮箱、姓氏、生日或成人密码。学生数据可以导出 JSON，也可以在事务中彻底删除该学生及其进度、尝试、沙盒和会话。
+        </p>
+        <p>站点无第三方分析、无外部 CDN，管理操作写入审计日志。</p>
+      </article>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">集合</th>
+            <th scope="col">存什么</th>
+            <th scope="col">关键约束</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>users</code></td><td>角色、显示名、成人凭据、头像、家长关系、词汇</td><td>学生无邮箱与密码</td></tr>
+          <tr><td><code>groups</code></td><td>名称、6 位群组码、成员及组内角色</td><td>群组码唯一</td></tr>
+          <tr><td><code>sessions</code></td><td>成人 / 儿童会话、令牌哈希、儿童所选群组</td><td>TTL 过期；令牌唯一</td></tr>
+          <tr><td><code>invites</code></td><td>邀请、家长绑定和密码重置令牌</td><td>SHA-256；7 天过期</td></tr>
+          <tr><td><code>levelprogress</code></td><td>每名学生每个关卡的状态、星星、尝试、最佳时间</td><td><code>(userId, levelId)</code> 唯一</td></tr>
+          <tr><td><code>levelattempts</code></td><td>每次尝试的历史、时长、提示数和诊断</td><td>客户端 ID 幂等</td></tr>
+          <tr><td><code>sandboxcircuits</code></td><td>自由电路 JSON 与缩略图</td><td>数据 ≤ 200 KB</td></tr>
+          <tr><td><code>auditlogs</code></td><td>成人执行的敏感操作</td><td>保留追溯</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="table-note">
+      MongoDB 以单节点 replica set <code>rs0</code> 运行，因此事务在开发和测试环境都真实可用。
+      索引由启动时的 <code>syncIndexes()</code> 和 migrate-mongo 迁移两条幂等路径共同维护。
+    </p>
+  </section>
+
+  <section class="section" id="deploy" aria-labelledby="deploy-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Fig. 03 · Deployment</p>
+        <h2 id="deploy-title">一台主机，两套隔离环境</h2>
+      </div>
+      <p class="section-head__lede">
+        生产与开发共用 OCI Ampere A1 主机，但域名、端口、静态目录、Compose 项目和数据库卷完全分开。
+        Caddy 在宿主机上，负责 TLS、CSP 和路由。
+      </p>
+    </div>
+
+    <figure class="drawing">
+      <div class="drawing__top">
+        <span><b>ARCH-03</b> · 部署拓扑</span>
+        <span>PROD ≠ DEV</span>
+      </div>
+      <div class="drawing__body">
+        <div class="host">
+          <div class="host__bar">
+            <span>HOST · OCI Ampere A1</span>
+            <span>Ubuntu · linux/arm64</span>
+          </div>
+          <div class="env-grid">
+            <article class="env env--prod">
+              <header>
+                <span class="tag">PROD</span>
+                <strong>circuit-learning.87543362.xyz</strong>
+              </header>
+              <div class="route">
+                <span class="route__key">/</span>
+                <span class="route__arrow">→</span>
+                <span class="route__val">静态文件 <code>/srv/circuits/web</code></span>
+              </div>
+              <div class="route">
+                <span class="route__key">/api/*</span>
+                <span class="route__arrow">→</span>
+                <span class="route__val"><code>127.0.0.1:3100</code> · API 容器</span>
+              </div>
+              <div class="route">
+                <span class="route__key">Mongo</span>
+                <span class="route__arrow">→</span>
+                <span class="route__val"><code>127.0.0.1:27018</code> · 卷 <code>mongo-data</code></span>
+              </div>
+              <p class="env__note">独立 Compose 项目 · 生产镜像 · 严格 CSP</p>
+            </article>
+
+            <article class="env env--dev">
+              <header>
+                <span class="tag">DEV</span>
+                <strong>circuit-learning-dev.87543362.xyz</strong>
+              </header>
+              <div class="route">
+                <span class="route__key">/</span>
+                <span class="route__arrow">→</span>
+                <span class="route__val">静态文件 <code>/srv/circuits/web-dev</code></span>
+              </div>
+              <div class="route">
+                <span class="route__key">/api/*</span>
+                <span class="route__arrow">→</span>
+                <span class="route__val"><code>127.0.0.1:3200</code> · API 容器</span>
+              </div>
+              <div class="route">
+                <span class="route__key">Mongo</span>
+                <span class="route__arrow">→</span>
+                <span class="route__val"><code>127.0.0.1:27019</code> · 卷 <code>mongo-dev-host-data</code></span>
+              </div>
+              <p class="env__note">独立 Compose 项目 · 独立镜像 · <code>noindex, nofollow</code></p>
+            </article>
+          </div>
+          <p class="host__note">
+            Caddy 不在 Compose 内；API 与 Mongo 在容器中。API 以非 root 用户运行，根文件系统只读，只开放 <code>/tmp</code>。
+          </p>
+        </div>
+
+        <div class="badge-row" aria-label="部署约束">
+          <span class="badge">node:20-bookworm-slim</span>
+          <span class="badge">linux/arm64</span>
+          <span class="badge">read_only</span>
+          <span class="badge">no-new-privileges</span>
+          <span class="badge">healthcheck</span>
+        </div>
+      </div>
+      <figcaption class="drawing__foot">
+        <span>所有镜像都有 arm64 版本；API 健康检查访问 <code>/api/health</code>，Mongo 等待 replica set 就绪。</span>
+        <span class="mono">FIG. 03</span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="section" id="quality" aria-labelledby="quality-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Quality gates</p>
+        <h2 id="quality-title">四道闸门</h2>
+      </div>
+      <p class="section-head__lede">
+        电路引擎、事务、触控尺寸和儿童文案都有自动化或审计兜底。测试不只覆盖“能跑”，也覆盖“孩子能用”。
+      </p>
+    </div>
+
+    <div class="quality-grid">
+      <article class="quality">
+        <h3>单元测试</h3>
+        <p>Vitest 覆盖共享引擎的串联、并联、短路、LED、材料和序列化，以及 API 服务与前端组件。</p>
+      </article>
+      <article class="quality">
+        <h3>真实事务</h3>
+        <p><code>mongodb-memory-server</code> 启动单节点 replica set，测试和 E2E 都使用真实事务与索引。</p>
+      </article>
+      <article class="quality">
+        <h3>设备端 E2E</h3>
+        <p>Playwright 覆盖 7 种设备配置、视觉快照、离线、权限、沙盒以及家长 / 教师 / 学生流程。</p>
+      </article>
+      <article class="quality">
+        <h3>儿童可用性</h3>
+        <p>12 词句子测试、法语 Hunspell 检查、48 / 56 px 触控目标审计，以及首屏体积预算。</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="decisions" aria-labelledby="decisions-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Trade-offs</p>
+        <h2 id="decisions-title">四个明确取舍</h2>
+      </div>
+      <p class="section-head__lede">
+        这些选择决定了系统的形状：共享规则、离线优先、单一交互模型、隐私默认。
+      </p>
+    </div>
+
+    <div class="decisions">
+      <article class="decision">
+        <h3>共享内核，而不是复制规则</h3>
+        <p>客户端和服务端跑同一份 TypeScript。代价是包必须保持纯粹；收益是灯泡亮度和星星规则永远不会分叉。</p>
+      </article>
+      <article class="decision">
+        <h3>离线优先，而不是失败重试</h3>
+        <p>进度仓库自带缓存和队列，网络只是其中一种传输方式。代价是幂等设计必须从第一天就做对。</p>
+      </article>
+      <article class="decision">
+        <h3>触摸优先的单一交互模型</h3>
+        <p>只用 Pointer Events，不依赖悬停、双击或键盘。代价是少量桌面便利；收益是 iPad、Android 和鼠标共用一套逻辑。</p>
+      </article>
+      <article class="decision">
+        <h3>隐私默认，不靠配置</h3>
+        <p>无第三方分析、无外部 CDN、个人数据不进入 Service Worker 缓存。孩子只留下完成游戏所需的最少信息。</p>
+      </article>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div>
+      <p class="footer__brand">LES CIRCUITS DE ZAP · ARCHITECTURE</p>
+      <p>给 8 岁孩子的电路游戏。页面基于仓库中的实际实现整理。</p>
+    </div>
+    <div class="footer__meta">
+      <a href="https://circuit-learning.87543362.xyz">circuit-learning.87543362.xyz</a>
+      <p class="mono">2026-10-25 · develop · 08a0659</p>
+    </div>
+  </footer>
+</div>
