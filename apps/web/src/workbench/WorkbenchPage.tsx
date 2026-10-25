@@ -1,6 +1,7 @@
 import {
   createComponent,
   evaluateLevelSuccess,
+  readCircuitMeters,
   starsForHints,
   type CircuitComponent,
   type CircuitSimulation,
@@ -68,6 +69,7 @@ import {
   screenToBoard,
 } from './viewport';
 import { WorkbenchSvg } from './WorkbenchSvg';
+import { ZapMeter } from './ZapMeter';
 import { renderAllWires, terminalPointMap } from './wireLayout';
 import {
   findWireSpliceTarget,
@@ -83,11 +85,17 @@ export interface SandboxChrome {
   onOpenWorkshop: () => void;
 }
 
+export interface ChallengeChrome {
+  seed: number;
+  onNewChallenge: () => void;
+}
+
 export interface WorkbenchPageProps {
   onBack: () => void;
   level?: LevelDefinition;
   onNextLevel?: () => void;
   sandbox?: SandboxChrome;
+  challenge?: ChallengeChrome;
 }
 
 const CURIOSITY_FIRST_MS = 24_000;
@@ -126,6 +134,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   level,
   onNextLevel,
   sandbox,
+  challenge,
 }: WorkbenchPageProps) {
   const {
     circuit,
@@ -210,6 +219,11 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   const levelSession = useLevelSession(level ?? null);
 
   const status = getStatus(simulation);
+  const meterIds = useMemo(() => level?.meters ?? [], [level]);
+  const meters = useMemo(
+    () => readCircuitMeters(circuit, simulation),
+    [circuit, simulation],
+  );
   const ghostPoint =
     paletteDrag !== null && paletteDrag.gesture === 'drag'
       ? paletteGhostPoint(paletteDrag)
@@ -827,7 +841,8 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   return (
     <div
       ref={pageRef}
-      className={`workbench-page${paletteVisible ? ' has-palette' : ''}`}
+      className={`workbench-page${paletteVisible ? ' has-palette' : ''}${meterIds.length > 0 ? ' has-meters' : ''}`}
+      data-challenge-seed={challenge?.seed}
       aria-hidden={workbenchPaused ? true : undefined}
       onContextMenu={(event) => event.preventDefault()}
     >
@@ -907,6 +922,20 @@ export const WorkbenchPage = memo(function WorkbenchPage({
           <Icon name="eye" />
           <span>{modeLabel}</span>
         </button>
+
+        {challenge !== undefined ? (
+          <button
+            type="button"
+            className="workbench-icon-button workbench-challenge-button"
+            aria-label={fr.challenge.new}
+            onPointerDown={(event) =>
+              activateButton(event, challenge.onNewChallenge)
+            }
+          >
+            <Icon name="shuffle" />
+            <span>{fr.challenge.new}</span>
+          </button>
+        ) : null}
 
         {isCompact ? null : (
           <button
@@ -1077,6 +1106,14 @@ export const WorkbenchPage = memo(function WorkbenchPage({
               onToggleMute={narration.toggleMute}
             />
           </div>
+
+          {meterIds.length > 0 ? (
+            <ZapMeter
+              meters={meters}
+              visible={meterIds}
+              compact={isCompact}
+            />
+          ) : null}
 
           <div className={`workbench-status workbench-status--${status.tone}`}>
             <span className="workbench-status__dot" aria-hidden="true" />

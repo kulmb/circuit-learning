@@ -339,6 +339,108 @@
   height: 28px;
 }
 
+.workbench-meters {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  max-width: 1100px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+}
+
+.workbench-meters::-webkit-scrollbar {
+  display: none;
+}
+
+.workbench-meter {
+  --meter-color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 320px;
+  min-height: 48px;
+  padding: 6px 10px;
+  border: 2px solid rgba(36, 50, 74, 0.08);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--color-ink, #24324a);
+  box-shadow: 0 4px 12px rgba(36, 50, 74, 0.06);
+}
+
+.workbench-meter svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  color: var(--meter-color);
+}
+
+.workbench-meter__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.05;
+}
+
+.workbench-meter__label {
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.workbench-meter__qualifier {
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.workbench-meter__segments {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.workbench-meter__segments span {
+  width: 7px;
+  height: 18px;
+  border-radius: 3px;
+  background: rgba(36, 50, 74, 0.12);
+}
+
+.workbench-meter__segments span.is-on {
+  background: var(--meter-color);
+}
+
+.workbench-meter[data-meter-id='tension'] {
+  --meter-color: #2563eb;
+}
+
+.workbench-meter[data-meter-id='courant'] {
+  --meter-color: #0d9488;
+}
+
+.workbench-meter[data-meter-id='resistance'] {
+  --meter-color: #b45309;
+}
+
+.workbench-meter[data-meter-id='puissance'] {
+  --meter-color: #d97706;
+}
+
+.workbench-meter--off {
+  --meter-color: #94a3b8;
+}
+
+.workbench-meter--alert {
+  --meter-color: #be123c;
+  border-color: #fecdd3;
+  background: #fff1f2;
+}
+
 .workbench-status {
   display: flex;
   align-items: center;
@@ -579,6 +681,12 @@
   max-height: 100%;
 }
 
+[data-layout='medium'][data-orientation='portrait']
+  .workbench-page.has-meters
+  .workbench-board {
+  width: min(100%, calc((100dvh - 378px) * var(--board-ratio, 1.5)));
+}
+
 /* ---------- Compact: phones in landscape ---------- */
 
 [data-layout='compact'] .workbench-page {
@@ -621,6 +729,38 @@
   width: min(100%, calc((100dvh - 84px) * var(--board-ratio, 1.5)));
   aspect-ratio: var(--board-aspect, 3 / 2);
   max-height: 100%;
+}
+
+[data-layout='compact'] .workbench-page.has-meters .workbench-board {
+  width: min(100%, calc((100dvh - 124px) * var(--board-ratio, 1.5)));
+}
+
+[data-layout='compact'] .workbench-meters {
+  gap: 4px;
+  padding: 0;
+}
+
+[data-layout='compact'] .workbench-meter {
+  min-height: 36px;
+  padding: 3px 6px;
+  gap: 4px;
+  border-width: 1px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+[data-layout='compact'] .workbench-meter svg {
+  width: 16px;
+  height: 16px;
+}
+
+[data-layout='compact'] .workbench-meter__label {
+  font-size: 0.62rem;
+}
+
+[data-layout='compact'] .workbench-meter__segments span {
+  width: 5px;
+  height: 12px;
 }
 
 [data-layout='compact'] .workbench-zoom-reset {
@@ -694,6 +834,15 @@
 }
 
 [data-layout='compact'] .workbench-mode-button span:last-child {
+  display: none;
+}
+
+[data-layout='compact'] .workbench-challenge-button {
+  min-width: 56px;
+  padding: 0;
+}
+
+[data-layout='compact'] .workbench-challenge-button span {
   display: none;
 }
 

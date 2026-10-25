@@ -51,6 +51,71 @@ describe('applyAttemptToProgress', () => {
     expect(progress.vocabulary).toEqual(['circuitFerme']);
   });
 
+  it('reconciles progress saved before the power and assembly levels existed', () => {
+    const initial = initialPlayerProgress();
+    const oldLevels = { ...initial.levels };
+
+    for (const levelId of [
+      'current-07',
+      'assembly-01',
+      'assembly-02',
+      'assembly-03',
+      'assembly-04',
+      'defi-01',
+      'defi-02',
+      'defi-03',
+      'defi-04',
+    ]) {
+      delete oldLevels[levelId];
+    }
+
+    oldLevels['current-06'] = {
+      ...initial.levels['current-06']!,
+      status: 'completed',
+    };
+
+    const progress = reconcileProgress({
+      levels: oldLevels,
+      vocabulary: [],
+    });
+
+    expect(progress.levels['current-07']?.status).toBe('unlocked');
+    expect(progress.levels['assembly-01']?.status).toBe('locked');
+    expect(progress.levels['defi-01']?.status).toBe('locked');
+  });
+
+  it('unlocks the assembly chapter after the power level', () => {
+    const progress = applyAttemptToProgress(
+      initialPlayerProgress(),
+      'current-07',
+      {
+        success: true,
+        hintsUsed: 0,
+        durationMs: 5000,
+        errorsDetected: [],
+      },
+      1000,
+    );
+
+    expect(progress.levels['assembly-01']?.status).toBe('unlocked');
+  });
+
+  it('unlocks the challenge chapter after the assembly chapter', () => {
+    const progress = applyAttemptToProgress(
+      initialPlayerProgress(),
+      'assembly-04',
+      {
+        success: true,
+        hintsUsed: 0,
+        durationMs: 5000,
+        errorsDetected: [],
+      },
+      1000,
+    );
+
+    expect(progress.levels['defi-01']?.status).toBe('unlocked');
+  });
+
   it('completes a level, unlocks the next and adds vocabulary', () => {
     const progress = applyAttemptToProgress(
       initialPlayerProgress(),

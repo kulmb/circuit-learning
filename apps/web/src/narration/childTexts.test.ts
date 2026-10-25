@@ -21,6 +21,8 @@ const CHILD_PREFIXES = [
   'materials.',
   'success.',
   'vocab.',
+  'meter.',
+  'challenge.',
 ] as const;
 
 const ADULT_PREFIXES = ['parentSettings.', 'progress.merge'] as const;

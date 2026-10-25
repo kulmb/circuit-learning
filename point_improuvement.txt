@@ -40,3 +40,10 @@
     完成内容：registerPwa 与本地版本写入前移到 React 渲染之前；启动时主动调用 registration.update()，激活上一会话遗留的 waiting worker；增加 controllerchange 与 2.5 秒兜底刷新，避免 Safari 下用户反复点击才升级。版本号保持 0.2.0。
 18: [已完成] atelier libre 默认没有任何元器件在工作台。
    完成内容：没有已保存作品时以空电路打开工作台，不再预置电池和灯泡；Zap 的提示「Et si tu posais une pile et une ampoule ?」仍会引导孩子开始；已保存的最新作品仍自动打开。
+0.3.0
+19: [已完成] 课程加入电流 电压 功率 电阻
+    完成内容：第二章新增 Zap-mètre 定性仪表（Tension / Courant / Résistance / Puissance，三格显示，无数字）；current-02 到 current-06 逐步引入仪表；新增 current-07 « La puissance »（变阻器调亮，功率仪表升高）；新增词汇 puissance、成人看板概念和收藏页词条。
+20: [已完成] 串联 并联 以及组合电路
+    完成内容：新增第三章 « En série ou en parallèle ? » 4 关（série、parallèle、组合、双开关）；新增拓扑判定 components_series / components_parallel / brighter_than / switch_cuts，成功条件不再只依赖亮度；第一章保留直观启蒙。
+21: [已完成] 固定数量的元器件，生成不同的电路
+    完成内容：新增第四章 « Les défis de Zap » 4 个固定元件预算（2/3/4/5）；种子生成器在 packages/shared/src/challenges 中生成不同布局、故障和目标，支持搭建与修复两种玩法；每关生成后用真实仿真校验可解性；« Nouveau défi » 重新生成；复用现有进度/星星/API，无数据库迁移。

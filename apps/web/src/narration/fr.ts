@@ -94,6 +94,30 @@ export const texts = {
   'display.symbol': 'Symboles',
   'display.overlay': 'Les deux',
 
+  'workbench.meters': 'Les mesures de Zap',
+  'meter.tension': 'Tension',
+  'meter.tension.low': 'poussée douce',
+  'meter.tension.medium': 'poussée moyenne',
+  'meter.tension.high': 'poussée forte',
+  'meter.courant': 'Courant',
+  'meter.courant.low': 'débit faible',
+  'meter.courant.medium': 'débit moyen',
+  'meter.courant.high': 'débit fort',
+  'meter.resistance': 'Résistance',
+  'meter.resistance.low': 'frein faible',
+  'meter.resistance.medium': 'frein moyen',
+  'meter.resistance.high': 'frein fort',
+  'meter.puissance': 'Puissance',
+  'meter.puissance.low': 'peu d’énergie',
+  'meter.puissance.medium': 'énergie moyenne',
+  'meter.puissance.high': 'beaucoup d’énergie',
+  'meter.off': 'circuit ouvert',
+  'meter.alert': 'attention',
+
+  'challenge.new': 'Nouveau défi',
+  'challenge.badge': 'Défi',
+  'challenge.hint': 'Chaque défi mélange les pièces.',
+
   'component.battery.label': 'Pile',
   'component.bulb.label': 'Ampoule',
   'component.switch.label': 'Interrupteur',
@@ -147,6 +171,8 @@ export const texts = {
 
   'chapter.light.title': 'Chapitre 1 : La lumière',
   'chapter.current.title': 'Chapitre 2 : La force du courant',
+  'chapter.assemblies.title': 'Chapitre 3 : En série ou en parallèle ?',
+  'chapter.challenges.title': 'Chapitre 4 : Les défis de Zap',
   'map.title': 'Carte des niveaux',
   'map.subtitle': 'Choisis un niveau.',
   'map.back': 'Accueil',
@@ -385,6 +411,99 @@ export const texts = {
   'level.current.06.hint.3':
     'Ferme l’interrupteur et baisse la lumière.',
 
+  'level.current.07.title': 'La puissance',
+  'level.current.07.goal': 'Fais briller l’ampoule très fort.',
+  'level.current.07.intro':
+    'Plus l’ampoule brille, plus elle utilise d’énergie.',
+  'level.current.07.hint.1': 'Touche le variateur.',
+  'level.current.07.hint.2': 'Glisse le curseur vers la gauche.',
+  'level.current.07.hint.3':
+    'Plus la lumière monte, plus la puissance augmente.',
+
+  'level.assembly.01.title': 'L’un après l’autre',
+  'level.assembly.01.goal': 'Relie les deux ampoules en file.',
+  'level.assembly.01.intro':
+    'En file, le courant passe par les deux.',
+  'level.assembly.01.hint.1': 'Place la deuxième ampoule.',
+  'level.assembly.01.hint.2': 'Relie-la après la première.',
+  'level.assembly.01.hint.3':
+    'Les deux ampoules doivent être plus faibles.',
+
+  'level.assembly.02.title': 'Côte à côte',
+  'level.assembly.02.goal': 'Relie chaque ampoule à la pile.',
+  'level.assembly.02.intro':
+    'Côte à côte, chaque ampoule a son chemin.',
+  'level.assembly.02.hint.1': 'Place la deuxième ampoule.',
+  'level.assembly.02.hint.2':
+    'Relie chaque ampoule directement à la pile.',
+  'level.assembly.02.hint.3':
+    'Les deux ampoules brillent normalement.',
+
+  'level.assembly.03.title': 'Le mélange',
+  'level.assembly.03.goal': 'Une ampoule forte, deux faibles.',
+  'level.assembly.03.intro':
+    'Mélange une ampoule en file et deux côte à côte.',
+  'level.assembly.03.hint.1':
+    'La première ampoule est seule sur son chemin.',
+  'level.assembly.03.hint.2':
+    'Les deux autres sont côte à côte.',
+  'level.assembly.03.hint.3':
+    'Relie les deux dernières à la même borne.',
+
+  'level.assembly.04.title': 'Les deux commandes',
+  'level.assembly.04.goal':
+    'Un interrupteur pour tout, un pour une ampoule.',
+  'level.assembly.04.intro':
+    'Le premier coupe tout, le second une ampoule.',
+  'level.assembly.04.hint.1':
+    'Le premier interrupteur commande les deux ampoules.',
+  'level.assembly.04.hint.2':
+    'Le second commande seulement la deuxième.',
+  'level.assembly.04.hint.3':
+    'Relie le premier interrupteur avant les deux chemins.',
+
+  'level.defi.01.title': 'Première lumière',
+  'level.defi.01.goal': 'Allume l’ampoule.',
+  'level.defi.01.intro':
+    'Zap a mélangé les pièces. À toi de jouer !',
+  'level.defi.01.hint.1': 'Il manque peut-être un fil.',
+  'level.defi.01.hint.2': 'Relie la pile à l’ampoule.',
+  'level.defi.01.hint.3':
+    'Le courant doit faire un tour complet.',
+
+  'level.defi.02.title': 'Deux ampoules',
+  'level.defi.02.goal': 'Relie les deux ampoules en file.',
+  'level.defi.02.intro':
+    'Même nombre de pièces, un nouveau circuit.',
+  'level.defi.02.hint.1': 'Place la deuxième ampoule.',
+  'level.defi.02.hint.2': 'Relie-les l’une après l’autre.',
+  'level.defi.02.hint.3':
+    'Le courant passe par les deux ampoules.',
+
+  'level.defi.03.title': 'Les deux chemins',
+  'level.defi.03.goal':
+    'Un interrupteur pour une seule ampoule.',
+  'level.defi.03.intro':
+    'Deux chemins, un interrupteur. À toi de trouver !',
+  'level.defi.03.hint.1':
+    'Chaque ampoule a son propre chemin.',
+  'level.defi.03.hint.2':
+    'L’interrupteur coupe un seul chemin.',
+  'level.defi.03.hint.3':
+    'Ferme l’interrupteur pour allumer la deuxième.',
+
+  'level.defi.04.title': 'L’atelier du moteur',
+  'level.defi.04.goal':
+    'Le moteur tourne et l’ampoule reste douce.',
+  'level.defi.04.intro':
+    'Un moteur, une ampoule et un variateur.',
+  'level.defi.04.hint.1':
+    'Le moteur et l’ampoule ont chacun leur chemin.',
+  'level.defi.04.hint.2':
+    'L’interrupteur commande le moteur.',
+  'level.defi.04.hint.3':
+    'Baisse la lumière avec le variateur.',
+
   'symbols.title': 'Les symboles',
   'symbols.goal': 'Associe chaque dessin à son symbole.',
   'symbols.intro':
@@ -452,6 +571,11 @@ export const texts = {
   'vocab.resistance.definition': 'Elle freine le courant.',
   'vocab.variateur.word': 'Variateur',
   'vocab.variateur.definition': 'Il règle la force du courant.',
+  'vocab.puissance.word': 'Puissance',
+  'vocab.puissance.definition': 'C’est l’énergie que l’ampoule utilise.',
+  'vocab.combinaison.word': 'Combinaison',
+  'vocab.combinaison.definition':
+    'Plusieurs chemins dans le même circuit.',
   'vocab.symbole.word': 'Symbole',
   'vocab.symbole.definition': 'Un dessin simple pour un composant.',
 } as const;
@@ -511,6 +635,12 @@ export const fr = {
     displayRealistic: texts['display.realistic'],
     displaySymbol: texts['display.symbol'],
     displayOverlay: texts['display.overlay'],
+    meters: texts['workbench.meters'],
+  },
+  challenge: {
+    new: texts['challenge.new'],
+    badge: texts['challenge.badge'],
+    hint: texts['challenge.hint'],
   },
   sandbox: {
     title: texts['sandbox.title'],

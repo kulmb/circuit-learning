@@ -4,4 +4,7 @@ export * from './success';
 export * from './metadata';
 export * from './chapterLight';
 export * from './chapterCurrent';
+export * from './chapterAssemblies';
+export * from './chapterChallenges';
 export * from './registry';
+export * from '../challenges';

@@ -12,6 +12,7 @@ import type { PaletteItem } from './paletteItems';
 const OFF_STATE: ComponentState = {
   current: 0,
   voltage: 0,
+  power: 0,
   intensity: 0,
   state: 'off',
   on: false,

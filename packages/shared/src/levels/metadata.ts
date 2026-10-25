@@ -113,14 +113,76 @@ export const CHAPTER_2_LEVEL_METADATA: readonly LevelMetadata[] = [
   {
     id: 'current-06',
     order: 17,
-    nextLevelId: null,
+    nextLevelId: 'current-07',
     vocabularyIds: ['courant', 'resistance', 'variateur'],
+  },
+  {
+    id: 'current-07',
+    order: 18,
+    nextLevelId: 'assembly-01',
+    vocabularyIds: ['puissance'],
+  },
+];
+
+export const CHAPTER_3_LEVEL_METADATA: readonly LevelMetadata[] = [
+  {
+    id: 'assembly-01',
+    order: 19,
+    nextLevelId: 'assembly-02',
+    vocabularyIds: ['serie'],
+  },
+  {
+    id: 'assembly-02',
+    order: 20,
+    nextLevelId: 'assembly-03',
+    vocabularyIds: ['parallele'],
+  },
+  {
+    id: 'assembly-03',
+    order: 21,
+    nextLevelId: 'assembly-04',
+    vocabularyIds: ['combinaison'],
+  },
+  {
+    id: 'assembly-04',
+    order: 22,
+    nextLevelId: 'defi-01',
+    vocabularyIds: ['combinaison'],
+  },
+];
+
+export const CHAPTER_4_LEVEL_METADATA: readonly LevelMetadata[] = [
+  {
+    id: 'defi-01',
+    order: 23,
+    nextLevelId: 'defi-02',
+    vocabularyIds: ['circuitFerme'],
+  },
+  {
+    id: 'defi-02',
+    order: 24,
+    nextLevelId: 'defi-03',
+    vocabularyIds: ['serie'],
+  },
+  {
+    id: 'defi-03',
+    order: 25,
+    nextLevelId: 'defi-04',
+    vocabularyIds: ['parallele'],
+  },
+  {
+    id: 'defi-04',
+    order: 26,
+    nextLevelId: null,
+    vocabularyIds: ['combinaison'],
   },
 ];
 
 export const ALL_LEVEL_METADATA: readonly LevelMetadata[] = [
   ...CHAPTER_1_LEVEL_METADATA,
   ...CHAPTER_2_LEVEL_METADATA,
+  ...CHAPTER_3_LEVEL_METADATA,
+  ...CHAPTER_4_LEVEL_METADATA,
 ];
 
 export function getLevelMetadata(

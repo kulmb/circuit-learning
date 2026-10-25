@@ -1,6 +1,7 @@
 import { getLevelById } from '@circuits/shared/levels';
 import { useState } from 'react';
 
+import { ChallengePage } from './levels/ChallengePage';
 import { ChildLoginPage } from './levels/ChildLoginPage';
 import { CollectionPage } from './levels/CollectionPage';
 import { LevelMapPage } from './levels/LevelMapPage';
@@ -85,6 +86,17 @@ export function GameShell({
             onNavigate('play', level.nextLevelId);
           },
         };
+
+  if (level.challenge !== undefined) {
+    return (
+      <ChallengePage
+        key={level.id}
+        level={level}
+        onBack={() => onNavigate('map')}
+        {...nextLevelProps}
+      />
+    );
+  }
 
   if (level.kind === 'materials') {
     return (

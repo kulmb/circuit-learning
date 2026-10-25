@@ -5,6 +5,8 @@ import { cloneComponent, createComponent, createWire } from '../circuit';
 import { simulateCircuit } from '../circuit/simulate';
 import { CHAPTER_1_LEVELS } from './chapterLight';
 import { CHAPTER_2_LEVELS } from './chapterCurrent';
+import { CHAPTER_3_LEVELS } from './chapterAssemblies';
+import { CHAPTER_4_LEVELS } from './chapterChallenges';
 import { ALL_LEVELS, getLevelById, getNextLevel } from './registry';
 import {
   ALL_LEVEL_METADATA,
@@ -66,12 +68,18 @@ describe('chapter data', () => {
 
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids[0]).toBe('light-01');
-    expect(ids[ids.length - 1]).toBe('current-06');
-    expect(ALL_LEVELS.map((level) => level.order)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-    ]);
+    expect(ids[ids.length - 1]).toBe('defi-04');
+    expect(ALL_LEVELS.map((level) => level.order)).toEqual(
+      Array.from({ length: 26 }, (_, index) => index + 1),
+    );
     expect(CHAPTER_2_LEVELS.map((level) => level.number)).toEqual([
-      1, 2, 3, 4, 5, 6,
+      1, 2, 3, 4, 5, 6, 7,
+    ]);
+    expect(CHAPTER_3_LEVELS.map((level) => level.number)).toEqual([
+      1, 2, 3, 4,
+    ]);
+    expect(CHAPTER_4_LEVELS.map((level) => level.number)).toEqual([
+      1, 2, 3, 4,
     ]);
 
     for (const level of ALL_LEVELS) {
@@ -83,7 +91,10 @@ describe('chapter data', () => {
     expect(getNextLevel('light-06')?.id).toBe('light-symbols');
     expect(getNextLevel('light-symbols')?.id).toBe('light-07');
     expect(getNextLevel('light-10')?.id).toBe('current-01');
-    expect(getNextLevel('current-06')).toBeUndefined();
+    expect(getNextLevel('current-06')?.id).toBe('current-07');
+    expect(getNextLevel('current-07')?.id).toBe('assembly-01');
+    expect(getNextLevel('assembly-04')?.id).toBe('defi-01');
+    expect(getNextLevel('defi-04')).toBeUndefined();
   });
 
   it('uses realistic art for levels 1–6, overlays for 7–9 and symbols for 10', () => {
@@ -98,6 +109,27 @@ describe('chapter data', () => {
     expect(getLevelById('current-01')?.displayMode).toBe('overlay');
     expect(getLevelById('current-05')?.displayMode).toBe('overlay');
     expect(getLevelById('current-06')?.displayMode).toBe('symbol');
+    expect(getLevelById('current-07')?.displayMode).toBe('symbol');
+  });
+
+  it('adds qualitative meters to chapter 2 and the assembly chapter', () => {
+    expect(getLevelById('current-02')?.meters).toEqual(['tension']);
+    expect(getLevelById('current-03')?.meters).toEqual(['courant']);
+    expect(getLevelById('current-04')?.meters).toEqual(['resistance']);
+    expect(getLevelById('current-07')?.meters).toEqual([
+      'tension',
+      'courant',
+      'resistance',
+      'puissance',
+    ]);
+    expect(getLevelById('assembly-01')?.meters).toEqual(['courant']);
+    expect(getLevelById('assembly-04')?.meters).toContain('puissance');
+  });
+
+  it('marks the four challenge tiers with a fixed component budget', () => {
+    expect(CHAPTER_4_LEVELS.map((level) => level.challenge?.budget)).toEqual([
+      2, 3, 4, 5,
+    ]);
   });
 });
 
@@ -364,6 +396,98 @@ describe('level success conditions', () => {
     const closed = buildNightLightCircuit(true);
     expect(evaluate('current-06', closed)).toBe(true);
   });
+
+  it('needs the rheostat at minimum resistance to reach full power', () => {
+    const circuit = circuitFromLevel('current-07');
+    expect(evaluate('current-07', circuit)).toBe(false);
+
+    circuit.components = circuit.components.map((component) =>
+      component.type === 'rheostat'
+        ? { ...component, wiperPosition: 0 }
+        : component,
+    );
+
+    expect(evaluate('current-07', circuit)).toBe(true);
+  });
+
+  it('accepts only a series wiring for assembly-01', () => {
+    const series = circuitFromLevel('assembly-01');
+    series.components.push(
+      createComponent('bulb', { id: 'bulb-2', position: { x: 9, y: 4 } }),
+    );
+    series.wires.push(
+      wire('w1', ref('battery-1', 'positive'), ref('bulb-1', 'a')),
+      wire('w2', ref('bulb-1', 'b'), ref('bulb-2', 'a')),
+      wire('w3', ref('bulb-2', 'b'), ref('battery-1', 'negative')),
+    );
+    expect(evaluate('assembly-01', series)).toBe(true);
+
+    const parallel = circuitFromLevel('assembly-01');
+    parallel.components.push(
+      createComponent('bulb', { id: 'bulb-2', position: { x: 9, y: 4 } }),
+    );
+    parallel.wires.push(
+      wire('w1', ref('battery-1', 'positive'), ref('bulb-1', 'a')),
+      wire('w2', ref('battery-1', 'positive'), ref('bulb-2', 'a')),
+      wire('w3', ref('bulb-1', 'b'), ref('battery-1', 'negative')),
+      wire('w4', ref('bulb-2', 'b'), ref('battery-1', 'negative')),
+    );
+    expect(evaluate('assembly-01', parallel)).toBe(false);
+  });
+
+  it('accepts only a parallel wiring for assembly-02', () => {
+    const parallel = circuitFromLevel('assembly-02');
+    parallel.components.push(
+      createComponent('bulb', { id: 'bulb-2', position: { x: 9, y: 4 } }),
+    );
+    parallel.wires.push(
+      wire('w1', ref('battery-1', 'positive'), ref('bulb-1', 'a')),
+      wire('w2', ref('battery-1', 'positive'), ref('bulb-2', 'a')),
+      wire('w3', ref('bulb-1', 'b'), ref('battery-1', 'negative')),
+      wire('w4', ref('bulb-2', 'b'), ref('battery-1', 'negative')),
+    );
+    expect(evaluate('assembly-02', parallel)).toBe(true);
+
+    const series = circuitFromLevel('assembly-02');
+    series.components.push(
+      createComponent('bulb', { id: 'bulb-2', position: { x: 9, y: 4 } }),
+    );
+    series.wires.push(
+      wire('w1', ref('battery-1', 'positive'), ref('bulb-1', 'a')),
+      wire('w2', ref('bulb-1', 'b'), ref('bulb-2', 'a')),
+      wire('w3', ref('bulb-2', 'b'), ref('battery-1', 'negative')),
+    );
+    expect(evaluate('assembly-02', series)).toBe(false);
+  });
+
+  it('makes the series bulb brighter than the parallel pair in assembly-03', () => {
+    const mixed = circuitFromLevel('assembly-03');
+    mixed.wires.push(
+      wire('w1', ref('battery-1', 'positive'), ref('bulb-1', 'a')),
+      wire('w2', ref('bulb-1', 'b'), ref('bulb-2', 'a')),
+      wire('w3', ref('bulb-1', 'b'), ref('bulb-3', 'a')),
+      wire('w4', ref('bulb-2', 'b'), ref('battery-1', 'negative')),
+      wire('w5', ref('bulb-3', 'b'), ref('battery-1', 'negative')),
+    );
+    expect(evaluate('assembly-03', mixed)).toBe(true);
+
+    const allSeries = circuitFromLevel('assembly-03');
+    allSeries.wires.push(
+      wire('w1', ref('battery-1', 'positive'), ref('bulb-1', 'a')),
+      wire('w2', ref('bulb-1', 'b'), ref('bulb-2', 'a')),
+      wire('w3', ref('bulb-2', 'b'), ref('bulb-3', 'a')),
+      wire('w4', ref('bulb-3', 'b'), ref('battery-1', 'negative')),
+    );
+    expect(evaluate('assembly-03', allSeries)).toBe(false);
+  });
+
+  it('keeps the main switch independent from the branch switch', () => {
+    const independent = buildAssemblyFinalCircuit(false);
+    expect(evaluate('assembly-04', independent)).toBe(true);
+
+    const shared = buildAssemblyFinalCircuit(true);
+    expect(evaluate('assembly-04', shared)).toBe(false);
+  });
 });
 
 function buildNightLightCircuit(closed: boolean): Circuit {
@@ -384,6 +508,37 @@ function buildNightLightCircuit(closed: boolean): Circuit {
     wire('w3', ref('rheostat-1', 'b'), ref('bulb-1', 'a')),
     wire('w4', ref('bulb-1', 'b'), ref('battery-1', 'negative')),
   );
+
+  return circuit;
+}
+
+function buildAssemblyFinalCircuit(sharedBranch: boolean) {
+  const circuit = circuitFromLevel('assembly-04');
+  circuit.components = circuit.components.map((component) =>
+    component.type === 'switch'
+      ? { ...component, closed: true }
+      : component,
+  );
+
+  if (sharedBranch) {
+    circuit.wires.push(
+      wire('w1', ref('battery-1', 'positive'), ref('switch-1', 'a')),
+      wire('w2', ref('switch-1', 'b'), ref('switch-2', 'a')),
+      wire('w3', ref('switch-2', 'b'), ref('bulb-1', 'a')),
+      wire('w4', ref('switch-2', 'b'), ref('bulb-2', 'a')),
+      wire('w5', ref('bulb-1', 'b'), ref('battery-1', 'negative')),
+      wire('w6', ref('bulb-2', 'b'), ref('battery-1', 'negative')),
+    );
+  } else {
+    circuit.wires.push(
+      wire('w1', ref('battery-1', 'positive'), ref('switch-1', 'a')),
+      wire('w2', ref('switch-1', 'b'), ref('bulb-1', 'a')),
+      wire('w3', ref('bulb-1', 'b'), ref('battery-1', 'negative')),
+      wire('w4', ref('switch-1', 'b'), ref('switch-2', 'a')),
+      wire('w5', ref('switch-2', 'b'), ref('bulb-2', 'a')),
+      wire('w6', ref('bulb-2', 'b'), ref('battery-1', 'negative')),
+    );
+  }
 
   return circuit;
 }

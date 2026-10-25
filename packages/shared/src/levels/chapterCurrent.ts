@@ -91,6 +91,7 @@ export const CHAPTER_2_LEVELS: LevelDefinition[] = [
     introTextId: 'level.current.02.intro',
     board: BOARD,
     displayMode: 'overlay',
+    meters: ['tension'],
     preplacedComponents: [
       preplaced(batteryAt('battery-1', 2, 4)),
       preplaced(bulbAt('bulb-1', 9, 4)),
@@ -131,6 +132,7 @@ export const CHAPTER_2_LEVELS: LevelDefinition[] = [
     introTextId: 'level.current.03.intro',
     board: BOARD,
     displayMode: 'overlay',
+    meters: ['courant'],
     preplacedComponents: [
       preplaced(batteryAt('battery-1', 2, 4)),
       preplaced(motorAt('motor-1', 8, 4)),
@@ -172,6 +174,7 @@ export const CHAPTER_2_LEVELS: LevelDefinition[] = [
     introTextId: 'level.current.04.intro',
     board: BOARD,
     displayMode: 'overlay',
+    meters: ['resistance'],
     preplacedComponents: [
       preplaced(batteryAt('battery-1', 2, 4)),
       preplaced(bulbAt('bulb-1', 8, 4)),
@@ -212,6 +215,7 @@ export const CHAPTER_2_LEVELS: LevelDefinition[] = [
     introTextId: 'level.current.05.intro',
     board: BOARD,
     displayMode: 'overlay',
+    meters: ['resistance'],
     preplacedComponents: [
       preplaced(batteryAt('battery-1', 2, 4)),
       preplaced(rheostatAt('rheostat-1', 5, 4)),
@@ -258,6 +262,7 @@ export const CHAPTER_2_LEVELS: LevelDefinition[] = [
     introTextId: 'level.current.06.intro',
     board: BOARD,
     displayMode: 'symbol',
+    meters: ['tension', 'courant', 'resistance'],
     preplacedComponents: [preplaced(batteryAt('battery-1', 2, 4))],
     preplacedWires: [],
     availableComponents: [
@@ -276,6 +281,67 @@ export const CHAPTER_2_LEVELS: LevelDefinition[] = [
       'level.current.06.hint.3',
     ],
     vocabularyIds: ['courant', 'resistance', 'variateur'],
-    nextLevelId: null,
+    nextLevelId: 'current-07',
+  },
+  {
+    id: 'current-07',
+    chapterId: CHAPTER_2_ID,
+    order: 18,
+    number: 7,
+    kind: 'circuit',
+    titleTextId: 'level.current.07.title',
+    goalTextId: 'level.current.07.goal',
+    introTextId: 'level.current.07.intro',
+    board: BOARD,
+    displayMode: 'symbol',
+    meters: ['tension', 'courant', 'resistance', 'puissance'],
+    preplacedComponents: [
+      preplaced(batteryAt('battery-1', 2, 4)),
+      preplaced(batteryAt('battery-2', 5, 4)),
+      preplaced(
+        createComponent('rheostat', {
+          id: 'rheostat-1',
+          position: { x: 8, y: 4 },
+          minResistance: 2,
+          maxResistance: 20,
+          wiperPosition: 1,
+        }),
+      ),
+      preplaced(bulbAt('bulb-1', 10, 4)),
+    ],
+    preplacedWires: [
+      createWire(
+        'current-07-wire-1',
+        ref('battery-1', 'negative'),
+        ref('battery-2', 'positive'),
+      ),
+      createWire(
+        'current-07-wire-2',
+        ref('battery-2', 'negative'),
+        ref('rheostat-1', 'a'),
+      ),
+      createWire(
+        'current-07-wire-3',
+        ref('rheostat-1', 'b'),
+        ref('bulb-1', 'a'),
+      ),
+      createWire(
+        'current-07-wire-4',
+        ref('bulb-1', 'b'),
+        ref('battery-1', 'positive'),
+      ),
+    ],
+    availableComponents: [],
+    success: [
+      { type: 'circuit_ok' },
+      { type: 'component_state', componentId: 'bulb-1', state: 'bright' },
+    ],
+    hintTextIds: [
+      'level.current.07.hint.1',
+      'level.current.07.hint.2',
+      'level.current.07.hint.3',
+    ],
+    vocabularyIds: ['puissance'],
+    nextLevelId: 'assembly-01',
   },
 ];
