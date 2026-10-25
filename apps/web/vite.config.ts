@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 const webPackage = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { version?: string };
-const appVersion = webPackage.version ?? '0.3.0';
+const appVersion = webPackage.version ?? '0.2.0';
 
 export default defineConfig({
   define: {

@@ -342,6 +342,9 @@ seul l'aperçu visuel bouge.
 L’« Atelier libre » est accessible depuis l’accueil et depuis la carte des
 niveaux. Il reprend le plan de travail, sans objectif ni étoile :
 
+- le plan s’ouvre vide : l’enfant choisit lui-même ses composants. Si aucune
+  création n’a encore été enregistrée, Zap suggère de poser une pile et une
+  ampoule ;
 - la palette offre tous les composants de l’atelier (pile, ampoule,
   interrupteur, moteur, LED, résistance, variateur, métal et gomme) sur tous les
   appareils. Les quantités sont illimitées ;
@@ -654,7 +657,7 @@ Le front est une PWA générée par `vite-plugin-pwa` (Workbox, mode `generateSW
   terminée ! » s’affiche ensuite sur toutes les pages. Aucune vérification
   périodique n’est lancée, pour ne jamais interrompre une partie ouverte.
 - La version applicative vient de `apps/web/package.json` (actuellement
-  `0.3.0`). Elle est écrite dans `localStorage` sous
+  `0.2.0`). Elle est écrite dans `localStorage` sous
   `circuits-de-zap:app-version:v1`, affichée en haut à droite de l’accueil et
   dans le pied de page de l’espace adulte.
 - Le service worker n’est enregistré qu’en build de production

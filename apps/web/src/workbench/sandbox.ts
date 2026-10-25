@@ -1,5 +1,4 @@
 import {
-  createComponent,
   serializeCircuit,
   type Circuit,
   type CircuitDocument,
@@ -28,22 +27,11 @@ export function sandboxPaletteItems(): PaletteItem[] {
   );
 }
 
-export function createSandboxStarter(): CircuitDocument {
-  return serializeCircuit({
-    components: [
-      createComponent('battery', {
-        id: 'battery-1',
-        position: { x: 3, y: 4 },
-      }),
-      createComponent('bulb', {
-        id: 'bulb-1',
-        position: { x: 8, y: 4 },
-      }),
-    ],
-    wires: [],
-  });
-}
-
+/**
+ * The free workshop opens on a blank board: the child picks every component
+ * from the palette. Zap's first curiosity prompt suggests a battery and a bulb
+ * for children who do not know where to start.
+ */
 export function createEmptySandbox(): CircuitDocument {
   return serializeCircuit({ components: [], wires: [] });
 }

@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   chooseSandboxCuriosity,
-  createSandboxStarter,
+  createEmptySandbox,
   nextSandboxName,
   sandboxCuriosityTips,
   sandboxFingerprint,
@@ -51,12 +51,12 @@ describe('sandbox naming', () => {
 });
 
 describe('sandbox circuit helpers', () => {
-  it('creates a valid starter circuit without wires', () => {
-    const starter = createSandboxStarter();
+  it('creates a blank board without any component', () => {
+    const board = createEmptySandbox();
 
-    expect(starter.components).toHaveLength(2);
-    expect(starter.wires).toHaveLength(0);
-    expect(JSON.parse(sandboxFingerprint(starter))).toBeDefined();
+    expect(board.components).toHaveLength(0);
+    expect(board.wires).toHaveLength(0);
+    expect(JSON.parse(sandboxFingerprint(board))).toBeDefined();
   });
 });
 

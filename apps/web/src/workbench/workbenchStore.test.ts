@@ -1,7 +1,7 @@
 import { getLevelById } from '@circuits/shared/levels';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { createSandboxStarter } from './sandbox';
+import { createEmptySandbox } from './sandbox';
 import { useWorkbenchStore } from './workbenchStore';
 
 function store() {
@@ -428,7 +428,7 @@ describe('workbench store', () => {
       updatedAt: 1000,
     };
 
-    store().loadSandboxCircuit(createSandboxStarter(), work, 'guest');
+    store().loadSandboxCircuit(createEmptySandbox(), work, 'guest');
 
     expect(store().sandboxActive).toBe(true);
     expect(store().levelId).toBeNull();
@@ -440,7 +440,7 @@ describe('workbench store', () => {
     store().addComponent('bulb', {}, { x: 6, y: 2 }, 'bulb');
     store().addComponent('bulb', {}, { x: 7, y: 2 }, 'bulb');
 
-    expect(store().circuit.components).toHaveLength(5);
+    expect(store().circuit.components).toHaveLength(3);
     expect(store().availableCounts).toBeNull();
 
     store().clearSandboxCircuit();
@@ -451,7 +451,7 @@ describe('workbench store', () => {
   });
 
   it('leaves the sandbox when a level starts', () => {
-    store().loadSandboxCircuit(createSandboxStarter(), null, 'guest');
+    store().loadSandboxCircuit(createEmptySandbox(), null, 'guest');
     expect(store().sandboxActive).toBe(true);
 
     const level = getLevelById('light-01');
