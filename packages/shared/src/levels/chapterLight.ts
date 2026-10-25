@@ -442,19 +442,6 @@ export const CHAPTER_1_LEVELS: LevelDefinition[] = [
       'level.10.hint.3',
     ],
     vocabularyIds: ['circuitFerme', 'interrupteur', 'moteur'],
-    nextLevelId: null,
+    nextLevelId: 'current-01',
   },
 ];
-
-export function getLevelById(levelId: string): LevelDefinition | undefined {
-  return CHAPTER_1_LEVELS.find((level) => level.id === levelId);
-}
-
-export function getNextLevel(levelId: string): LevelDefinition | undefined {
-  const level = getLevelById(levelId);
-  if (level === null || level === undefined || level.nextLevelId === null) {
-    return undefined;
-  }
-
-  return getLevelById(level.nextLevelId);
-}

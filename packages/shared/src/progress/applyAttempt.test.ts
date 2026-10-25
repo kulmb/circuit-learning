@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyAttemptToProgress,
   initialPlayerProgress,
+  reconcileProgress,
 } from './applyAttempt';
 
 describe('applyAttemptToProgress', () => {
@@ -11,7 +12,43 @@ describe('applyAttemptToProgress', () => {
 
     expect(progress.levels['light-01']?.status).toBe('unlocked');
     expect(progress.levels['light-02']?.status).toBe('locked');
+    expect(progress.levels['current-01']?.status).toBe('locked');
     expect(progress.vocabulary).toEqual([]);
+  });
+
+  it('unlocks chapter 2 after the last chapter 1 level', () => {
+    const progress = applyAttemptToProgress(
+      initialPlayerProgress(),
+      'light-10',
+      {
+        success: true,
+        hintsUsed: 0,
+        durationMs: 5000,
+        errorsDetected: [],
+      },
+      1000,
+    );
+
+    expect(progress.levels['current-01']?.status).toBe('unlocked');
+  });
+
+  it('reconciles progress saved before chapter 2 existed', () => {
+    const initial = initialPlayerProgress();
+    const oldProgress = {
+      levels: {
+        ...initial.levels,
+        'light-10': {
+          ...initial.levels['light-10']!,
+          status: 'completed' as const,
+        },
+      },
+      vocabulary: ['circuitFerme'],
+    };
+    const progress = reconcileProgress(oldProgress);
+
+    expect(progress.levels['current-01']?.status).toBe('unlocked');
+    expect(progress.levels['current-02']?.status).toBe('locked');
+    expect(progress.vocabulary).toEqual(['circuitFerme']);
   });
 
   it('completes a level, unlocks the next and adds vocabulary', () => {

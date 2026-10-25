@@ -1,6 +1,7 @@
 import {
-  CHAPTER_1_LEVEL_METADATA,
+  ALL_LEVEL_METADATA,
   getLevelMetadata,
+  reconcileProgress,
   starsForHints,
   type AttemptResult,
   type AttemptStart,
@@ -228,7 +229,7 @@ export class LocalProgressRepository implements ProgressRepository {
 function createInitialState(): StoredState {
   const levels: Record<string, LevelProgress> = {};
 
-  for (const [index, level] of CHAPTER_1_LEVEL_METADATA.entries()) {
+  for (const [index, level] of ALL_LEVEL_METADATA.entries()) {
     levels[level.id] = createLevelProgress(
       level.id,
       index === 0 ? 'unlocked' : 'locked',
@@ -256,7 +257,7 @@ function normalizeState(raw: unknown): StoredState {
 
   const levels: Record<string, LevelProgress> = {};
 
-  for (const [index, level] of CHAPTER_1_LEVEL_METADATA.entries()) {
+  for (const [index, level] of ALL_LEVEL_METADATA.entries()) {
     const stored = record.levels?.[level.id];
     levels[level.id] =
       stored !== undefined
@@ -269,15 +270,20 @@ function normalizeState(raw: unknown): StoredState {
       (level) => level.status === 'unlocked' || level.status === 'completed',
     )
   ) {
-    const first = CHAPTER_1_LEVEL_METADATA[0];
+    const first = ALL_LEVEL_METADATA[0];
     if (first !== undefined) {
       levels[first.id] = createLevelProgress(first.id, 'unlocked');
     }
   }
 
+  const reconciledLevels = reconcileProgress({
+    levels,
+    vocabulary: [],
+  }).levels;
+
   return {
     version: 1,
-    levels,
+    levels: reconciledLevels,
     attempts: Array.isArray(record.attempts) ? record.attempts : [],
     vocabulary: Array.isArray(record.vocabulary)
       ? [...new Set(record.vocabulary.filter((id): id is string => typeof id === 'string'))]

@@ -4,6 +4,7 @@ import {
   type Circuit,
   type CircuitComponent,
   type CircuitSimulation,
+  type RheostatComponent,
   type TerminalRef,
   type Vec2,
 } from '@circuits/shared';
@@ -67,6 +68,8 @@ import type { DisplayMode } from './displayMode';
 import {
   toolbarButtonSize,
   toolbarIconSize,
+  toolbarSliderHeight,
+  toolbarSliderWidth,
 } from './toolbarLayout';
 import type { Selection } from './workbenchStore';
 
@@ -101,6 +104,11 @@ export interface WorkbenchSvgProps {
   onDeleteSelection: () => void;
   onDeleteComponent: (componentId: string) => void;
   onToggleSwitch: (componentId: string) => void;
+  onSetRheostatWiper: (
+    componentId: string,
+    wiperPosition: number,
+    recordHistory: boolean,
+  ) => void;
   onAddWire: (from: TerminalRef, to: TerminalRef) => void;
 }
 
@@ -138,12 +146,21 @@ interface PanGesture extends BaseGesture {
   anchorBoard: Point;
 }
 
+interface RheostatGesture extends BaseGesture {
+  kind: 'rheostat';
+  componentId: string;
+  sliderLeft: number;
+  sliderWidth: number;
+  historyPushed: boolean;
+}
+
 type BoardGesture =
   | ComponentGesture
   | TerminalGesture
   | WireGesture
   | BlankGesture
-  | PanGesture;
+  | PanGesture
+  | RheostatGesture;
 
 interface PinchGesture {
   startView: BoardView;
@@ -190,6 +207,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
   onDeleteSelection,
   onDeleteComponent,
   onToggleSwitch,
+  onSetRheostatWiper,
   onAddWire,
 }: WorkbenchSvgProps) {
   const isCompact = useLayout().size === 'compact';
@@ -560,6 +578,55 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
       element?.closest('[data-terminal-component]') ?? null;
     const componentElement = element?.closest('[data-component-id]') ?? null;
     const wireElement = element?.closest('[data-wire-id]') ?? null;
+    const rheostatElement =
+      element?.closest('[data-rheostat-slider]') ?? null;
+
+    if (rheostatElement !== null) {
+      const componentId = rheostatElement.getAttribute(
+        'data-rheostat-slider',
+      );
+      const rheostat =
+        componentId === null
+          ? undefined
+          : circuit.components.find(
+              (item) => item.id === componentId,
+            );
+
+      if (rheostat?.type === 'rheostat' && componentId !== null) {
+        const sliderRect = rheostatElement.getBoundingClientRect();
+
+        if (sliderRect.width > 0) {
+          const position = clamp(
+            (client.x - sliderRect.left) / sliderRect.width,
+            0,
+            1,
+          );
+          const changed =
+            Math.abs(rheostat.wiperPosition - position) >= 1e-9;
+
+          gestureRef.current = {
+            kind: 'rheostat',
+            pointerId,
+            startClient,
+            pointerType,
+            dragged: false,
+            view: startView,
+            componentId,
+            sliderLeft: sliderRect.left,
+            sliderWidth: sliderRect.width,
+            historyPushed: changed,
+          };
+          onSelect({ kind: 'component', id: componentId });
+          onSetPendingTerminal(null);
+
+          if (changed) {
+            onSetRheostatWiper(componentId, position, true);
+          }
+
+          return;
+        }
+      }
+    }
 
     if (terminalElement !== null) {
       const componentId = terminalElement.getAttribute('data-terminal-component');
@@ -678,6 +745,35 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
       return;
     }
 
+    if (gesture.kind === 'rheostat') {
+      if (gesture.sliderWidth <= 0) {
+        return;
+      }
+
+      const position = clamp(
+        (client.x - gesture.sliderLeft) / gesture.sliderWidth,
+        0,
+        1,
+      );
+      const rheostat = circuit.components.find(
+        (item) => item.id === gesture.componentId,
+      );
+
+      if (
+        rheostat?.type === 'rheostat' &&
+        Math.abs(rheostat.wiperPosition - position) >= 1e-9
+      ) {
+        onSetRheostatWiper(
+          gesture.componentId,
+          position,
+          !gesture.historyPushed,
+        );
+        gesture.historyPushed = true;
+      }
+
+      return;
+    }
+
     const dragged =
       gesture.dragged || isDragGesture(gesture.startClient, client);
 
@@ -787,6 +883,11 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
 
     gestureRef.current = null;
     updateTrashHover(false);
+
+    if (gesture.kind === 'rheostat') {
+      releaseAcquiredPointerIfDone();
+      return;
+    }
 
     const wasDragged = gesture.dragged;
     const rect = measureElementRect(event.currentTarget, board);
@@ -1133,16 +1234,29 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
       {selected !== null &&
       selectedComponent !== undefined &&
       dragPreview === null &&
-      !lockedComponentIds.includes(selectedComponent.id) ? (
-        <SelectionToolbar
-          component={selectedComponent}
-          components={circuit.components}
-          board={board}
-          compact={isCompact}
-          viewportScale={scale}
-          onRotate={() => onRotateComponent(selectedComponent.id)}
-          onDelete={onDeleteSelection}
-        />
+      (selectedComponent.type === 'rheostat' ||
+        !lockedComponentIds.includes(selectedComponent.id)) ? (
+        selectedComponent.type === 'rheostat' ? (
+          <RheostatToolbar
+            component={selectedComponent}
+            components={circuit.components}
+            board={board}
+            compact={isCompact}
+            viewportScale={scale}
+            locked={lockedComponentIds.includes(selectedComponent.id)}
+            onDelete={onDeleteSelection}
+          />
+        ) : (
+          <SelectionToolbar
+            component={selectedComponent}
+            components={circuit.components}
+            board={board}
+            compact={isCompact}
+            viewportScale={scale}
+            onRotate={() => onRotateComponent(selectedComponent.id)}
+            onDelete={onDeleteSelection}
+          />
+        )
       ) : null}
 
       {selectedWire !== undefined && dragPreview === null ? (
@@ -1332,6 +1446,157 @@ function SelectionToolbar({
         tone="danger"
         onActivate={onDelete}
       />
+    </g>
+  );
+}
+
+interface RheostatToolbarProps {
+  component: RheostatComponent;
+  components: CircuitComponent[];
+  board: BoardDimensions;
+  compact: boolean;
+  viewportScale: number;
+  locked: boolean;
+  onDelete: () => void;
+}
+
+function RheostatToolbar({
+  component,
+  components,
+  board,
+  compact,
+  viewportScale,
+  locked,
+  onDelete,
+}: RheostatToolbarProps) {
+  const buttonSize = toolbarButtonSize(compact, viewportScale);
+  const sliderWidth = toolbarSliderWidth(viewportScale);
+  const sliderHeight = toolbarSliderHeight(viewportScale);
+  const visualScale = buttonSize / 56;
+  const gap = 8 * visualScale;
+  const padding = 6 * visualScale;
+  const width =
+    padding * 2 + sliderWidth + (locked ? 0 : gap + buttonSize);
+  const height = padding * 2 + Math.max(sliderHeight, buttonSize);
+  const { left, top } = chooseToolbarPosition(
+    component,
+    components,
+    width,
+    height,
+    board,
+  );
+  const trackPadding = sliderHeight * 0.22;
+  const trackX = padding + trackPadding;
+  const trackWidth = sliderWidth - trackPadding * 2;
+  const trackY = padding + sliderHeight / 2;
+  const trackHeight = Math.max(4, sliderHeight * 0.14);
+  const thumbRadius = sliderHeight * 0.22;
+  const thumbX = trackX + trackWidth * component.wiperPosition;
+  const buttonY = padding + (sliderHeight - buttonSize) / 2;
+
+  return (
+    <g transform={`translate(${left} ${top})`} data-toolbar="true">
+      <rect
+        width={width}
+        height={height}
+        rx={18}
+        fill="#ffffff"
+        stroke="#c7d8e8"
+        strokeWidth={2}
+        pointerEvents="none"
+      />
+
+      <g
+        data-rheostat-slider={component.id}
+        role="slider"
+        aria-label={fr.components.rheostat.label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(component.wiperPosition * 100)}
+      >
+        <rect
+          x={padding}
+          y={padding}
+          width={sliderWidth}
+          height={sliderHeight}
+          fill="transparent"
+          pointerEvents="all"
+        />
+        <rect
+          x={trackX}
+          y={trackY - trackHeight / 2}
+          width={trackWidth}
+          height={trackHeight}
+          rx={trackHeight / 2}
+          fill="#e2e8f0"
+          pointerEvents="none"
+        />
+        <rect
+          x={trackX}
+          y={trackY - trackHeight / 2}
+          width={Math.max(0, thumbX - trackX)}
+          height={trackHeight}
+          rx={trackHeight / 2}
+          fill="#f59e0b"
+          pointerEvents="none"
+        />
+        <circle
+          cx={thumbX}
+          cy={trackY}
+          r={thumbRadius}
+          fill="#ffffff"
+          stroke="#b45309"
+          strokeWidth={2.5}
+          pointerEvents="none"
+        />
+        <line
+          x1={thumbX}
+          y1={trackY - thumbRadius * 0.45}
+          x2={thumbX}
+          y2={trackY + thumbRadius * 0.45}
+          stroke="#b45309"
+          strokeWidth={2}
+          strokeLinecap="round"
+          pointerEvents="none"
+        />
+        <line
+          x1={thumbX - thumbRadius * 0.28}
+          y1={trackY - thumbRadius * 0.45}
+          x2={thumbX - thumbRadius * 0.28}
+          y2={trackY + thumbRadius * 0.45}
+          stroke="#b45309"
+          strokeWidth={1.4}
+          strokeLinecap="round"
+          pointerEvents="none"
+          opacity={0.55}
+        />
+        <line
+          x1={thumbX + thumbRadius * 0.28}
+          y1={trackY - thumbRadius * 0.45}
+          x2={thumbX + thumbRadius * 0.28}
+          y2={trackY + thumbRadius * 0.45}
+          stroke="#b45309"
+          strokeWidth={1.4}
+          strokeLinecap="round"
+          pointerEvents="none"
+          opacity={0.55}
+        />
+      </g>
+
+      {locked ? null : (
+        <g transform={`translate(${padding + sliderWidth + gap} ${buttonY})`}>
+          <ToolbarButton
+            x={0}
+            y={0}
+            size={buttonSize}
+            viewportScale={viewportScale}
+            label={fr.workbench.delete}
+            icon="trash"
+            tone="danger"
+            onActivate={onDelete}
+          />
+        </g>
+      )}
     </g>
   );
 }

@@ -3,6 +3,7 @@ import { assertId } from './ids';
 import type {
   CircuitComponent,
   ComponentType,
+  RheostatComponent,
   Rotation,
   Terminal,
   TerminalRef,
@@ -19,6 +20,7 @@ export const COMPONENT_TYPES = [
   'buzzer',
   'led',
   'resistor',
+  'rheostat',
   'material',
 ] as const satisfies readonly ComponentType[];
 
@@ -34,6 +36,9 @@ export const DEFAULT_LED_FORWARD_VOLTAGE = 0.6;
 export const DEFAULT_SWITCH_RESISTANCE = 0.01;
 export const DEFAULT_MATERIAL_RESISTANCE = 0.01;
 export const DEFAULT_RESISTOR_RESISTANCE = 10;
+export const DEFAULT_RHEOSTAT_MIN_RESISTANCE = 2;
+export const DEFAULT_RHEOSTAT_MAX_RESISTANCE = 20;
+export const DEFAULT_RHEOSTAT_WIPER_POSITION = 0;
 export const SHORT_CIRCUIT_CURRENT = 5;
 
 export const NOMINAL_CURRENTS = {
@@ -52,6 +57,7 @@ export const EXPECTED_TERMINAL_IDS: Record<ComponentType, readonly [string, stri
   buzzer: ['a', 'b'],
   led: ['anode', 'cathode'],
   resistor: ['a', 'b'],
+  rheostat: ['a', 'b'],
   material: ['a', 'b'],
 };
 
@@ -77,6 +83,7 @@ const TERMINAL_LAYOUTS: Record<ComponentType, readonly Terminal[]> = {
     { id: 'cathode', label: 'K', polarity: 'cathode', offset: { x: 0.6, y: 0 } },
   ],
   resistor: twoTerminals(),
+  rheostat: twoTerminals(),
   material: twoTerminals(),
 };
 
@@ -90,6 +97,9 @@ export interface CreateComponentOptions {
   voltage?: number;
   internalResistance?: number;
   forwardVoltage?: number;
+  minResistance?: number;
+  maxResistance?: number;
+  wiperPosition?: number;
 }
 
 export function isComponentType(value: unknown): value is ComponentType {
@@ -177,6 +187,34 @@ export function createComponent(
           'resistance',
         ),
       };
+    case 'rheostat': {
+      const minResistance = positive(
+        options.minResistance ?? DEFAULT_RHEOSTAT_MIN_RESISTANCE,
+        'minimum resistance',
+      );
+      const maxResistance = positive(
+        options.maxResistance ?? DEFAULT_RHEOSTAT_MAX_RESISTANCE,
+        'maximum resistance',
+      );
+
+      if (maxResistance <= minResistance) {
+        throw new CircuitError(
+          'invalid_circuit',
+          `Rheostat ${id} maximum resistance must exceed its minimum`,
+        );
+      }
+
+      return {
+        ...base,
+        type,
+        minResistance,
+        maxResistance,
+        wiperPosition: unitInterval(
+          options.wiperPosition ?? DEFAULT_RHEOSTAT_WIPER_POSITION,
+          'wiper position',
+        ),
+      };
+    }
     case 'material':
       return {
         ...base,
@@ -229,6 +267,15 @@ export function cloneWire(wire: Wire): Wire {
   }
 
   return clone;
+}
+
+/** Effective resistance of a rheostat between its two terminals. */
+export function rheostatResistance(component: RheostatComponent): number {
+  return (
+    component.minResistance +
+    (component.maxResistance - component.minResistance) *
+      component.wiperPosition
+  );
 }
 
 export function getTerminalWorldPosition(
@@ -303,6 +350,16 @@ function positive(value: number, field: string): number {
 function nonNegative(value: number, field: string): number {
   if (!Number.isFinite(value) || value < 0) {
     throw new CircuitError('invalid_circuit', `${field} must be zero or positive`);
+  }
+  return value;
+}
+
+function unitInterval(value: number, field: string): number {
+  if (!Number.isFinite(value) || value < 0 || value > 1) {
+    throw new CircuitError(
+      'invalid_circuit',
+      `${field} must be between zero and one`,
+    );
   }
   return value;
 }

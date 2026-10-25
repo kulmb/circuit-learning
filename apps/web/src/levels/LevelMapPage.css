@@ -159,6 +159,19 @@
   }
 }
 
+.level-map__chapter {
+  width: min(1100px, 100%);
+  margin: 26px auto 0;
+}
+
+.level-map__chapter-title {
+  margin: 0 auto;
+  color: var(--color-ink);
+  font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+  font-weight: 900;
+  text-align: center;
+}
+
 /* Large and medium: a horizontal path of cards. */
 .level-map__path {
   display: flex;

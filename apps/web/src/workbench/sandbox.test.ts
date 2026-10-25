@@ -24,6 +24,7 @@ describe('sandbox palette', () => {
       'motor',
       'led',
       'resistor',
+      'rheostat',
       'metal',
       'gum',
     ]);

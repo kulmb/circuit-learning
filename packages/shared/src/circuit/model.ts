@@ -270,6 +270,26 @@ function validateComponent(component: CircuitComponent): void {
     case 'resistor':
       assertPositive(component.resistance, `${component.type} ${component.id} resistance`);
       break;
+    case 'rheostat':
+      assertPositive(
+        component.minResistance,
+        `rheostat ${component.id} minimum resistance`,
+      );
+      assertPositive(
+        component.maxResistance,
+        `rheostat ${component.id} maximum resistance`,
+      );
+      if (component.maxResistance <= component.minResistance) {
+        throw new CircuitError(
+          'invalid_circuit',
+          `rheostat ${component.id} maximum resistance must exceed its minimum`,
+        );
+      }
+      assertUnitInterval(
+        component.wiperPosition,
+        `rheostat ${component.id} wiper position`,
+      );
+      break;
     case 'switch':
       assertBoolean(component.closed, `switch ${component.id} closed`);
       assertPositive(
@@ -318,6 +338,15 @@ function assertNonNegative(value: number, field: string): void {
 function assertBoolean(value: boolean, field: string): void {
   if (typeof value !== 'boolean') {
     throw new CircuitError('invalid_circuit', `${field} must be a boolean`);
+  }
+}
+
+function assertUnitInterval(value: number, field: string): void {
+  if (!Number.isFinite(value) || value < 0 || value > 1) {
+    throw new CircuitError(
+      'invalid_circuit',
+      `${field} must be between zero and one`,
+    );
   }
 }
 

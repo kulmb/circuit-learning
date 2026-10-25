@@ -27,6 +27,12 @@ function completeCircuit(): Circuit {
       createComponent('buzzer', { id: 'buzzer' }),
       createComponent('led', { id: 'led', forwardVoltage: 0.7 }),
       createComponent('resistor', { id: 'resistor', resistance: 22 }),
+      createComponent('rheostat', {
+        id: 'rheostat',
+        minResistance: 3,
+        maxResistance: 30,
+        wiperPosition: 0.4,
+      }),
       createComponent('material', { id: 'material', conductive: true }),
     ],
     wires: [
@@ -92,6 +98,42 @@ describe('circuit serialization', () => {
     }
 
     firstWire.from.terminalId = 'missing';
+
+    expect(() => deserializeCircuit(document)).toThrow(CircuitError);
+  });
+
+  it('rejects an invalid rheostat wiper position', () => {
+    const document = JSON.parse(
+      JSON.stringify(serializeCircuit(completeCircuit())),
+    ) as CircuitDocument;
+    const rheostat = document.components.find(
+      (component) => component.type === 'rheostat',
+    );
+
+    expect(rheostat).toBeDefined();
+    if (rheostat?.type !== 'rheostat') {
+      throw new Error('Missing serialized rheostat');
+    }
+
+    rheostat.wiperPosition = 1.2;
+
+    expect(() => deserializeCircuit(document)).toThrow(CircuitError);
+  });
+
+  it('rejects a rheostat whose maximum resistance is not above its minimum', () => {
+    const document = JSON.parse(
+      JSON.stringify(serializeCircuit(completeCircuit())),
+    ) as CircuitDocument;
+    const rheostat = document.components.find(
+      (component) => component.type === 'rheostat',
+    );
+
+    expect(rheostat).toBeDefined();
+    if (rheostat?.type !== 'rheostat') {
+      throw new Error('Missing serialized rheostat');
+    }
+
+    rheostat.maxResistance = rheostat.minResistance;
 
     expect(() => deserializeCircuit(document)).toThrow(CircuitError);
   });

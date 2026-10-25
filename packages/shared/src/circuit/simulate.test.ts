@@ -300,6 +300,66 @@ describe('circuit simulation', () => {
     expect(stateOf(result, 'battery2').current).toBeGreaterThan(0);
   });
 
+  it('dims the bulb when the rheostat wiper increases the resistance', () => {
+    const circuit: Circuit = {
+      components: [
+        createComponent('battery', { id: 'battery' }),
+        createComponent('rheostat', {
+          id: 'rheostat',
+          wiperPosition: 0,
+        }),
+        createComponent('bulb', { id: 'bulb' }),
+      ],
+      wires: [
+        createWire('w1', ref('battery', 'positive'), ref('rheostat', 'a')),
+        createWire('w2', ref('rheostat', 'b'), ref('bulb', 'a')),
+        createWire('w3', ref('bulb', 'b'), ref('battery', 'negative')),
+      ],
+    };
+
+    const low = simulateCircuit(circuit);
+    expect(low.ok).toBe(true);
+    expect(low.shortCircuit).toBe(false);
+    expect(stateOf(low, 'bulb').state).toBe('normal');
+
+    circuit.components = circuit.components.map((component) =>
+      component.type === 'rheostat'
+        ? { ...component, wiperPosition: 1 }
+        : component,
+    );
+
+    const high = simulateCircuit(circuit);
+    expect(high.ok).toBe(true);
+    expect(stateOf(high, 'bulb').state).toBe('dim');
+    expect(stateOf(high, 'bulb').intensity).toBeLessThan(
+      stateOf(low, 'bulb').intensity,
+    );
+  });
+
+  it('keeps the bulb normal when the rheostat is in parallel', () => {
+    const circuit: Circuit = {
+      components: [
+        createComponent('battery', { id: 'battery' }),
+        createComponent('rheostat', {
+          id: 'rheostat',
+          wiperPosition: 1,
+        }),
+        createComponent('bulb', { id: 'bulb' }),
+      ],
+      wires: [
+        createWire('w1', ref('battery', 'positive'), ref('bulb', 'a')),
+        createWire('w2', ref('bulb', 'b'), ref('battery', 'negative')),
+        createWire('w3', ref('battery', 'positive'), ref('rheostat', 'a')),
+        createWire('w4', ref('rheostat', 'b'), ref('battery', 'negative')),
+      ],
+    };
+
+    const result = simulateCircuit(circuit);
+
+    expect(result.ok).toBe(true);
+    expect(stateOf(result, 'bulb').state).toBe('normal');
+  });
+
   it('detects a direct short circuit and reports the wire', () => {
     const circuit: Circuit = {
       components: [createComponent('battery', { id: 'battery' })],

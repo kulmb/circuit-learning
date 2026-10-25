@@ -307,6 +307,87 @@ describe('workbench store', () => {
     );
   });
 
+  it('inserts a second battery in series and brightens the bulb', () => {
+    const level = getLevelById('current-02');
+    expect(level).toBeDefined();
+    if (!level) throw new Error('Level missing');
+
+    store().loadLevel(level);
+    expect(store().simulation.states['bulb-1']?.state).toBe('normal');
+    expect(store().availableCounts).toEqual({ battery: 1 });
+
+    const topWire = store().circuit.wires.find(
+      (wire) => wire.id === 'current-02-wire-1',
+    );
+    expect(topWire).toBeDefined();
+    if (topWire === undefined) throw new Error('Top wire missing');
+
+    store().addComponentOnWire(
+      'battery',
+      {},
+      { x: 5, y: 4 },
+      'battery',
+      topWire.id,
+      180,
+    );
+
+    expect(store().simulation.states['bulb-1']?.state).toBe('bright');
+    expect(store().availableCounts).toEqual({ battery: 0 });
+  });
+
+  it('adjusts a locked rheostat and keeps one undo entry per drag', () => {
+    const level = getLevelById('current-05');
+    expect(level).toBeDefined();
+    if (!level) throw new Error('Level missing');
+
+    store().loadLevel(level);
+    expect(store().lockedComponentIds).toContain('rheostat-1');
+    expect(store().simulation.states['bulb-1']?.state).toBe('normal');
+
+    const historyBefore = store().history.length;
+
+    store().setRheostatWiper('rheostat-1', 0.5, true);
+    store().setRheostatWiper('rheostat-1', 1, false);
+
+    expect(store().history).toHaveLength(historyBefore + 1);
+    expect(store().simulation.states['bulb-1']?.state).toBe('dim');
+
+    store().undo();
+
+    const rheostat = store().circuit.components.find(
+      (component) => component.id === 'rheostat-1',
+    );
+    expect(
+      rheostat?.type === 'rheostat' ? rheostat.wiperPosition : null,
+    ).toBe(0);
+    expect(store().simulation.states['bulb-1']?.state).toBe('normal');
+  });
+
+  it('clamps the rheostat wiper between zero and one', () => {
+    const level = getLevelById('current-05');
+    expect(level).toBeDefined();
+    if (!level) throw new Error('Level missing');
+
+    store().loadLevel(level);
+    store().setRheostatWiper('rheostat-1', 3, true);
+
+    let rheostat = store().circuit.components.find(
+      (component) => component.id === 'rheostat-1',
+    );
+    expect(
+      rheostat?.type === 'rheostat' ? rheostat.wiperPosition : null,
+    ).toBe(1);
+
+    store().setRheostatWiper('rheostat-1', -2, true);
+
+    rheostat = store().circuit.components.find(
+      (component) => component.id === 'rheostat-1',
+    );
+    expect(
+      rheostat?.type === 'rheostat' ? rheostat.wiperPosition : null,
+    ).toBe(0);
+  });
+
   it('uses deterministic ids for the final level components', () => {
     const level = getLevelById('light-10');
     expect(level).toBeDefined();

@@ -534,6 +534,60 @@ describe('workbench interactions', () => {
     ).toBeInTheDocument();
   });
 
+  it('dims the bulb with the rheostat slider on a locked variator', async () => {
+    const level = getLevelById('current-05');
+    if (!level) throw new Error('Level missing');
+
+    render(
+      <WorkbenchPage level={level} onBack={() => undefined} />,
+    );
+    getSvg();
+
+    expect(useWorkbenchStore.getState().simulation.states['bulb-1']?.state)
+      .toBe('normal');
+
+    tap(getComponent('rheostat-1'), 200, 200);
+
+    const slider = document.querySelector(
+      '[data-rheostat-slider="rheostat-1"]',
+    );
+    expect(slider).not.toBeNull();
+    if (!(slider instanceof Element)) throw new Error('Slider missing');
+
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      width: 144,
+      height: 56,
+      right: 144,
+      bottom: 56,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    fireEvent.pointerDown(slider, {
+      pointerId: 2,
+      pointerType: 'mouse',
+      button: 0,
+      clientX: 144,
+      clientY: 28,
+    });
+    fireEvent.pointerUp(slider, {
+      pointerId: 2,
+      pointerType: 'mouse',
+      button: 0,
+      clientX: 144,
+      clientY: 28,
+    });
+
+    expect(useWorkbenchStore.getState().simulation.states['bulb-1']?.state)
+      .toBe('dim');
+    expect(
+      await screen.findByRole('heading', { name: getText('success.title') }),
+    ).toBeInTheDocument();
+  });
+
   it('uses level hints and lowers the star rating', async () => {
     const level = getLevelById('light-01');
     if (!level) throw new Error('Level missing');

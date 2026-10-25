@@ -36,5 +36,9 @@ MONGODB_URI='mongodb://127.0.0.1:27019/circuits?directConnection=true' \
 
 WEB_DEPLOY_DIR="$target_dir" "$root_dir/scripts/deploy-web.sh"
 
+# 3. Standalone architecture page, outside the Vite build. It lives at
+#    /technique and is re-copied here because deploy-web.sh uses rsync --delete.
+WEB_DEPLOY_DIR="$target_dir" "$root_dir/scripts/deploy-technique.sh"
+
 echo "Déploiement de développement terminé (front : $target_dir)."
 echo "Vérifiez : curl -fsS https://circuit-learning-dev.87543362.xyz/api/health"

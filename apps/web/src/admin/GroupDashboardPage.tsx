@@ -5,7 +5,9 @@ import {
   type GroupDashboardStudent,
 } from '@circuits/shared';
 import {
-  CHAPTER_1_LEVELS,
+  ALL_LEVELS,
+  CHAPTERS,
+  getChapterForLevel,
   type LevelDefinition,
 } from '@circuits/shared/levels';
 import { useCallback, useEffect, useState } from 'react';
@@ -30,8 +32,17 @@ import {
 } from './AdminShared';
 import { adminTexts } from './fr';
 
+function chapterPrefix(level: LevelDefinition): string {
+  const chapter = getChapterForLevel(level.id);
+  const index = chapter === undefined
+    ? 0
+    : CHAPTERS.findIndex((entry) => entry.id === chapter.id) + 1;
+
+  return index > 0 ? `${index}·` : '';
+}
+
 function levelShortLabel(level: LevelDefinition): string {
-  return level.number === null ? '★' : String(level.number);
+  return `${chapterPrefix(level)}${level.number === null ? '★' : level.number}`;
 }
 
 function levelTitle(level: LevelDefinition): string {
@@ -45,7 +56,7 @@ function difficultyLevelLabel(level: LevelDefinition | undefined): string {
 
   return level.number === null
     ? 'à la transition'
-    : `au niveau ${level.number}`;
+    : `au niveau ${levelShortLabel(level)}`;
 }
 
 export function GroupDashboardPage({ groupId }: { groupId: string }) {
@@ -83,7 +94,7 @@ export function GroupDashboardPage({ groupId }: { groupId: string }) {
   }
 
   const levelById = new Map(
-    CHAPTER_1_LEVELS.map((level) => [level.id, level]),
+    ALL_LEVELS.map((level) => [level.id, level]),
   );
   const chartData = dashboard.levels.map((stats) => {
     const level = levelById.get(stats.levelId);
@@ -220,7 +231,7 @@ export function GroupDashboardPage({ groupId }: { groupId: string }) {
                 <thead>
                   <tr>
                     <th>{adminTexts.dashboard.student}</th>
-                    {CHAPTER_1_LEVELS.map((level) => (
+                    {ALL_LEVELS.map((level) => (
                       <th key={level.id} title={levelTitle(level)}>
                         {levelShortLabel(level)}
                       </th>
@@ -298,7 +309,7 @@ function MatrixRow({ student }: { student: GroupDashboardStudent }) {
           {avatarEmoji(student.avatarId)} {student.displayName}
         </button>
       </th>
-      {CHAPTER_1_LEVELS.map((level) => {
+      {ALL_LEVELS.map((level) => {
         const entry = levels.get(level.id);
 
         return (
@@ -372,7 +383,7 @@ function AvatarSummary({ student }: { student: GroupDashboardStudent }) {
         {avatarEmoji(student.avatarId)} <strong>{student.displayName}</strong>
       </span>
       <span>
-        {completed}/{CHAPTER_1_LEVELS.length}
+        {completed}/{ALL_LEVELS.length}
       </span>
     </span>
   );

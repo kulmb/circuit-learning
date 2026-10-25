@@ -28,6 +28,7 @@ export type ComponentType =
   | 'buzzer'
   | 'led'
   | 'resistor'
+  | 'rheostat'
   | 'material';
 
 export interface BaseComponent {
@@ -80,6 +81,14 @@ export interface ResistorComponent extends BaseComponent {
   resistance: number;
 }
 
+export interface RheostatComponent extends BaseComponent {
+  type: 'rheostat';
+  minResistance: number;
+  maxResistance: number;
+  /** 0 = minResistance, 1 = maxResistance. */
+  wiperPosition: number;
+}
+
 export interface MaterialComponent extends BaseComponent {
   type: 'material';
   conductive: boolean;
@@ -95,6 +104,7 @@ export type CircuitComponent =
   | BuzzerComponent
   | LedComponent
   | ResistorComponent
+  | RheostatComponent
   | MaterialComponent;
 
 export interface Wire {

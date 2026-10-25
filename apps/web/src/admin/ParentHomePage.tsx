@@ -5,7 +5,7 @@ import {
   type StudentDashboardResponse,
   type StudentSummary,
 } from '@circuits/shared';
-import { CHAPTER_1_LEVELS } from '@circuits/shared/levels';
+import { ALL_LEVELS } from '@circuits/shared/levels';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ApiClientError, apiRequest } from '../api/client';
@@ -113,7 +113,7 @@ export function ParentHomePage() {
 
                   <div className="admin-parent-stats">
                     <span>
-                      <strong>{completed}</strong> / {CHAPTER_1_LEVELS.length}
+                      <strong>{completed}</strong> / {ALL_LEVELS.length}
                       <small>
                         {adminTexts.parent.completedLevels(completed)}
                       </small>

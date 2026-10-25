@@ -311,7 +311,7 @@ pnpm --filter @circuits/api admin:password     # change un mot de passe
 - `serializeCircuit(circuit)` / `deserializeCircuit(json)` : format JSON versionné
 
 Les tests couvrent le circuit simple, le série, le parallèle, les courts-circuits,
-les LED, les matériaux conducteurs/isolants et la sérialisation.
+les LED, les matériaux conducteurs/isolants, le variateur et la sérialisation.
 
 ## Plan de travail
 
@@ -325,6 +325,8 @@ travail :
 - câblage par deux appuis sur des bornes, ou en glissant d'une borne à l'autre ;
 - sélection d'un composant avec rotation et suppression, interrupteurs activables
   d'un simple appui ;
+- sélection d'un variateur : un grand curseur apparaît dans la barre d'outils et
+  règle sa résistance au doigt ou à la souris ;
 - suppression par glisser vers la corbeille et bouton d'annulation ;
 - trois affichages : réaliste, symboles normalisés, ou les deux côte à côte ;
 - ampoule, moteur, buzzer et LED réagissent au courant ; le court-circuit secoue
@@ -340,9 +342,9 @@ seul l'aperçu visuel bouge.
 L’« Atelier libre » est accessible depuis l’accueil et depuis la carte des
 niveaux. Il reprend le plan de travail, sans objectif ni étoile :
 
-- la pile et l’ampoule sont toujours disponibles ; l’interrupteur, le métal et
-  la gomme, la résistance, le moteur et la LED apparaissent quand le niveau qui
-  les présente est terminé. Les quantités sont illimitées ;
+- la palette offre tous les composants de l’atelier (pile, ampoule,
+  interrupteur, moteur, LED, résistance, variateur, métal et gomme) sur tous les
+  appareils. Les quantités sont illimitées ;
 - la simulation, les animations de courant et l’avertissement de court-circuit
   restent actifs ;
 - après 24 secondes sans modification, Zap propose une idée en lien avec le
@@ -450,12 +452,15 @@ identifiant (`zap.hint.open.1`, `workbench.statusClosed`, etc.).
 ## Niveaux et progression
 
 Le chapitre 1, « La lumière », contient dix niveaux et une transition
-« Les symboles ». Les définitions, conditions de réussite et règles d'étoiles
-vivent dans `packages/shared/src/levels` ; le front les consomme sans les
-dupliquer. Les définitions complètes sont chargées avec l’écran de jeu
+« Les symboles ». Le chapitre 2, « La force du courant », contient six niveaux
+qui introduisent les bornes + / −, la tension (la « force » de la pile), le
+courant, la résistance et le variateur à glissière, puis une veilleuse
+réglable. Les définitions, conditions de réussite et règles d'étoiles vivent
+dans `packages/shared/src/levels` ; le front les consomme sans les dupliquer.
+Les définitions complètes sont chargées avec l’écran de jeu
 (`@circuits/shared/levels`), tandis que les règles de progression n’utilisent
-que `CHAPTER_1_LEVEL_METADATA` (identifiants, ordre, niveau suivant,
-vocabulaire).
+que `ALL_LEVEL_METADATA` (identifiants, ordre, niveau suivant, vocabulaire).
+Le registre `CHAPTERS` / `ALL_LEVELS` alimente la carte et les tableaux adultes.
 
 Une réussite affiche un bandeau non modal en bas de l'écran : étoiles, puis
 vocabulaire dans un panneau limité en hauteur. Il n'y a ni voile sombre ni
@@ -641,12 +646,15 @@ Le front est une PWA générée par `vite-plugin-pwa` (Workbox, mode `generateSW
 - Les navigations SPA retombent sur `index.html` ; un niveau déjà précaché se
   lance hors ligne. La progression hors ligne continue d’utiliser la file
   `ApiProgressRepository` (ou `localStorage` en invité).
-- Au chargement, si une nouvelle version est disponible, elle est activée
-  automatiquement et la page se recharge. Un bandeau « Mise à jour terminée ! »
-  s’affiche ensuite sur toutes les pages. Aucune vérification périodique n’est
-  lancée, pour ne jamais interrompre une partie ouverte.
+- Au démarrage, avant même le rendu React, le service worker est enregistré,
+  `registration.update()` est appelé et un worker resté en attente est activé.
+  La page se recharge alors automatiquement, avec un repli si Safari ne
+  déclenche pas `controlling` : l’enfant n’a pas besoin d’ouvrir la carte des
+  niveaux pour recevoir la nouvelle version. Un bandeau « Mise à jour
+  terminée ! » s’affiche ensuite sur toutes les pages. Aucune vérification
+  périodique n’est lancée, pour ne jamais interrompre une partie ouverte.
 - La version applicative vient de `apps/web/package.json` (actuellement
-  `0.2.0`). Elle est écrite dans `localStorage` sous
+  `0.3.0`). Elle est écrite dans `localStorage` sous
   `circuits-de-zap:app-version:v1`, affichée en haut à droite de l’accueil et
   dans le pied de page de l’espace adulte.
 - Le service worker n’est enregistré qu’en build de production

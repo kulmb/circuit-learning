@@ -2,6 +2,8 @@
 # Le front est servi depuis /srv/circuits/web-dev, l'API sous /api sur le port 3200.
 
 circuit-learning-dev.87543362.xyz {
+	redir /technique/ /technique 308
+
 	handle /api/* {
 		reverse_proxy 127.0.0.1:3200
 	}
@@ -10,6 +12,13 @@ circuit-learning-dev.87543362.xyz {
 		root * /srv/circuits/web-dev
 		try_files {path} /index.html
 		file_server
+
+		# Page d'architecture servie sans extension (fichier /technique).
+		@technique path /technique
+		header @technique {
+			Content-Type "text/html; charset=utf-8"
+			Cache-Control "no-cache"
+		}
 
 		@assets path /assets/*
 		header @assets Cache-Control "public, max-age=31536000, immutable"

@@ -143,6 +143,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
     moveComponent,
     rotateComponent,
     toggleSwitch,
+    setRheostatWiper,
     deleteComponent,
     deleteSelection,
     addWire,
@@ -1033,6 +1034,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
               onDeleteSelection={deleteSelection}
               onDeleteComponent={deleteComponent}
               onToggleSwitch={toggleSwitch}
+              onSetRheostatWiper={setRheostatWiper}
               onAddWire={addWire}
             />
 

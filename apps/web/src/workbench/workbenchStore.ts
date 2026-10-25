@@ -77,6 +77,11 @@ export interface WorkbenchState {
   moveComponent: (componentId: string, position: Vec2) => void;
   rotateComponent: (componentId: string) => void;
   toggleSwitch: (componentId: string) => void;
+  setRheostatWiper: (
+    componentId: string,
+    wiperPosition: number,
+    recordHistory: boolean,
+  ) => void;
   deleteComponent: (componentId: string) => void;
   deleteSelection: () => void;
   addWire: (from: TerminalRef, to: TerminalRef) => void;
@@ -361,6 +366,47 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
     set({
       ...nextCircuitState(state, { components, wires: state.circuit.wires }),
       selected: { kind: 'component', id: componentId },
+      pendingTerminal: null,
+    });
+  },
+
+  setRheostatWiper(componentId, wiperPosition, recordHistory) {
+    const state = get();
+    const target = state.circuit.components.find(
+      (component) => component.id === componentId,
+    );
+
+    if (target?.type !== 'rheostat') {
+      return;
+    }
+
+    const clamped = Math.min(1, Math.max(0, wiperPosition));
+
+    if (Math.abs(target.wiperPosition - clamped) < 1e-9) {
+      return;
+    }
+
+    const components = state.circuit.components.map((component) =>
+      component.id === componentId && component.type === 'rheostat'
+        ? { ...component, wiperPosition: clamped }
+        : component,
+    );
+    const circuit: Circuit = { components, wires: state.circuit.wires };
+    const selection = { kind: 'component' as const, id: componentId };
+
+    if (recordHistory) {
+      set({
+        ...nextCircuitState(state, circuit),
+        selected: selection,
+        pendingTerminal: null,
+      });
+      return;
+    }
+
+    set({
+      circuit,
+      simulation: simulateCircuit(circuit),
+      selected: selection,
       pendingTerminal: null,
     });
   },

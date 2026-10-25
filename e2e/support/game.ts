@@ -293,7 +293,13 @@ export async function gotoGuestMap(page: Page): Promise<void> {
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.locator('.level-node')).toHaveCount(11);
+  await expect(
+    page.getByRole('heading', {
+      name: 'Chapitre 2 : La force du courant',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.locator('.level-node')).toHaveCount(17);
 }
 
 export async function nextPaint(page: Page): Promise<void> {

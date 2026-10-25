@@ -62,6 +62,10 @@ export const COMPONENT_VISUALS: Record<ComponentType, ComponentVisual> = {
     label: fr.components.resistor.label,
     color: '#8d6e63',
   },
+  rheostat: {
+    label: fr.components.rheostat.label,
+    color: '#b08968',
+  },
   material: METAL_VISUAL,
 };
 
@@ -73,6 +77,9 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   paletteItem('buzzer', 'buzzer', COMPONENT_VISUALS.buzzer),
   paletteItem('led', 'led', COMPONENT_VISUALS.led),
   paletteItem('resistor', 'resistor', COMPONENT_VISUALS.resistor),
+  paletteItem('rheostat', 'rheostat', COMPONENT_VISUALS.rheostat, {
+    wiperPosition: 0,
+  }),
   paletteItem('metal', 'material', METAL_VISUAL, { conductive: true }),
   paletteItem('gum', 'material', GUM_VISUAL, { conductive: false }),
 ];

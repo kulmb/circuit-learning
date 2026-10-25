@@ -1,11 +1,12 @@
 import {
   initialPlayerProgress,
+  reconcileProgress,
   starsForHints,
   type PlayerProgress,
   type PlayerProgressResponse,
 } from '@circuits/shared';
 import {
-  CHAPTER_1_LEVELS,
+  ALL_LEVELS,
   getLevelById,
   type LevelDefinition,
 } from '@circuits/shared/levels';
@@ -25,13 +26,6 @@ export interface FinishPayload {
   hintsUsed: number;
   durationMs: number;
   errorsDetected: string[];
-}
-
-function levelStatus(
-  progress: PlayerProgress,
-  levelId: string,
-): PlayerProgress['levels'][string]['status'] {
-  return progress.levels[levelId]?.status ?? 'locked';
 }
 
 export async function buildPlayerProgress(
@@ -63,19 +57,19 @@ export async function buildPlayerProgress(
     }
   }
 
-  return {
+  return reconcileProgress({
     levels: progress.levels,
     vocabulary: [
       ...new Set((user.vocabulary ?? []).map((entry) => entry.wordId)),
     ],
-  };
+  });
 }
 
 export function toProgressResponse(
   progress: PlayerProgress,
 ): PlayerProgressResponse {
   return {
-    levels: CHAPTER_1_LEVELS.flatMap((level) => {
+    levels: ALL_LEVELS.flatMap((level) => {
       const entry = progress.levels[level.id];
 
       return entry === undefined
@@ -107,9 +101,26 @@ async function assertLevelUnlocked(
     throw notFound('Ce niveau n’existe pas.');
   }
 
-  const row = await LevelProgressModel.findOne({ userId, levelId });
+  const rows = await LevelProgressModel.find({ userId });
   const progress = initialPlayerProgress();
-  const status = row?.status ?? levelStatus(progress, levelId);
+
+  for (const row of rows) {
+    if (progress.levels[row.levelId] !== undefined) {
+      progress.levels[row.levelId] = {
+        levelId: row.levelId,
+        status: row.status,
+        stars: row.stars,
+        attempts: row.attempts,
+        hintsUsed: row.hintsUsed,
+        bestTimeMs: row.bestTimeMs,
+        firstCompletedAt: row.firstCompletedAt?.getTime() ?? null,
+        lastPlayedAt: row.lastPlayedAt?.getTime() ?? null,
+      };
+    }
+  }
+
+  const status =
+    reconcileProgress(progress).levels[levelId]?.status ?? 'locked';
 
   if (status === 'locked') {
     throw new ApiError(
