@@ -59,6 +59,36 @@ const ProgressContext = createContext<ProgressContextValue>({
   keepAccountOnly: () => undefined,
 });
 
+const SIGNED_OUT_KEY = 'circuits-de-zap:signed-out';
+
+/**
+ * A failed offline logout must not let a page reload restore the previous
+ * child. This local marker survives until an explicit login succeeds.
+ */
+function readSignedOut(): boolean {
+  try {
+    return window.localStorage.getItem(SIGNED_OUT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markSignedOut(): void {
+  try {
+    window.localStorage.setItem(SIGNED_OUT_KEY, '1');
+  } catch {
+    // Without storage the cookie still expires on its own.
+  }
+}
+
+function clearSignedOut(): void {
+  try {
+    window.localStorage.removeItem(SIGNED_OUT_KEY);
+  } catch {
+    // Ignore.
+  }
+}
+
 function declineKey(userId: string): string {
   return `circuits-de-zap:merge-declined:${userId}`;
 }
@@ -123,6 +153,10 @@ export function ProgressProvider({
   );
   const applySession = useCallback(
     (next: AuthSessionResponse | null) => {
+      if (next !== null) {
+        clearSignedOut();
+      }
+
       setSessionState(next);
 
       if (shouldCheckGuestProgress(next)) {
@@ -141,6 +175,11 @@ export function ProgressProvider({
     }
 
     if (import.meta.env.MODE === 'test') {
+      setReady(true);
+      return;
+    }
+
+    if (readSignedOut()) {
       setReady(true);
       return;
     }
@@ -184,6 +223,8 @@ export function ProgressProvider({
 
   useEffect(() => {
     if (initialSession !== null) {
+      clearSignedOut();
+
       if (shouldCheckGuestProgress(initialSession)) {
         setMergePrompt({ open: true, busy: false, error: false });
       }
@@ -241,6 +282,14 @@ export function ProgressProvider({
   }, [session]);
 
   const logout = useCallback(async () => {
+    // Mark first: even if the network call fails, a reload must not restore
+    // the previous session from the still-valid httpOnly cookie.
+    markSignedOut();
+
+    if (repository instanceof ApiProgressRepository) {
+      repository.clearUserCache();
+    }
+
     setSessionState(null);
     setMergePrompt(CLOSED_MERGE_PROMPT);
 
@@ -251,14 +300,16 @@ export function ProgressProvider({
       await fetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'same-origin',
+        keepalive: true,
         signal: controller.signal,
       });
     } catch {
-      // The local session is already cleared; the cookie expires on its own.
+      // The local marker keeps the session from coming back on reload. The
+      // server cookie still expires on its own; a later login replaces it.
     } finally {
       clearTimeout(timeout);
     }
-  }, []);
+  }, [repository]);
 
   const value = useMemo<ProgressContextValue>(
     () => ({

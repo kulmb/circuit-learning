@@ -67,6 +67,42 @@ describe('ApiProgressRepository', () => {
     window.localStorage.clear();
   });
 
+  it('clears this account cache and queue on logout', () => {
+    const repo = repository(
+      (async () => jsonResponse({})) as typeof fetch,
+    );
+    window.localStorage.setItem(
+      `circuits-de-zap:api-progress:v1:${USER_ID}`,
+      '{"version":1}',
+    );
+    window.localStorage.setItem(
+      `circuits-de-zap:api-queue:v1:${USER_ID}`,
+      '[]',
+    );
+    window.localStorage.setItem(
+      'circuits-de-zap:api-progress:v1:other-student',
+      '{"version":1}',
+    );
+
+    repo.clearUserCache();
+
+    expect(
+      window.localStorage.getItem(
+        `circuits-de-zap:api-progress:v1:${USER_ID}`,
+      ),
+    ).toBeNull();
+    expect(
+      window.localStorage.getItem(
+        `circuits-de-zap:api-queue:v1:${USER_ID}`,
+      ),
+    ).toBeNull();
+    expect(
+      window.localStorage.getItem(
+        'circuits-de-zap:api-progress:v1:other-student',
+      ),
+    ).not.toBeNull();
+  });
+
   it('loads the server progress and caches it', async () => {
     const calls: FakeCall[] = [];
     const repo = repository(

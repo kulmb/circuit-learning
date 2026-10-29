@@ -1,6 +1,8 @@
 import {
   auditLogsQuerySchema,
   auditLogsResponseSchema,
+  inactiveStudentsQuerySchema,
+  inactiveStudentsResponseSchema,
   updateUserRoleRequestSchema,
   updateUserStatusRequestSchema,
   userParamsSchema,
@@ -12,6 +14,7 @@ import type { FastifyPluginAsync } from 'fastify';
 
 import { authOf, createGuards } from '../auth/guards.js';
 import type { CookieSettings } from '../services/cookies.js';
+import { listInactiveStudents } from '../services/inactiveStudents.js';
 import { toAdminUser, toAuditLog } from '../http/dto.js';
 import { sendDto } from '../http/respond.js';
 import {
@@ -20,6 +23,7 @@ import {
   listUsers,
   setUserDisabled,
   setUserRole,
+  unlockAdultAccount,
 } from '../services/userManagement.js';
 
 export interface UserRoutesOptions {
@@ -55,11 +59,40 @@ export const userRoutes: FastifyPluginAsync<UserRoutesOptions> = async (
   );
 
   app.get(
+    '/api/users/inactive-students',
+    { preHandler: adminOnly },
+    async (request, reply) => {
+      const query = inactiveStudentsQuerySchema.parse(request.query);
+      const report = await listInactiveStudents({
+        actor: authOf(request).user,
+        months: query.months,
+        limit: query.limit,
+      });
+
+      sendDto(reply, inactiveStudentsResponseSchema, report);
+    },
+  );
+
+  app.get(
     '/api/users/:userId',
     { preHandler: adminOnly },
     async (request, reply) => {
       const params = userParamsSchema.parse(request.params);
       const user = await getUser(authOf(request).user, params.userId);
+
+      sendDto(reply, userResponseSchema, { user: toAdminUser(user) });
+    },
+  );
+
+  app.post(
+    '/api/users/:userId/unlock',
+    { preHandler: adminOnly },
+    async (request, reply) => {
+      const params = userParamsSchema.parse(request.params);
+      const user = await unlockAdultAccount({
+        actor: authOf(request).user,
+        userId: params.userId,
+      });
 
       sendDto(reply, userResponseSchema, { user: toAdminUser(user) });
     },

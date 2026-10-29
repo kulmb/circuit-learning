@@ -46,7 +46,7 @@ l'appareil. Sur tablette en portrait, une mise en page adaptée est proposée.
 ## Architecture
 Monorepo pnpm workspaces :
 - apps/web : front React 18 (Vite, TypeScript strict, Zustand, framer-motion), PWA
-- apps/api : back Node 20 + Fastify 4 + TypeScript strict
+- apps/api : back Node 22 + Fastify 5 + TypeScript strict
 - packages/shared : moteur de circuit, définitions des niveaux, règles de score, types,
   schémas zod (partagés front/back)
 
@@ -66,6 +66,8 @@ Organisation du front :
 ## Back-end
 - MongoDB 7 via Mongoose (schémas stricts, strict: 'throw', timestamps activés).
 - MongoDB lancé en replica set à un seul nœud (rs0) pour pouvoir utiliser les transactions.
+- Production/dev hébergé : MongoDB exige `--auth` + keyFile ; l'API utilise un compte
+  applicatif `readWrite` limité à la base `circuits`.
 - Index déclarés dans les schémas Mongoose et créés au démarrage (syncIndexes).
 - Évolutions de schéma : scripts de migration versionnés avec migrate-mongo (apps/api/migrations).
 - Ne jamais renvoyer un document Mongoose brut au client : toujours passer par un DTO validé
@@ -95,7 +97,7 @@ Organisation du front :
 - Serveur cible : instance Oracle Cloud (OCI) Ampere A1, CPU aarch64 (linux/arm64), Ubuntu.
 - Docker Compose : mongo, api, et build statique du front. Toutes les images doivent exister
   en linux/arm64 et être testées sur cette architecture.
-- Images Node basées sur Debian (node:20-bookworm-slim), pas Alpine : les modules natifs
+- Images Node basées sur Debian (node:22-bookworm-slim), pas Alpine : les modules natifs
   (argon2) et mongodb-memory-server sont plus fiables en glibc sur arm64.
 - Aucune dépendance qui n'a pas de version arm64 (vérifier avant d'ajouter un paquet natif
   ou une image Docker).

@@ -94,7 +94,7 @@ export const studentRoutes: FastifyPluginAsync<StudentRoutesOptions> = async (
     },
   );
 
-  app.get(
+  app.post(
     '/api/students/:studentId/export',
     { preHandler: reader },
     async (request, reply) => {

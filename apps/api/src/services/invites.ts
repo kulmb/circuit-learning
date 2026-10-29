@@ -17,6 +17,11 @@ import { createSession } from './sessions.js';
 import { generateToken, hashToken } from './tokens.js';
 
 export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/**
+ * A password reset link is a direct account-takeover credential. Keep it much
+ * shorter than a role invitation, which a person may open days later.
+ */
+export const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 export interface InviteWithToken {
   invite: InviteDocument;
@@ -148,7 +153,7 @@ export async function createPasswordResetInvite(options: {
     type: 'password_reset',
     targetUserId: target._id,
     createdBy: options.actor._id,
-    expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+    expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS),
   });
 
   await AuditLogModel.create({
@@ -271,6 +276,22 @@ export async function acceptInvite(options: {
   password: string;
   userAgent: string;
 }): Promise<AcceptedInvite> {
+  // Check the token before paying the argon2 cost: an unknown or expired
+  // token must not be able to consume CPU on every request.
+  const preview = await findInviteByToken(options.token);
+
+  if (preview === null) {
+    throw notFound('Cette invitation est introuvable.');
+  }
+
+  if (preview.usedAt !== null || preview.expiresAt.getTime() <= Date.now()) {
+    throw new ApiError(
+      410,
+      'invite_unusable',
+      'Cette invitation n’est plus valable.',
+    );
+  }
+
   const passwordHash = await hashSecret(options.password);
   const session = await mongoose.startSession();
   let acceptedUser: UserDocument | null = null;

@@ -661,6 +661,7 @@ describe('visibility and privacy', () => {
 
   it('guards student details, exports, deletion and parent links', async () => {
     const fixture = await createFixture();
+    const adminLogin = await login('admin');
     const coachLogin = await login('coach');
     const otherLogin = await login('other');
     const parentLogin = await login('parent');
@@ -689,11 +690,11 @@ describe('visibility and privacy', () => {
     ).toBe(403);
 
     expect(
-      (await get(`/api/students/${fixture.lina._id.toString()}/export`, otherLogin.cookie))
+      (await send('POST', `/api/students/${fixture.lina._id.toString()}/export`, otherLogin.cookie))
         .statusCode,
     ).toBe(403);
     expect(
-      (await get(`/api/students/${fixture.lina._id.toString()}/export`, childCookie))
+      (await send('POST', `/api/students/${fixture.lina._id.toString()}/export`, childCookie))
         .statusCode,
     ).toBe(403);
 
@@ -713,10 +714,18 @@ describe('visibility and privacy', () => {
     );
     expect(parentAttempt.statusCode).toBe(403);
 
-    const linked = await send(
+    const teacherLink = await send(
       'POST',
       `/api/students/${fixture.lina._id.toString()}/parents`,
       coachLogin.cookie,
+      { username: 'parent2' },
+    );
+    expect(teacherLink.statusCode).toBe(403);
+
+    const linked = await send(
+      'POST',
+      `/api/students/${fixture.lina._id.toString()}/parents`,
+      adminLogin.cookie,
       { username: 'parent2' },
     );
     expect(linked.statusCode).toBe(200);
@@ -780,7 +789,8 @@ describe('visibility and privacy', () => {
       { $set: { vocabulary: [{ wordId: 'circuitFerme', unlockedAt: new Date() }] } },
     );
 
-    const response = await get(
+    const response = await send(
+      'POST',
       `/api/students/${fixture.lina._id.toString()}/export`,
       parentLogin.cookie,
     );
@@ -1004,7 +1014,7 @@ describe('administration', () => {
       await get(`/api/groups/${fixture.groupA._id.toString()}`, childCookie),
       await get('/api/students', childCookie),
       await get(`/api/students/${fixture.lina._id.toString()}`, childCookie),
-      await get(`/api/students/${fixture.lina._id.toString()}/export`, childCookie),
+      await send('POST', `/api/students/${fixture.lina._id.toString()}/export`, childCookie),
       await get('/api/users', childCookie),
       await get('/api/audit-logs', childCookie),
       await send('POST', '/api/groups', childCookie, { name: 'Non' }),
@@ -1044,5 +1054,63 @@ describe('administration', () => {
       const response = await app.inject({ method: 'GET', url });
       expect(response.statusCode).toBe(401);
     }
+  });
+});
+
+describe('inactive students report', () => {
+  it('lists students inactive for 24 months and keeps it admin-only', async () => {
+    const fixture = await createFixture();
+    const old = new Date();
+    old.setMonth(old.getMonth() - 25);
+
+    await UserModel.updateOne(
+      { _id: fixture.lina._id },
+      { $set: { lastSeenAt: old } },
+    );
+    await UserModel.updateOne(
+      { _id: fixture.noe._id },
+      { $set: { lastSeenAt: new Date() } },
+    );
+    await UserModel.updateOne(
+      { _id: fixture.mila._id },
+      { $set: { lastSeenAt: null } },
+    );
+    await UserModel.collection.updateOne(
+      { _id: fixture.mila._id },
+      { $set: { createdAt: old } },
+    );
+
+    const adminLogin = await login('admin');
+    const response = await get(
+      '/api/users/inactive-students?months=24',
+      adminLogin.cookie,
+    );
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.months).toBe(24);
+    expect(body.total).toBe(2);
+    expect(
+      body.students.map((student: { displayName: string }) => student.displayName).sort(),
+    ).toEqual(['Lina', 'Mila']);
+    expect(
+      body.students.every(
+        (student: { lastActivityAt: string }) =>
+          new Date(student.lastActivityAt).getTime() <
+          new Date(Date.now() - 24 * 30 * 24 * 60 * 60 * 1000).getTime(),
+      ),
+    ).toBe(true);
+    expect(
+      body.students.find(
+        (student: { displayName: string }) => student.displayName === 'Lina',
+      ).groups[0].name,
+    ).toBe('CE2 A');
+
+    const coachLogin = await login('coach');
+    const refused = await get(
+      '/api/users/inactive-students?months=24',
+      coachLogin.cookie,
+    );
+    expect(refused.statusCode).toBe(403);
   });
 });

@@ -24,8 +24,10 @@ import { Types } from 'mongoose';
 import {
   AuditLogModel,
   GroupModel,
+  UserModel,
   type GroupDocument,
 } from '../db/models/index.js';
+import { canAccessGroup } from '../auth/access.js';
 import { authOf, createGuards } from '../auth/guards.js';
 import { loginAdult } from '../services/adultAuth.js';
 import { changeAccountPassword } from '../services/adminAccounts.js';
@@ -51,6 +53,7 @@ import {
   createRoleInvite,
   previewInvite,
 } from '../services/invites.js';
+import { verifySecret } from '../services/secrets.js';
 import { createSession, deleteSession } from '../services/sessions.js';
 import {
   toAuthSession,
@@ -123,6 +126,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
         username: body.username,
         password: body.password,
         userAgent: userAgentOf(request),
+        ip: request.ip,
       });
 
       setSessionCookie(
@@ -162,6 +166,35 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
           400,
           'no_username',
           'Ce compte n’a pas d’identifiant de connexion.',
+        );
+      }
+
+      const account = await UserModel.findById(user._id).select(
+        '+passwordHash',
+      );
+
+      if (
+        account === null ||
+        account.passwordHash === null ||
+        account.passwordHash === undefined
+      ) {
+        throw new ApiError(
+          400,
+          'no_password',
+          'Ce compte n’a pas de mot de passe.',
+        );
+      }
+
+      const currentPasswordValid = await verifySecret(
+        account.passwordHash,
+        body.currentPassword,
+      );
+
+      if (!currentPasswordValid) {
+        throw new ApiError(
+          401,
+          'invalid_credentials',
+          'Le mot de passe actuel est incorrect.',
         );
       }
 
@@ -281,13 +314,18 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
 
   app.post(
     '/api/auth/device-pin',
-    {
-      preHandler: guards.requireGroupAccess(
-        (request) => devicePinRequestSchema.parse(request.body).groupId,
-      ),
-    },
+    { preHandler: guards.requireRole('admin', 'encadrant') },
     async (request, reply) => {
       const body = devicePinRequestSchema.parse(request.body);
+
+      if (!(await canAccessGroup(authOf(request).user, body.groupId))) {
+        throw new ApiError(
+          403,
+          'forbidden',
+          'Tu n’as pas accès à ce groupe.',
+        );
+      }
+
       const group: GroupDocument | null = await GroupModel.findById(
         body.groupId,
       );

@@ -1,8 +1,10 @@
 import {
+  inactiveStudentsResponseSchema,
   inviteCreatedResponseSchema,
   userResponseSchema,
   usersResponseSchema,
   type AdminUser,
+  type InactiveStudent,
 } from '@circuits/shared';
 import {
   useCallback,
@@ -13,6 +15,7 @@ import {
 
 import { ApiClientError, apiRequest } from '../api/client';
 import { useProgress } from '../progress/ProgressContext';
+import { navigate } from '../router';
 import {
   AdminEmpty,
   AdminError,
@@ -44,6 +47,9 @@ export function UsersPage() {
   const [teacherInviteUrl, setTeacherInviteUrl] = useState<string | null>(
     null,
   );
+  const [inactive, setInactive] = useState<InactiveStudent[] | null>(null);
+  const [inactiveBusy, setInactiveBusy] = useState(false);
+  const [inactiveError, setInactiveError] = useState<string | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
     setError(null);
@@ -151,6 +157,47 @@ export function UsersPage() {
       setError(
         caught instanceof ApiClientError ? caught.message : adminTexts.error,
       );
+    }
+  }
+
+  async function loadInactive(): Promise<void> {
+    setInactiveBusy(true);
+    setInactiveError(null);
+
+    try {
+      const response = await apiRequest(
+        '/users/inactive-students?months=24',
+        inactiveStudentsResponseSchema,
+      );
+      setInactive(response.students);
+    } catch (caught) {
+      setInactiveError(
+        caught instanceof ApiClientError ? caught.message : adminTexts.error,
+      );
+    } finally {
+      setInactiveBusy(false);
+    }
+  }
+
+  async function unlockUser(user: AdminUser): Promise<void> {
+    setBusyId(user.id);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await apiRequest(
+        `/users/${encodeURIComponent(user.id)}/unlock`,
+        userResponseSchema,
+        { method: 'POST' },
+      );
+      setNotice(adminTexts.users.unlocked);
+      await load();
+    } catch (caught) {
+      setError(
+        caught instanceof ApiClientError ? caught.message : adminTexts.error,
+      );
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -263,6 +310,65 @@ export function UsersPage() {
         ) : null}
       </form>
 
+      <section className="admin-card">
+        <h2>{adminTexts.users.inactiveTitle}</h2>
+        <p className="admin-muted">{adminTexts.users.inactiveHint}</p>
+        <button
+          type="button"
+          className="admin-button admin-button--secondary"
+          disabled={inactiveBusy}
+          onPointerDown={(event) =>
+            activate(event, () => void loadInactive())
+          }
+        >
+          {inactiveBusy
+            ? adminTexts.loading
+            : adminTexts.users.inactiveShow}
+        </button>
+
+        {inactiveError !== null ? (
+          <AdminError message={inactiveError} />
+        ) : null}
+
+        {inactive !== null ? (
+          inactive.length === 0 ? (
+            <p className="admin-muted">{adminTexts.users.inactiveEmpty}</p>
+          ) : (
+            <ul className="admin-simple-list">
+              {inactive.map((student) => (
+                <li key={student.id}>
+                  <span>
+                    <strong>{student.displayName}</strong>
+                    <br />
+                    <small>
+                      {adminTexts.users.inactiveSince(
+                        formatDate(student.lastActivityAt),
+                      )}
+                      {student.groups.length > 0
+                        ? ` · ${student.groups
+                            .map((group) => group.name)
+                            .join(', ')}`
+                        : ''}
+                    </small>
+                  </span>
+                  <button
+                    type="button"
+                    className="admin-button admin-button--secondary admin-button--small"
+                    onPointerDown={(event) =>
+                      activate(event, () =>
+                        navigate(`/admin/students/${student.id}`),
+                      )
+                    }
+                  >
+                    {adminTexts.users.open}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : null}
+      </section>
+
       {users === null ? (
         <AdminLoading />
       ) : users.length === 0 ? (
@@ -353,6 +459,18 @@ export function UsersPage() {
                             }
                           >
                             {adminTexts.users.resetLink}
+                          </button>
+                        ) : null}
+                        {adult && !self ? (
+                          <button
+                            type="button"
+                            className="admin-button admin-button--secondary admin-button--small"
+                            disabled={busyId === user.id}
+                            onPointerDown={(event) =>
+                              activate(event, () => void unlockUser(user))
+                            }
+                          >
+                            {adminTexts.users.unlock}
                           </button>
                         ) : null}
                       </div>

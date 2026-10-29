@@ -2,12 +2,23 @@
 export class ApiError extends Error {
   readonly statusCode: number;
   readonly code: string;
+  /** Optional Retry-After value in seconds, set by login throttling. */
+  readonly retryAfterSeconds?: number;
 
-  constructor(statusCode: number, code: string, message: string) {
+  constructor(
+    statusCode: number,
+    code: string,
+    message: string,
+    retryAfterSeconds?: number,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.statusCode = statusCode;
     this.code = code;
+
+    if (retryAfterSeconds !== undefined) {
+      this.retryAfterSeconds = retryAfterSeconds;
+    }
   }
 }
 

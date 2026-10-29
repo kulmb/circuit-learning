@@ -17,6 +17,11 @@ export interface Session {
   /** Group chosen by a child when signing in on a shared device. */
   groupId: Types.ObjectId | null;
   expiresAt: Date;
+  /**
+   * Hard deadline that sliding renewal must never pass. Null on sessions
+   * created before the field existed; sessions.ts falls back to createdAt.
+   */
+  absoluteExpiresAt: Date | null;
   userAgent: string;
   kind: SessionKind;
   createdAt: Date;
@@ -39,6 +44,7 @@ const sessionSchema = new Schema<Session>(
       default: null,
     },
     expiresAt: { type: Date, required: true },
+    absoluteExpiresAt: { type: Date, default: null },
     userAgent: { type: String, default: '', trim: true, maxlength: 512 },
     kind: { type: String, required: true, enum: SESSION_KINDS },
   },

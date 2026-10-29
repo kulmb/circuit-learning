@@ -173,12 +173,14 @@ async function login(
   username: string,
   password = ADULT_PASSWORD,
   target: FastifyInstance = app,
+  remoteAddress?: string,
 ): Promise<{ response: LightMyRequestResponse; cookie: string }> {
   const response = await target.inject({
     method: 'POST',
     url: '/api/auth/login',
     headers: { 'user-agent': 'vitest' },
     payload: { username, password },
+    ...(remoteAddress === undefined ? {} : { remoteAddress }),
   });
 
   return {
@@ -300,7 +302,28 @@ describe('adult login and sessions', () => {
     );
   });
 
-  it('rejects a wrong password and locks after eight failures', async () => {
+  it('never slides an adult session past its absolute deadline', async () => {
+    await createAdult('admin', 'admin');
+    const { cookie } = await login('admin');
+
+    const stored = await SessionModel.findOne().select('+tokenHash');
+    expect(stored).not.toBeNull();
+
+    await SessionModel.updateOne(
+      { _id: stored?._id },
+      {
+        $set: {
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          absoluteExpiresAt: new Date(Date.now() - 1000),
+        },
+      },
+    );
+
+    expect((await me(cookie)).statusCode).toBe(401);
+    expect(await SessionModel.countDocuments()).toBe(0);
+  });
+
+  it('throttles wrong passwords per username and IP, not per account', async () => {
     await createAdult('parent', 'parent');
 
     for (let attempt = 1; attempt < 8; attempt += 1) {
@@ -310,22 +333,57 @@ describe('adult login and sessions', () => {
     }
 
     const locked = await login('parent', 'wrong-password');
-    expect(locked.response.statusCode).toBe(423);
-    expect(locked.response.json().error.code).toBe('account_locked');
+    expect(locked.response.statusCode).toBe(429);
+    expect(locked.response.json().error.code).toBe('too_many_attempts');
+    expect(locked.response.headers['retry-after']).toMatch(/^\d+$/);
 
     const stored = await UserModel.findOne({ username: 'parent' });
     expect(stored?.failedLogins).toBe(0);
-    expect(stored?.lockedUntil?.getTime()).toBeGreaterThan(Date.now());
+    expect(stored?.lockedUntil).toBeNull();
 
     const stillLocked = await login('parent');
-    expect(stillLocked.response.statusCode).toBe(423);
+    expect(stillLocked.response.statusCode).toBe(429);
 
-    await UserModel.updateOne(
-      { username: 'parent' },
-      { $set: { lockedUntil: null } },
+    // The account is not locked globally: the real user on another address
+    // can still sign in.
+    const otherAddress = await login(
+      'parent',
+      ADULT_PASSWORD,
+      app,
+      '203.0.113.7',
     );
-    const unlocked = await login('parent');
-    expect(unlocked.response.statusCode).toBe(200);
+    expect(otherAddress.response.statusCode).toBe(200);
+  });
+
+  it('lets an admin clear the login throttle of an adult account', async () => {
+    const parent = await createAdult('parent', 'parent');
+    await createAdult('admin', 'admin');
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      await login('parent', 'wrong-password');
+    }
+
+    const locked = await login('parent');
+    expect(locked.response.statusCode).toBe(429);
+
+    const adminLogin = await login('admin');
+    expect(adminLogin.response.statusCode).toBe(200);
+
+    const unlocked = await app.inject({
+      method: 'POST',
+      url: `/api/users/${parent._id.toString()}/unlock`,
+      headers: {
+        cookie: cookieHeader({ zap_session: adminLogin.cookie }),
+      },
+    });
+    expect(unlocked.statusCode).toBe(200);
+    expect(unlocked.json().user.id).toBe(parent._id.toString());
+
+    const after = await login('parent');
+    expect(after.response.statusCode).toBe(200);
+
+    const audit = await AuditLogModel.findOne({ action: 'unlock_user' });
+    expect(audit).not.toBeNull();
   });
 
   it('rejects disabled accounts and unknown usernames with the same message', async () => {
@@ -373,6 +431,9 @@ describe('adult login and sessions', () => {
       const { response } = await login('admin', ADULT_PASSWORD, secureApp);
       expect(response.statusCode).toBe(200);
       expect(String(response.headers['set-cookie'])).toMatch(/Secure/i);
+      expect(String(response.headers['set-cookie'])).toMatch(
+        /__Host-zap_session=/,
+      );
     } finally {
       await secureApp.close();
     }
@@ -436,7 +497,35 @@ describe('adult login and sessions', () => {
     expect((await me(cookie)).statusCode).toBe(401);
   });
 
-  it('changes an adult password without asking the old one', async () => {
+  it('requires the current password before changing an adult password', async () => {
+    await createAdult('encadrant', 'coach');
+    const { cookie } = await login('coach');
+
+    const missing = await app.inject({
+      method: 'POST',
+      url: '/api/auth/password',
+      headers: { cookie: cookieHeader({ zap_session: cookie }) },
+      payload: { newPassword: NEW_PASSWORD },
+    });
+    expect(missing.statusCode).toBe(400);
+    expect(missing.json().error.code).toBe('validation_failed');
+
+    const wrong = await app.inject({
+      method: 'POST',
+      url: '/api/auth/password',
+      headers: { cookie: cookieHeader({ zap_session: cookie }) },
+      payload: {
+        currentPassword: 'Mauvais-Mot-De-Passe-2026',
+        newPassword: NEW_PASSWORD,
+      },
+    });
+    expect(wrong.statusCode).toBe(401);
+    expect(wrong.json().error.code).toBe('invalid_credentials');
+
+    expect((await login('coach')).response.statusCode).toBe(200);
+  });
+
+  it('changes an adult password with the current password and revokes other sessions', async () => {
     await createAdult('encadrant', 'coach');
     const { cookie } = await login('coach');
 
@@ -444,7 +533,10 @@ describe('adult login and sessions', () => {
       method: 'POST',
       url: '/api/auth/password',
       headers: { cookie: cookieHeader({ zap_session: cookie }) },
-      payload: { newPassword: NEW_PASSWORD },
+      payload: {
+        currentPassword: ADULT_PASSWORD,
+        newPassword: NEW_PASSWORD,
+      },
     });
 
     expect(response.statusCode).toBe(200);
@@ -466,7 +558,10 @@ describe('adult login and sessions', () => {
       method: 'POST',
       url: '/api/auth/password',
       headers: { cookie: cookieHeader({ zap_session: freshCookie }) },
-      payload: { newPassword: 'trop-court' },
+      payload: {
+        currentPassword: NEW_PASSWORD,
+        newPassword: 'trop-court',
+      },
     });
     expect(short.statusCode).toBe(400);
     expect(short.json().error.code).toBe('validation_failed');
@@ -660,6 +755,13 @@ describe('adult invitations', () => {
     });
     expect(created.statusCode).toBe(201);
     expect(created.json().invite.type).toBe('password_reset');
+
+    const storedReset = await InviteModel.findOne({
+      type: 'password_reset',
+    });
+    const remaining = (storedReset?.expiresAt.getTime() ?? 0) - Date.now();
+    expect(remaining).toBeGreaterThan(55 * 60 * 1000);
+    expect(remaining).toBeLessThanOrEqual(60 * 60 * 1000);
 
     const token = tokenFromUrl(created.json().invite.url);
     const preview = await app.inject({
@@ -890,6 +992,20 @@ describe('child authentication', () => {
 });
 
 describe('device pinning', () => {
+  it('refuses to pin a device for a parent', async () => {
+    const fixture = await createFixture();
+    const parentLogin = await login('parent');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/auth/device-pin',
+      headers: { cookie: cookieHeader({ zap_session: parentLogin.cookie }) },
+      payload: { groupId: fixture.group._id.toString() },
+    });
+
+    expect(response.statusCode).toBe(403);
+  });
+
   it('pins a group, lists it without a session and logs a child in without a code', async () => {
     const fixture = await createFixture();
     const coachLogin = await login('coach');

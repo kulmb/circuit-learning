@@ -289,11 +289,10 @@ describe('AdminApp', () => {
     renderAdmin('/admin/students/cccccccccccccccccccccccc', parentSession);
 
     expect(
-      await screen.findByRole('link', { name: 'Télécharger les données (JSON)' }),
-    ).toHaveAttribute(
-      'href',
-      '/api/students/cccccccccccccccccccccccc/export',
-    );
+      await screen.findByRole('button', {
+        name: 'Télécharger les données (JSON)',
+      }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Supprimer définitivement' }),
     ).not.toBeInTheDocument();

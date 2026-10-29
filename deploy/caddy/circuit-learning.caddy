@@ -2,7 +2,19 @@
 # Le front est servi à la racine, l'API sous /api.
 
 circuit-learning.87543362.xyz {
+	# Never index authentication or back-office pages, and never cache them.
+	@private path /admin /admin/* /invitation/* /api/auth/*
+	header @private {
+		Cache-Control "no-store"
+		X-Robots-Tag "noindex, nofollow"
+	}
+
 	handle /api/* {
+		header {
+			Strict-Transport-Security "max-age=31536000; includeSubDomains"
+			X-Content-Type-Options "nosniff"
+			Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		}
 		reverse_proxy 127.0.0.1:3100
 	}
 
@@ -27,10 +39,12 @@ circuit-learning.87543362.xyz {
 		}
 
 		header {
-			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+			Strict-Transport-Security "max-age=31536000; includeSubDomains"
 			X-Content-Type-Options "nosniff"
 			Referrer-Policy "strict-origin-when-cross-origin"
 			X-Frame-Options "DENY"
+			Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
 		}
 	}
 }

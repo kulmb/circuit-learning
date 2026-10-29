@@ -317,20 +317,20 @@ export const texts = {
   'level.04.hint.2': 'Regarde si l’ampoule s’allume.',
   'level.04.hint.3': 'Range les matériaux dans la bonne boîte.',
 
-  'level.05.title': 'Deux ampoules en file',
+  'level.05.title': 'Deux ampoules en série',
   'level.05.goal': 'Relie les deux ampoules l’une après l’autre.',
   'level.05.intro':
-    'Avec deux ampoules en file, la lumière est plus faible.',
+    'En série, les ampoules brillent moins fort.',
   'level.05.hint.1': 'Place la deuxième ampoule.',
   'level.05.hint.2': 'Relie-les l’une après l’autre.',
   'level.05.hint.3': 'Les deux ampoules doivent être plus faibles.',
 
-  'level.06.title': 'Deux ampoules côte à côte',
-  'level.06.goal': 'Relie les deux ampoules côte à côte.',
-  'level.06.intro': 'Côte à côte, les ampoules brillent autant.',
+  'level.06.title': 'Deux ampoules en parallèle',
+  'level.06.goal': 'Relie chaque ampoule directement à la pile.',
+  'level.06.intro': 'En parallèle, les ampoules brillent autant.',
   'level.06.hint.1': 'Place la deuxième ampoule.',
   'level.06.hint.2': 'Relie chaque ampoule directement à la pile.',
-  'level.06.hint.3': 'Les ampoules côte à côte brillent normalement.',
+  'level.06.hint.3': 'Les ampoules en parallèle brillent normalement.',
 
   'level.07.title': 'Danger : court-circuit !',
   'level.07.goal': 'Enlève le court-circuit.',
@@ -420,33 +420,33 @@ export const texts = {
   'level.current.07.hint.3':
     'Plus la lumière monte, plus la puissance augmente.',
 
-  'level.assembly.01.title': 'L’un après l’autre',
-  'level.assembly.01.goal': 'Relie les deux ampoules en file.',
+  'level.assembly.01.title': 'En série',
+  'level.assembly.01.goal': 'Relie les deux ampoules en série.',
   'level.assembly.01.intro':
-    'En file, le courant passe par les deux.',
+    'En série, le courant passe par les deux.',
   'level.assembly.01.hint.1': 'Place la deuxième ampoule.',
   'level.assembly.01.hint.2': 'Relie-la après la première.',
   'level.assembly.01.hint.3':
     'Les deux ampoules doivent être plus faibles.',
 
-  'level.assembly.02.title': 'Côte à côte',
+  'level.assembly.02.title': 'En parallèle',
   'level.assembly.02.goal': 'Relie chaque ampoule à la pile.',
   'level.assembly.02.intro':
-    'Côte à côte, chaque ampoule a son chemin.',
+    'En parallèle, chaque ampoule a son chemin.',
   'level.assembly.02.hint.1': 'Place la deuxième ampoule.',
   'level.assembly.02.hint.2':
     'Relie chaque ampoule directement à la pile.',
   'level.assembly.02.hint.3':
     'Les deux ampoules brillent normalement.',
 
-  'level.assembly.03.title': 'Le mélange',
+  'level.assembly.03.title': 'Le circuit combiné',
   'level.assembly.03.goal': 'Une ampoule forte, deux faibles.',
   'level.assembly.03.intro':
-    'Mélange une ampoule en file et deux côte à côte.',
+    'Mélange une ampoule en série et deux en parallèle.',
   'level.assembly.03.hint.1':
     'La première ampoule est seule sur son chemin.',
   'level.assembly.03.hint.2':
-    'Les deux autres sont côte à côte.',
+    'Les deux autres sont en parallèle.',
   'level.assembly.03.hint.3':
     'Relie les deux dernières à la même borne.',
 
@@ -551,9 +551,9 @@ export const texts = {
   'vocab.isolant.word': 'Isolant',
   'vocab.isolant.definition': 'Il bloque le courant.',
   'vocab.serie.word': 'En série',
-  'vocab.serie.definition': 'Les ampoules sont l’une après l’autre.',
+  'vocab.serie.definition': 'Elles sont sur le même chemin.',
   'vocab.parallele.word': 'En parallèle',
-  'vocab.parallele.definition': 'Les ampoules sont côte à côte.',
+  'vocab.parallele.definition': 'Chaque ampoule a son propre chemin.',
   'vocab.courtCircuit.word': 'Court-circuit',
   'vocab.courtCircuit.definition':
     'Le courant passe directement, la pile chauffe.',

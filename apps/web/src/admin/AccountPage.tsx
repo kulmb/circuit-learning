@@ -13,6 +13,7 @@ import { adminTexts } from './fr';
 
 export function AccountPage() {
   const { session } = useProgress();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +44,12 @@ export function AccountPage() {
     try {
       await apiRequest('/auth/password', passwordChangedResponseSchema, {
         method: 'POST',
-        body: { newPassword: password },
+        body: {
+          currentPassword,
+          newPassword: password,
+        },
       });
+      setCurrentPassword('');
       setPassword('');
       setConfirmation('');
       setNotice(adminTexts.account.success);
@@ -80,6 +85,16 @@ export function AccountPage() {
         {notice !== null ? <AdminNotice message={notice} tone="success" /> : null}
 
         <form className="admin-form" onSubmit={(event) => void submit(event)}>
+          <label className="admin-field">
+            <span>{adminTexts.account.currentPassword}</span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              required
+            />
+          </label>
           <label className="admin-field">
             <span>{adminTexts.account.newPassword}</span>
             <input

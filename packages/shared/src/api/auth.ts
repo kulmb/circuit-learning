@@ -113,7 +113,10 @@ export const adultLoginRequestSchema = z
   .strict();
 
 export const passwordChangeRequestSchema = z
-  .object({ newPassword: newPasswordSchema })
+  .object({
+    currentPassword: z.string().min(1).max(MAX_PASSWORD_LENGTH),
+    newPassword: newPasswordSchema,
+  })
   .strict();
 
 export const passwordResetLinkRequestSchema = z

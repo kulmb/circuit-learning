@@ -24,6 +24,11 @@ export {
   type LevelAttemptDocument,
 } from './levelAttempt.js';
 export {
+  LoginThrottleModel,
+  type LoginThrottle,
+  type LoginThrottleDocument,
+} from './loginThrottle.js';
+export {
   LevelProgressModel,
   LEVEL_PROGRESS_STATUSES,
   type LevelProgress,
@@ -60,6 +65,7 @@ import { GroupModel } from './group.js';
 import { InviteModel } from './invite.js';
 import { LevelAttemptModel } from './levelAttempt.js';
 import { LevelProgressModel } from './levelProgress.js';
+import { LoginThrottleModel } from './loginThrottle.js';
 import { SandboxCircuitModel } from './sandboxCircuit.js';
 import { SessionModel } from './session.js';
 import { UserModel } from './user.js';
@@ -73,6 +79,7 @@ export async function syncModelIndexes(): Promise<void> {
     InviteModel.syncIndexes(),
     LevelProgressModel.syncIndexes(),
     LevelAttemptModel.syncIndexes(),
+    LoginThrottleModel.syncIndexes(),
     SandboxCircuitModel.syncIndexes(),
     AuditLogModel.syncIndexes(),
   ]);

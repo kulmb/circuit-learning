@@ -1,0 +1,11 @@
+# Overlay optionnel pour les migrations et les scripts d'administration.
+# La production ne publie pas le port MongoDB ; ce fichier l'ouvre uniquement
+# sur la boucle locale pendant l'opération, puis on revient au compose normal.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.migrate.yml up -d mongo
+#   MONGODB_URI='mongodb://...@127.0.0.1:27018/circuits?directConnection=true&authSource=circuits' pnpm --filter @circuits/api db:migrate
+#   docker compose -f docker-compose.yml -f docker-compose.migrate.yml stop mongo
+services:
+  mongo:
+    ports:
+      - "127.0.0.1:27018:27017"

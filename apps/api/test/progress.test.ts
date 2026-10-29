@@ -28,6 +28,12 @@ import {
   type UserDocument,
 } from '../src/db/models/index.js';
 import {
+  MAX_ATTEMPTS_PER_DAY,
+} from '../src/services/progress.js';
+import {
+  MAX_SANDBOX_CIRCUITS,
+} from '../src/services/sandbox.js';
+import {
   hashSecret,
   pictureSecretFromPattern,
 } from '../src/services/secrets.js';
@@ -552,5 +558,71 @@ describe('sandbox API', () => {
       },
     });
     expect(remoteThumbnail.statusCode).toBe(400);
+  });
+
+  it('caps the number of sandbox creations per child', async () => {
+    await SandboxCircuitModel.insertMany(
+      Array.from({ length: MAX_SANDBOX_CIRCUITS }, (_, index) => ({
+        userId: lina._id,
+        clientId: `quota-${index}`,
+        name: `Création ${index}`,
+        data: document,
+        thumbnail: null,
+      })),
+    );
+
+    const refused = await app.inject({
+      method: 'PUT',
+      url: '/api/me/sandbox/new-one',
+      headers: { cookie: `zap_session=${linaCookie}` },
+      payload: { name: 'Nouvelle', data: document },
+    });
+    expect(refused.statusCode).toBe(429);
+    expect(refused.json().error.code).toBe('sandbox_quota');
+
+    const updated = await app.inject({
+      method: 'PUT',
+      url: '/api/me/sandbox/quota-0',
+      headers: { cookie: `zap_session=${linaCookie}` },
+      payload: { name: 'Mise à jour', data: document },
+    });
+    expect(updated.statusCode).toBe(200);
+  });
+});
+
+describe('attempt quotas', () => {
+  it('caps daily attempts but keeps an existing attempt idempotent', async () => {
+    const today = new Date();
+    await LevelAttemptModel.insertMany(
+      Array.from({ length: MAX_ATTEMPTS_PER_DAY }, (_, index) => ({
+        userId: lina._id,
+        groupId: group._id,
+        clientId: `quota-attempt-${index}`,
+        levelId: 'light-01',
+        startedAt: today,
+        endedAt: null,
+        success: false,
+        hintsUsed: 0,
+        durationMs: 0,
+        errorsDetected: [],
+      })),
+    );
+
+    const refused = await app.inject({
+      method: 'POST',
+      url: '/api/me/attempts/start',
+      headers: { cookie: `zap_session=${linaCookie}` },
+      payload: { levelId: 'light-01', attemptId: 'new-attempt' },
+    });
+    expect(refused.statusCode).toBe(429);
+    expect(refused.json().error.code).toBe('attempt_quota');
+
+    const existing = await app.inject({
+      method: 'POST',
+      url: '/api/me/attempts/start',
+      headers: { cookie: `zap_session=${linaCookie}` },
+      payload: { levelId: 'light-01', attemptId: 'quota-attempt-0' },
+    });
+    expect(existing.statusCode).toBe(201);
   });
 });
