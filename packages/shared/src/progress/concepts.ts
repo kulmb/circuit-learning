@@ -76,4 +76,34 @@ export const PROGRESS_CONCEPTS: readonly ProgressConcept[] = [
     label: 'Circuit combiné',
     vocabularyIds: ['combinaison'],
   },
+  {
+    id: 'son',
+    label: 'Sonnerie',
+    vocabularyIds: ['sonnerie'],
+  },
+  {
+    id: 'diode',
+    label: 'Diode et sens unique',
+    vocabularyIds: ['diode', 'sensUnique'],
+  },
+  {
+    id: 'aimant',
+    label: 'Électroaimant et bobine',
+    vocabularyIds: ['electroAimant', 'bobine'],
+  },
+  {
+    id: 'relais',
+    label: 'Relais et lame souple',
+    vocabularyIds: ['relais', 'lameSouple'],
+  },
+  {
+    id: 'lumiere',
+    label: 'Capteur de lumière et panneau solaire',
+    vocabularyIds: ['capteurLumiere', 'panneauSolaire'],
+  },
+  {
+    id: 'condensateur',
+    label: 'Condensateur, charge et décharge',
+    vocabularyIds: ['condensateur', 'charge', 'decharge', 'reserve'],
+  },
 ];

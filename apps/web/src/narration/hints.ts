@@ -12,10 +12,12 @@ export type ZapExpression = 'content' | 'thinking' | 'surprised' | 'alert';
 export type HintCode =
   | 'short_circuit'
   | 'missing_battery'
+  | 'missing_source'
   | 'switch_open'
   | 'insulating_material'
   | 'bulb_one_side'
   | 'led_reversed'
+  | 'diode_reversed'
   | 'open_circuit'
   | 'success'
   | 'error';
@@ -40,6 +42,11 @@ const HINTS: Record<Exclude<HintCode, 'success'>, readonly [TextId, TextId, Text
     'zap.hint.battery.2',
     'zap.hint.battery.3',
   ],
+  missing_source: [
+    'zap.hint.source.1',
+    'zap.hint.source.2',
+    'zap.hint.source.3',
+  ],
   switch_open: ['zap.hint.switch.1', 'zap.hint.switch.2', 'zap.hint.switch.3'],
   insulating_material: [
     'zap.hint.insulator.1',
@@ -48,6 +55,7 @@ const HINTS: Record<Exclude<HintCode, 'success'>, readonly [TextId, TextId, Text
   ],
   bulb_one_side: ['zap.hint.bulb.1', 'zap.hint.bulb.2', 'zap.hint.bulb.3'],
   led_reversed: ['zap.hint.led.1', 'zap.hint.led.2', 'zap.hint.led.3'],
+  diode_reversed: ['zap.hint.diode.1', 'zap.hint.diode.2', 'zap.hint.diode.3'],
   open_circuit: ['zap.hint.open.1', 'zap.hint.open.2', 'zap.hint.open.3'],
   error: ['zap.hint.error.1', 'zap.hint.error.2', 'zap.hint.error.3'],
 };
@@ -55,10 +63,12 @@ const HINTS: Record<Exclude<HintCode, 'success'>, readonly [TextId, TextId, Text
 const DIAGNOSTIC_ORDER: readonly DiagnosticCode[] = [
   'short_circuit',
   'missing_battery',
+  'missing_source',
   'switch_open',
   'insulating_material',
   'bulb_one_side',
   'led_reversed',
+  'diode_reversed',
   'open_circuit',
   'simulation_error',
 ];
@@ -143,7 +153,7 @@ function buildHighlight(
       }
     | undefined,
 ): HintHighlight | null {
-  if (code === 'missing_battery') {
+  if (code === 'missing_battery' || code === 'missing_source') {
     return {
       terminalRefs: [],
       componentIds: [],

@@ -92,6 +92,19 @@ beforeEach(async () => {
     'variateur',
     'puissance',
     'combinaison',
+    'sonnerie',
+    'diode',
+    'sensUnique',
+    'electroAimant',
+    'bobine',
+    'relais',
+    'lameSouple',
+    'capteurLumiere',
+    'panneauSolaire',
+    'condensateur',
+    'charge',
+    'decharge',
+    'reserve',
   ]);
   noe = await createStudent('Noé', 'panda', ['circuitFerme']);
   await createAdult('parent', 'parent', { parentOf: [lina._id] });

@@ -203,6 +203,73 @@ function parseComponent(raw: unknown, path: string): CircuitComponent {
           path,
         ),
       };
+    case 'diode':
+      return {
+        ...base,
+        type,
+        resistance: readPositiveNumber(raw, 'resistance', path),
+        forwardVoltage: readNonNegativeNumber(raw, 'forwardVoltage', path),
+      };
+    case 'electromagnet':
+      return {
+        ...base,
+        type,
+        resistance: readPositiveNumber(raw, 'resistance', path),
+        turns: readPositiveNumber(raw, 'turns', path),
+      };
+    case 'reed':
+      return {
+        ...base,
+        type,
+        magnetNear: readBoolean(raw, 'magnetNear', path),
+        normallyOpen: readBoolean(raw, 'normallyOpen', path),
+        resistanceWhenClosed: readPositiveNumber(
+          raw,
+          'resistanceWhenClosed',
+          path,
+        ),
+      };
+    case 'relay':
+      return {
+        ...base,
+        type,
+        coilResistance: readPositiveNumber(raw, 'coilResistance', path),
+        contactResistance: readPositiveNumber(raw, 'contactResistance', path),
+        threshold: readPositiveNumber(raw, 'threshold', path),
+        normallyClosed: readBoolean(raw, 'normallyClosed', path),
+        closed: readBoolean(raw, 'closed', path),
+      };
+    case 'ldr': {
+      const lightResistance = readPositiveNumber(raw, 'lightResistance', path);
+      const darkResistance = readPositiveNumber(raw, 'darkResistance', path);
+
+      if (darkResistance <= lightResistance) {
+        fail(`${path}.darkResistance must exceed lightResistance`);
+      }
+
+      return {
+        ...base,
+        type,
+        lightResistance,
+        darkResistance,
+        lightLevel: readUnitInterval(raw, 'lightLevel', path),
+      };
+    }
+    case 'solar':
+      return {
+        ...base,
+        type,
+        voltage: readPositiveNumber(raw, 'voltage', path),
+        internalResistance: readPositiveNumber(raw, 'internalResistance', path),
+        lightLevel: readUnitInterval(raw, 'lightLevel', path),
+      };
+    case 'capacitor':
+      return {
+        ...base,
+        type,
+        capacitance: readPositiveNumber(raw, 'capacitance', path),
+        initialVoltage: readNonNegativeNumber(raw, 'initialVoltage', path),
+      };
   }
 }
 

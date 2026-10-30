@@ -278,6 +278,15 @@
   box-shadow: 0 2px 0 rgba(36, 50, 74, 0.12);
 }
 
+.workbench-daynight-button {
+  bottom: 68px;
+}
+
+[data-layout='compact'] .workbench-daynight-button {
+  bottom: 64px;
+  min-height: 48px;
+}
+
 .workbench-zoom-hint {
   position: absolute;
   bottom: 12px;
@@ -429,6 +438,14 @@
 
 .workbench-meter[data-meter-id='puissance'] {
   --meter-color: #d97706;
+}
+
+.workbench-meter[data-meter-id='charge'] {
+  --meter-color: #ca8a04;
+}
+
+.workbench-meter[data-meter-id='aimant'] {
+  --meter-color: #7c3aed;
 }
 
 .workbench-meter--off {

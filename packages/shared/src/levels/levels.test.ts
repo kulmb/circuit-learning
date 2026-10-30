@@ -7,10 +7,16 @@ import { CHAPTER_1_LEVELS } from './chapterLight';
 import { CHAPTER_2_LEVELS } from './chapterCurrent';
 import { CHAPTER_3_LEVELS } from './chapterAssemblies';
 import { CHAPTER_4_LEVELS } from './chapterChallenges';
+import { CHAPTER_5_LEVELS } from './chapterSound';
+import { CHAPTER_6_LEVELS } from './chapterDiode';
+import { CHAPTER_7_LEVELS } from './chapterMagnet';
+import { CHAPTER_8_LEVELS } from './chapterSensor';
+import { CHAPTER_9_LEVELS } from './chapterCapacitor';
 import { ALL_LEVELS, getLevelById, getNextLevel } from './registry';
 import {
   ALL_LEVEL_METADATA,
   CHAPTER_1_LEVEL_METADATA,
+  CHAPTER_5_LEVEL_METADATA,
 } from './metadata';
 import { starsForHints } from './stars';
 import { evaluateLevelSuccess } from './success';
@@ -50,6 +56,7 @@ describe('chapter data', () => {
   it('keeps the lightweight metadata in sync with the level definitions', () => {
     expect(ALL_LEVEL_METADATA).toHaveLength(ALL_LEVELS.length);
     expect(CHAPTER_1_LEVEL_METADATA).toHaveLength(CHAPTER_1_LEVELS.length);
+    expect(CHAPTER_5_LEVEL_METADATA).toHaveLength(CHAPTER_5_LEVELS.length);
 
     for (const [index, level] of ALL_LEVELS.entries()) {
       const metadata = ALL_LEVEL_METADATA[index];
@@ -68,9 +75,9 @@ describe('chapter data', () => {
 
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids[0]).toBe('light-01');
-    expect(ids[ids.length - 1]).toBe('defi-04');
+    expect(ids[ids.length - 1]).toBe('cap-06');
     expect(ALL_LEVELS.map((level) => level.order)).toEqual(
-      Array.from({ length: 26 }, (_, index) => index + 1),
+      Array.from({ length: 46 }, (_, index) => index + 1),
     );
     expect(CHAPTER_2_LEVELS.map((level) => level.number)).toEqual([
       1, 2, 3, 4, 5, 6, 7,
@@ -80,6 +87,15 @@ describe('chapter data', () => {
     ]);
     expect(CHAPTER_4_LEVELS.map((level) => level.number)).toEqual([
       1, 2, 3, 4,
+    ]);
+    expect(CHAPTER_5_LEVELS.map((level) => level.number)).toEqual([1, 2, 3]);
+    expect(CHAPTER_6_LEVELS.map((level) => level.number)).toEqual([1, 2, 3]);
+    expect(CHAPTER_7_LEVELS.map((level) => level.number)).toEqual([
+      1, 2, 3, 4, 5,
+    ]);
+    expect(CHAPTER_8_LEVELS.map((level) => level.number)).toEqual([1, 2, 3]);
+    expect(CHAPTER_9_LEVELS.map((level) => level.number)).toEqual([
+      1, 2, 3, 4, 5, 6,
     ]);
 
     for (const level of ALL_LEVELS) {
@@ -94,7 +110,12 @@ describe('chapter data', () => {
     expect(getNextLevel('current-06')?.id).toBe('current-07');
     expect(getNextLevel('current-07')?.id).toBe('assembly-01');
     expect(getNextLevel('assembly-04')?.id).toBe('defi-01');
-    expect(getNextLevel('defi-04')).toBeUndefined();
+    expect(getNextLevel('defi-04')?.id).toBe('sound-01');
+    expect(getNextLevel('sound-03')?.id).toBe('diode-01');
+    expect(getNextLevel('diode-03')?.id).toBe('mag-01');
+    expect(getNextLevel('mag-05')?.id).toBe('sensor-01');
+    expect(getNextLevel('sensor-03')?.id).toBe('cap-01');
+    expect(getNextLevel('cap-06')).toBeUndefined();
   });
 
   it('uses realistic art for levels 1–6, overlays for 7–9 and symbols for 10', () => {
@@ -124,6 +145,9 @@ describe('chapter data', () => {
     ]);
     expect(getLevelById('assembly-01')?.meters).toEqual(['courant']);
     expect(getLevelById('assembly-04')?.meters).toContain('puissance');
+    expect(getLevelById('mag-01')?.meters).toEqual(['aimant']);
+    expect(getLevelById('cap-01')?.meters).toEqual(['charge']);
+    expect(getLevelById('cap-06')?.meters).toEqual(['charge']);
   });
 
   it('marks the four challenge tiers with a fixed component budget', () => {

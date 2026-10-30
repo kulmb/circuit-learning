@@ -110,6 +110,9 @@ export interface WorkbenchSvgProps {
     wiperPosition: number,
     recordHistory: boolean,
   ) => void;
+  onSetReedMagnet: (componentId: string, magnetNear: boolean) => void;
+  onEmptyCapacitor: (componentId: string) => void;
+  showMagnet: boolean;
   onAddWire: (from: TerminalRef, to: TerminalRef) => void;
 }
 
@@ -155,13 +158,19 @@ interface RheostatGesture extends BaseGesture {
   historyPushed: boolean;
 }
 
+interface MagnetGesture extends BaseGesture {
+  kind: 'magnet';
+  grabOffset: Point;
+}
+
 type BoardGesture =
   | ComponentGesture
   | TerminalGesture
   | WireGesture
   | BlankGesture
   | PanGesture
-  | RheostatGesture;
+  | RheostatGesture
+  | MagnetGesture;
 
 interface PinchGesture {
   startView: BoardView;
@@ -209,6 +218,9 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
   onDeleteComponent,
   onToggleSwitch,
   onSetRheostatWiper,
+  onSetReedMagnet,
+  onEmptyCapacitor,
+  showMagnet,
   onAddWire,
 }: WorkbenchSvgProps) {
   useLanguage();
@@ -223,8 +235,26 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
   const localSvgRef = useRef<SVGSVGElement | null>(null);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const [wirePreview, setWirePreview] = useState<WirePreview | null>(null);
+  const [magnet, setMagnet] = useState<Point>({
+    x: CELL_SIZE * 1.4,
+    y: board.height - CELL_SIZE * 1.4,
+  });
 
   const panEnabled = pannable || view.zoom > 1.0001;
+
+  const updateReedProximity = (point: Point): void => {
+    for (const component of circuit.components) {
+      if (component.type !== 'reed') {
+        continue;
+      }
+
+      const distanceToReed = Math.hypot(
+        point.x - component.position.x * CELL_SIZE,
+        point.y - component.position.y * CELL_SIZE,
+      );
+      onSetReedMagnet(component.id, distanceToReed <= CELL_SIZE * 1.4);
+    }
+  };
 
   useEffect(() => {
     viewRef.current = view;
@@ -582,6 +612,25 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
     const wireElement = element?.closest('[data-wire-id]') ?? null;
     const rheostatElement =
       element?.closest('[data-rheostat-slider]') ?? null;
+    const magnetElement = element?.closest('[data-magnet-id]') ?? null;
+
+    if (magnetElement !== null) {
+      gestureRef.current = {
+        kind: 'magnet',
+        pointerId,
+        startClient,
+        pointerType,
+        dragged: false,
+        view: startView,
+        grabOffset: {
+          x: magnet.x - startPoint.x,
+          y: magnet.y - startPoint.y,
+        },
+      };
+      onSelect(null);
+      onSetPendingTerminal(null);
+      return;
+    }
 
     if (rheostatElement !== null) {
       const componentId = rheostatElement.getAttribute(
@@ -778,7 +827,6 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
 
     const dragged =
       gesture.dragged || isDragGesture(gesture.startClient, client);
-
     if (dragged && !gesture.dragged) {
       gesture.dragged = true;
       if (gesture.kind === 'terminal') {
@@ -814,6 +862,24 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
       gesture.pointerType,
       touchOffset,
     );
+
+    if (gesture.kind === 'magnet') {
+      const next = {
+        x: clamp(
+          adjustedPoint.x + gesture.grabOffset.x,
+          CELL_SIZE * 0.6,
+          board.width - CELL_SIZE * 0.6,
+        ),
+        y: clamp(
+          adjustedPoint.y + gesture.grabOffset.y,
+          CELL_SIZE * 0.6,
+          board.height - CELL_SIZE * 0.6,
+        ),
+      };
+      setMagnet(next);
+      updateReedProximity(next);
+      return;
+    }
 
     if (gesture.kind === 'component') {
       if (lockedComponentIds.includes(gesture.componentId)) {
@@ -1138,6 +1204,41 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
         />
       ))}
 
+      {showMagnet ? (
+        <g
+          data-magnet-id="magnet"
+          role="img"
+          aria-label={fr.workbench.magnetAria}
+          transform={`translate(${magnet.x} ${magnet.y})`}
+          pointerEvents="all"
+        >
+          <rect
+            x={-28}
+            y={-30}
+            width={56}
+            height={60}
+            rx={14}
+            fill="#f8fafc"
+            stroke="#94a3b8"
+            strokeWidth={3}
+          />
+          <path
+            d="M -16 -20 v22 a16 16 0 0 0 32 0 v-22"
+            fill="none"
+            stroke="#dc2626"
+            strokeWidth={12}
+            strokeLinecap="square"
+          />
+          <path
+            d="M -16 -20 v10 M 16 -20 v10"
+            fill="none"
+            stroke="#1d4ed8"
+            strokeWidth={12}
+            strokeLinecap="square"
+          />
+        </g>
+      ) : null}
+
       {previewComponent !== null ? (
         <ComponentBlock
           component={previewComponent}
@@ -1257,6 +1358,12 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
             viewportScale={scale}
             onRotate={() => onRotateComponent(selectedComponent.id)}
             onDelete={onDeleteSelection}
+            onEmpty={
+              selectedComponent.type === 'capacitor'
+                ? () => onEmptyCapacitor(selectedComponent.id)
+                : undefined
+            }
+            emptyLabel={fr.workbench.emptyCapacitor}
           />
         )
       ) : null}
@@ -1393,6 +1500,8 @@ interface SelectionToolbarProps {
   viewportScale: number;
   onRotate: () => void;
   onDelete: () => void;
+  onEmpty?: (() => void) | undefined;
+  emptyLabel?: string | undefined;
 }
 
 function SelectionToolbar({
@@ -1403,12 +1512,15 @@ function SelectionToolbar({
   viewportScale,
   onRotate,
   onDelete,
+  onEmpty,
+  emptyLabel,
 }: SelectionToolbarProps) {
   const buttonSize = toolbarButtonSize(compact, viewportScale);
   const visualScale = buttonSize / 72;
   const gap = 8 * visualScale;
   const padding = 6 * visualScale;
-  const width = padding * 2 + buttonSize * 2 + gap;
+  const buttonCount = onEmpty === undefined ? 2 : 3;
+  const width = padding * 2 + buttonSize * buttonCount + gap * (buttonCount - 1);
   const height = padding * 2 + buttonSize;
   const { left, top } = chooseToolbarPosition(
     component,
@@ -1438,8 +1550,19 @@ function SelectionToolbar({
         icon="rotate"
         onActivate={onRotate}
       />
+      {onEmpty === undefined ? null : (
+        <ToolbarButton
+          x={padding + buttonSize + gap}
+          y={padding}
+          size={buttonSize}
+          viewportScale={viewportScale}
+          label={emptyLabel ?? fr.workbench.emptyCapacitor}
+          icon="empty"
+          onActivate={onEmpty}
+        />
+      )}
       <ToolbarButton
-        x={padding + buttonSize + gap}
+        x={padding + (buttonSize + gap) * (buttonCount - 1)}
         y={padding}
         size={buttonSize}
         viewportScale={viewportScale}
@@ -1647,7 +1770,7 @@ interface ToolbarButtonProps {
   size: number;
   viewportScale: number;
   label: string;
-  icon: 'rotate' | 'trash';
+  icon: 'rotate' | 'trash' | 'empty';
   tone?: 'default' | 'danger';
   onActivate: () => void;
 }

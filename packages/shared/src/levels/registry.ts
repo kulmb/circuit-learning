@@ -18,6 +18,31 @@ import {
   CHAPTER_4_LEVELS,
   CHAPTER_4_TITLE_ID,
 } from './chapterChallenges';
+import {
+  CHAPTER_5_ID,
+  CHAPTER_5_LEVELS,
+  CHAPTER_5_TITLE_ID,
+} from './chapterSound';
+import {
+  CHAPTER_6_ID,
+  CHAPTER_6_LEVELS,
+  CHAPTER_6_TITLE_ID,
+} from './chapterDiode';
+import {
+  CHAPTER_7_ID,
+  CHAPTER_7_LEVELS,
+  CHAPTER_7_TITLE_ID,
+} from './chapterMagnet';
+import {
+  CHAPTER_8_ID,
+  CHAPTER_8_LEVELS,
+  CHAPTER_8_TITLE_ID,
+} from './chapterSensor';
+import {
+  CHAPTER_9_ID,
+  CHAPTER_9_LEVELS,
+  CHAPTER_9_TITLE_ID,
+} from './chapterCapacitor';
 import type { LevelDefinition } from './types';
 
 export interface ChapterDefinition {
@@ -46,6 +71,31 @@ export const CHAPTERS: readonly ChapterDefinition[] = [
     id: CHAPTER_4_ID,
     titleTextId: CHAPTER_4_TITLE_ID,
     levels: CHAPTER_4_LEVELS,
+  },
+  {
+    id: CHAPTER_5_ID,
+    titleTextId: CHAPTER_5_TITLE_ID,
+    levels: CHAPTER_5_LEVELS,
+  },
+  {
+    id: CHAPTER_6_ID,
+    titleTextId: CHAPTER_6_TITLE_ID,
+    levels: CHAPTER_6_LEVELS,
+  },
+  {
+    id: CHAPTER_7_ID,
+    titleTextId: CHAPTER_7_TITLE_ID,
+    levels: CHAPTER_7_LEVELS,
+  },
+  {
+    id: CHAPTER_8_ID,
+    titleTextId: CHAPTER_8_TITLE_ID,
+    levels: CHAPTER_8_LEVELS,
+  },
+  {
+    id: CHAPTER_9_ID,
+    titleTextId: CHAPTER_9_TITLE_ID,
+    levels: CHAPTER_9_LEVELS,
   },
 ];
 

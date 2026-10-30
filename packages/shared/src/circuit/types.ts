@@ -29,7 +29,14 @@ export type ComponentType =
   | 'led'
   | 'resistor'
   | 'rheostat'
-  | 'material';
+  | 'material'
+  | 'diode'
+  | 'electromagnet'
+  | 'reed'
+  | 'relay'
+  | 'ldr'
+  | 'solar'
+  | 'capacitor';
 
 export interface BaseComponent {
   id: string;
@@ -95,6 +102,56 @@ export interface MaterialComponent extends BaseComponent {
   resistanceWhenConductive: number;
 }
 
+export interface DiodeComponent extends BaseComponent {
+  type: 'diode';
+  resistance: number;
+  forwardVoltage: number;
+}
+
+export interface ElectromagnetComponent extends BaseComponent {
+  type: 'electromagnet';
+  resistance: number;
+  turns: number;
+}
+
+export interface ReedComponent extends BaseComponent {
+  type: 'reed';
+  magnetNear: boolean;
+  normallyOpen: boolean;
+  resistanceWhenClosed: number;
+}
+
+export interface RelayComponent extends BaseComponent {
+  type: 'relay';
+  coilResistance: number;
+  contactResistance: number;
+  threshold: number;
+  normallyClosed: boolean;
+  closed: boolean;
+}
+
+export interface LdrComponent extends BaseComponent {
+  type: 'ldr';
+  lightResistance: number;
+  darkResistance: number;
+  /** 0 = dark, 1 = bright light. */
+  lightLevel: number;
+}
+
+export interface SolarComponent extends BaseComponent {
+  type: 'solar';
+  voltage: number;
+  internalResistance: number;
+  /** 0 = dark, 1 = bright light. */
+  lightLevel: number;
+}
+
+export interface CapacitorComponent extends BaseComponent {
+  type: 'capacitor';
+  capacitance: number;
+  initialVoltage: number;
+}
+
 export type CircuitComponent =
   | BatteryComponent
   | BulbComponent
@@ -105,7 +162,14 @@ export type CircuitComponent =
   | LedComponent
   | ResistorComponent
   | RheostatComponent
-  | MaterialComponent;
+  | MaterialComponent
+  | DiodeComponent
+  | ElectromagnetComponent
+  | ReedComponent
+  | RelayComponent
+  | LdrComponent
+  | SolarComponent
+  | CapacitorComponent;
 
 export interface Wire {
   id: string;
@@ -130,16 +194,28 @@ export interface ComponentState {
   state: QualitativeState;
   on: boolean;
   reverseBiased: boolean;
+  /** Capacitor charge, 0 = empty, 1 = full. */
+  charge?: number;
+  /** Electromagnet strength, 0 = none, 1 = strong. */
+  magneticStrength?: number;
+  /** Reed switch closed by a nearby magnet. */
+  magnetNear?: boolean;
+  /** Relay contact closed. */
+  relayClosed?: boolean;
+  /** Branch currents for multi-terminal components, from first to second terminal. */
+  branchCurrents?: Record<string, number>;
 }
 
 export type DiagnosticCode =
   | 'missing_battery'
+  | 'missing_source'
   | 'open_circuit'
   | 'short_circuit'
   | 'bulb_one_side'
   | 'switch_open'
   | 'insulating_material'
   | 'led_reversed'
+  | 'diode_reversed'
   | 'simulation_error';
 
 export type DiagnosticSeverity = 'info' | 'warning' | 'danger';
@@ -164,10 +240,12 @@ export interface CircuitDescription {
   shortCircuit: boolean;
   openCircuit: boolean;
   missingBattery: boolean;
+  missingSource: boolean;
   bulbOneSide: boolean;
   switchOpen: boolean;
   insulatingMaterial: boolean;
   ledReversed: boolean;
+  diodeReversed: boolean;
   danglingTerminals: TerminalRef[];
   diagnostics: CircuitDiagnostic[];
   shortCircuitInfo: ShortCircuitInfo | null;

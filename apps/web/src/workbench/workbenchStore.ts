@@ -86,6 +86,8 @@ export interface WorkbenchState {
     wiperPosition: number,
     recordHistory: boolean,
   ) => void;
+  setLightLevel: (lightLevel: number) => void;
+  setReedMagnet: (componentId: string, magnetNear: boolean) => void;
   deleteComponent: (componentId: string) => void;
   deleteSelection: () => void;
   addWire: (from: TerminalRef, to: TerminalRef) => void;
@@ -255,6 +257,11 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       rotation,
       ...options,
     });
+
+    if (component.terminals.length !== 2) {
+      return;
+    }
+
     const firstTerminal = component.terminals[0];
     const secondTerminal = component.terminals[1];
 
@@ -415,6 +422,49 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       circuit,
       simulation: simulateCircuit(circuit),
       selected: selection,
+      pendingTerminal: null,
+    });
+  },
+
+  setLightLevel(lightLevel) {
+    const state = get();
+    const clamped = Math.min(1, Math.max(0, lightLevel));
+    const components = state.circuit.components.map((component) => {
+      if (component.type !== 'ldr' && component.type !== 'solar') {
+        return component;
+      }
+
+      return { ...component, lightLevel: clamped };
+    });
+    const circuit: Circuit = { components, wires: state.circuit.wires };
+
+    set({
+      circuit,
+      simulation: simulateCircuit(circuit),
+      pendingTerminal: null,
+    });
+  },
+
+  setReedMagnet(componentId, magnetNear) {
+    const state = get();
+    const target = state.circuit.components.find(
+      (component) => component.id === componentId,
+    );
+
+    if (target?.type !== 'reed' || target.magnetNear === magnetNear) {
+      return;
+    }
+
+    const components = state.circuit.components.map((component) =>
+      component.id === componentId && component.type === 'reed'
+        ? { ...component, magnetNear }
+        : component,
+    );
+    const circuit: Circuit = { components, wires: state.circuit.wires };
+
+    set({
+      circuit,
+      simulation: simulateCircuit(circuit),
       pendingTerminal: null,
     });
   },
@@ -643,11 +693,8 @@ function restoredAvailableCounts(
     return null;
   }
 
-  const offer = state.availableOffers.find(
-    (candidate) =>
-      candidate.type === component.type &&
-      (component.type !== 'material' ||
-        (candidate.key === 'metal') === component.conductive),
+  const offer = state.availableOffers.find((candidate) =>
+    offerMatchesComponent(candidate, component),
   );
 
   if (offer === undefined) {
@@ -664,6 +711,44 @@ function restoredAvailableCounts(
     ...state.availableCounts,
     [offer.key]: remaining + 1,
   };
+}
+
+function offerMatchesComponent(
+  offer: LevelAvailableComponent,
+  component: CircuitComponent,
+): boolean {
+  if (offer.type !== component.type) {
+    return false;
+  }
+
+  if (offer.type === 'material') {
+    return (
+      component.type === 'material' &&
+      (offer.key === 'metal') === component.conductive
+    );
+  }
+
+  if (offer.options === undefined) {
+    return true;
+  }
+
+  const values = component as unknown as Record<string, unknown>;
+
+  return Object.entries(offer.options).every(([key, value]) => {
+    // These fields are changed by play (switch state, magnet, day/night)
+    // and must not decide which palette slot is restored.
+    if (
+      key === 'closed' ||
+      key === 'magnetNear' ||
+      key === 'wiperPosition' ||
+      key === 'lightLevel' ||
+      key === 'conductive'
+    ) {
+      return true;
+    }
+
+    return values[key] === value;
+  });
 }
 
 function nextCircuitState(

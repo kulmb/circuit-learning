@@ -22,7 +22,7 @@ test('un encadrant ne peut pas ouvrir la fiche d’un élève d’un autre group
   await page.goto(`/admin/students/${E2E_IDS.lina}`);
 
   await expect(page.getByRole('alert')).toContainText(
-    'Tu n’as pas accès à cet élève.',
+    'Tu n’as pas le droit de faire cela.',
   );
   await expect(
     page.getByRole('heading', { name: 'Lina', exact: true }),

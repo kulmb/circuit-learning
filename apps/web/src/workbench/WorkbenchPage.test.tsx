@@ -1075,3 +1075,66 @@ describe('workbench responsive layout', () => {
     );
   });
 });
+
+describe('0.4.0 chapters', () => {
+  const newLevelIds = [
+    'sound-01',
+    'sound-02',
+    'sound-03',
+    'diode-01',
+    'diode-02',
+    'diode-03',
+    'mag-01',
+    'mag-02',
+    'mag-03',
+    'mag-04',
+    'mag-05',
+    'sensor-01',
+    'sensor-02',
+    'sensor-03',
+    'cap-01',
+    'cap-02',
+    'cap-03',
+    'cap-04',
+    'cap-05',
+    'cap-06',
+  ];
+
+  it.each(newLevelIds)('renders %s without crashing', (levelId) => {
+    const level = getLevelById(levelId);
+    if (!level) throw new Error(`Level ${levelId} missing`);
+
+    const view = render(
+      <WorkbenchPage level={level} onBack={() => undefined} />,
+    );
+    getSvg();
+
+    expect(
+      screen.getByRole('heading', { name: getText(level.titleTextId) }),
+    ).toBeInTheDocument();
+
+    view.unmount();
+  });
+
+  it('shows the magnet accessory on a reed level', () => {
+    const level = getLevelById('mag-03');
+    if (!level) throw new Error('Level missing');
+
+    render(<WorkbenchPage level={level} onBack={() => undefined} />);
+    getSvg();
+
+    expect(document.querySelector('[data-magnet-id]')).not.toBeNull();
+  });
+
+  it('shows the day/night control on a light level', () => {
+    const level = getLevelById('sensor-01');
+    if (!level) throw new Error('Level missing');
+
+    render(<WorkbenchPage level={level} onBack={() => undefined} />);
+    getSvg();
+
+    expect(
+      screen.getByRole('button', { name: getText('workbench.dayNight') }),
+    ).toBeInTheDocument();
+  });
+});

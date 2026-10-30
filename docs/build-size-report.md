@@ -1,14 +1,14 @@
 # Rapport de taille des ressources
 
-Généré le 2026-10-25 15:30 UTC depuis `apps/web/dist`.
+Généré le 2026-10-30 14:44 UTC depuis `apps/web/dist`.
 
 ## Budget du premier écran
 
 | Mesure | Taille gzip | Budget | État |
 |---|---:|---:|:---:|
-| JavaScript initial | 130.18 Ko | 300 Ko | OK |
-| CSS initial | 4.26 Ko | — | information |
-| Total JS + CSS initial | 134.44 Ko | — | information |
+| JavaScript initial | 168.12 Ko | 300 Ko | OK |
+| CSS initial | 4.78 Ko | — | information |
+| Total JS + CSS initial | 172.90 Ko | — | information |
 
 Le JavaScript initial est le script module référencé par `index.html`.
 `GameShell` (écrans de jeu et définitions de niveaux), `AdminApp` et
@@ -19,13 +19,13 @@ téléchargées qu’à l’ouverture de leur route.
 
 | Fichier | Brut | Gzip |
 |---|---:|---:|
-| `/assets/index-DLJzdwuY.js` | 428.88 Ko | 130.18 Ko |
+| `/assets/index-DaxAhvYw.js` | 560.63 Ko | 168.12 Ko |
 
 ## CSS initial
 
 | Fichier | Brut | Gzip |
 |---|---:|---:|
-| `/assets/index-Dx_jN9hy.css` | 15.96 Ko | 4.26 Ko |
+| `/assets/index-CnaTKrCR.css` | 18.26 Ko | 4.78 Ko |
 
 ## JavaScript chargé à la demande
 
@@ -33,20 +33,20 @@ Ces fichiers ne sont pas présents sur le premier écran.
 
 | Fichier | Brut | Gzip |
 |---|---:|---:|
-| `/assets/AdminApp-BxZoQzVZ.js` | 429.71 Ko | 117.53 Ko |
-| `/assets/GameShell-BVMhXs3V.js` | 125.77 Ko | 35.87 Ko |
-| `/assets/ParentSettingsPage-CrYWwSyK.js` | 6.51 Ko | 1.69 Ko |
-| `/assets/haptics-k8aB_QHZ.js` | 0.28 Ko | 0.21 Ko |
-| `/assets/levels-DxwijXU1.js` | 28.55 Ko | 5.56 Ko |
+| `/assets/AdminApp-BNAxRtoJ.js` | 453.42 Ko | 125.42 Ko |
+| `/assets/GameShell-CNjpo9iZ.js` | 142.01 Ko | 39.45 Ko |
+| `/assets/ParentSettingsPage-Bjcg3POB.js` | 6.54 Ko | 1.70 Ko |
+| `/assets/haptics-BYq8sN-h.js` | 0.28 Ko | 0.21 Ko |
+| `/assets/levels-zzGwMqsk.js` | 49.47 Ko | 10.04 Ko |
 | `/assets/workbox-window.prod.es5-BqEJf4Xk.js` | 5.71 Ko | 2.34 Ko |
 
 ## CSS chargé à la demande
 
 | Fichier | Brut | Gzip |
 |---|---:|---:|
-| `/assets/AdminApp-GZt0Yr8w.css` | 16.96 Ko | 3.87 Ko |
-| `/assets/GameShell-_6woonKC.css` | 54.69 Ko | 9.51 Ko |
-| `/assets/ParentSettingsPage-wph3yc7p.css` | 6.17 Ko | 1.52 Ko |
+| `/assets/AdminApp-CApOn6fC.css` | 17.30 Ko | 4.01 Ko |
+| `/assets/GameShell-D5FI5NVh.css` | 55.33 Ko | 9.60 Ko |
+| `/assets/ParentSettingsPage-CmvvkCYX.css` | 6.27 Ko | 1.55 Ko |
 
 ## Fichiers PWA
 

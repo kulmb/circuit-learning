@@ -10,9 +10,22 @@ import { buildPaletteItems, type PaletteItem } from './paletteItems';
 
 /**
  * The free workshop offers the same components on every device. The buzzer
- * stays in the guided levels, where its sound has a purpose.
+ * stays in the guided levels, where its sound has a purpose. The 0.4.0
+ * components stay in the guided levels too: their transient and light
+ * controls are not available in the free workshop yet.
  */
-const SANDBOX_HIDDEN_KEYS: ReadonlySet<string> = new Set(['buzzer']);
+const SANDBOX_HIDDEN_KEYS: ReadonlySet<string> = new Set([
+  'buzzer',
+  'diode',
+  'electromagnet-short',
+  'electromagnet-long',
+  'reed',
+  'relay',
+  'ldr',
+  'solar',
+  'capacitor-small',
+  'capacitor-large',
+]);
 
 export interface SandboxWorkMeta {
   id: string;

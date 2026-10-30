@@ -8,15 +8,17 @@ import { cloneComponent } from '../circuit/components';
 import { cloneWire } from '../circuit/components';
 import { simulateCircuit } from '../circuit/simulate';
 import { areInParallel, areInSeries } from '../circuit/topology';
+import type { LevelRuntime } from './runtime';
 import type { LevelDefinition, SuccessCondition } from './types';
 
 export function evaluateLevelSuccess(
   level: LevelDefinition,
   circuit: Circuit,
   simulation: CircuitSimulation,
+  runtime?: LevelRuntime,
 ): boolean {
   return level.success.every((condition) =>
-    evaluateCondition(condition, circuit, simulation),
+    evaluateCondition(condition, circuit, simulation, runtime),
   );
 }
 
@@ -24,6 +26,7 @@ function evaluateCondition(
   condition: SuccessCondition,
   circuit: Circuit,
   simulation: CircuitSimulation,
+  runtime: LevelRuntime | undefined,
 ): boolean {
   switch (condition.type) {
     case 'circuit_ok':
@@ -68,6 +71,78 @@ function evaluateCondition(
         condition.componentId,
         condition.thanComponentId,
       );
+    case 'capacitor_filled': {
+      const state = simulation.states[condition.componentId];
+      return (
+        runtime?.capacitorFilled[condition.componentId] === true ||
+        (state?.charge ?? 0) >= 0.8
+      );
+    }
+    case 'capacitor_empty': {
+      const state = simulation.states[condition.componentId];
+      return (
+        runtime?.capacitorEmpty[condition.componentId] === true ||
+        (state?.charge ?? 1) <= 0.15
+      );
+    }
+    case 'lamp_stays_on_after_open':
+      return (
+        runtime !== undefined &&
+        runtime.maxLampOnAfterOpenMs >= condition.minDurationMs
+      );
+    case 'flash_seen':
+      return runtime?.flashSeen[condition.componentId] === true;
+    case 'magnet_attracts': {
+      const strength =
+        simulation.states[condition.componentId]?.magneticStrength ?? 0;
+      return condition.amount === 'all' ? strength >= 0.75 : strength > 0.1;
+    }
+    case 'reed_state':
+      return simulation.states[condition.componentId]?.on === condition.closed;
+    case 'reed_controls': {
+      const near = simulateCircuit(withReedMagnet(circuit, condition.reedId, true));
+      const far = simulateCircuit(withReedMagnet(circuit, condition.reedId, false));
+
+      return (
+        near.states[condition.componentId]?.state === condition.stateNear &&
+        far.states[condition.componentId]?.state === condition.stateFar
+      );
+    }
+    case 'relay_state':
+      return (
+        simulation.states[condition.componentId]?.relayClosed ===
+        condition.closed
+      );
+    case 'relay_controls': {
+      const state = simulation.states[condition.relayId];
+      const target = simulation.states[condition.componentId];
+      if (state === undefined || target === undefined) {
+        return false;
+      }
+
+      return state.relayClosed === true
+        ? target.state === condition.stateOn
+        : target.state === condition.stateOff;
+    }
+    case 'light_response': {
+      const lit = simulateCircuit(withLightLevel(circuit, 1));
+      const dark = simulateCircuit(withLightLevel(circuit, 0));
+
+      return (
+        lit.states[condition.componentId]?.state === condition.litState &&
+        dark.states[condition.componentId]?.state === condition.darkState
+      );
+    }
+    case 'diode_conducts': {
+      const state = simulation.states[condition.componentId];
+      return state !== undefined && state.on && !state.reverseBiased;
+    }
+    case 'diode_blocks': {
+      const state = simulation.states[condition.componentId];
+      return state !== undefined && (!state.on || state.reverseBiased);
+    }
+    case 'every_source_powers':
+      return everySourcePowers(circuit, condition.componentId);
   }
 }
 
@@ -197,5 +272,82 @@ function withSwitchState(circuit: Circuit, switchId: string, closed: boolean): C
   return {
     components,
     wires: circuit.wires.map(cloneWire),
+  };
+}
+
+function withLightLevel(circuit: Circuit, lightLevel: number): Circuit {
+  const components = circuit.components.map((component) => {
+    const clone = cloneComponent(component);
+
+    if (clone.type === 'ldr' || clone.type === 'solar') {
+      clone.lightLevel = lightLevel;
+    }
+
+    return clone as CircuitComponent;
+  });
+
+  return {
+    components,
+    wires: circuit.wires.map(cloneWire),
+  };
+}
+
+function withReedMagnet(
+  circuit: Circuit,
+  reedId: string,
+  magnetNear: boolean,
+): Circuit {
+  const components = circuit.components.map((component) => {
+    const clone = cloneComponent(component);
+
+    if (clone.id === reedId && clone.type === 'reed') {
+      clone.magnetNear = magnetNear;
+    }
+
+    return clone as CircuitComponent;
+  });
+
+  return {
+    components,
+    wires: circuit.wires.map(cloneWire),
+  };
+}
+
+function everySourcePowers(circuit: Circuit, componentId: string): boolean {
+  const sources = circuit.components.filter(
+    (component) => component.type === 'battery' || component.type === 'solar',
+  );
+
+  if (sources.length === 0) {
+    return false;
+  }
+
+  return sources.every((source) => {
+    const simulation = simulateCircuit(withoutOtherSources(circuit, source.id));
+    return simulation.states[componentId]?.on === true;
+  });
+}
+
+function withoutOtherSources(circuit: Circuit, keepId: string): Circuit {
+  const removed = new Set(
+    circuit.components
+      .filter(
+        (component) =>
+          (component.type === 'battery' || component.type === 'solar') &&
+          component.id !== keepId,
+      )
+      .map((component) => component.id),
+  );
+
+  return {
+    components: circuit.components
+      .filter((component) => !removed.has(component.id))
+      .map(cloneComponent),
+    wires: circuit.wires
+      .filter(
+        (wire) =>
+          !removed.has(wire.from.componentId) && !removed.has(wire.to.componentId),
+      )
+      .map(cloneWire),
   };
 }
