@@ -203,7 +203,7 @@ trois indices, vocabulaire, étoiles selon les indices utilisés.
 |---|---|---|---|---|---|---|
 | `meca-01` | La roue qui tourne | Fais tourner la roue avec le moteur. | l’axe transmet la rotation | moteur, axe, roue | la roue tourne | EV3 01, 12 |
 | `meca-02` | Plus vite ou plus fort ? | Choisis les engrenages pour grimper ou pour courir. | petit menant / grand mené = lent et fort ; l’inverse = rapide et faible | moteur, petits et grands engrenages, roue | la charge monte (fort) ou le drapeau est atteint (vite) | EV3 06, 07, 12 |
-| `meca-03` | Le ver sans fin | Soulève la charge lourde. | le ver ralentit, force et bloque le retour | moteur, ver, engrenage, charge | la charge monte et reste en place | EV3 10 (ver), 06 (réduction) |
+| `meca-03` | La pince qui tient | Ferme la pince et garde l’objet. | le ver ralentit, force et bloque le retour | moteur, ver, pince, objet | la pince tient l’objet sans moteur | EV3 10 (ver), 06 (réduction) |
 | `meca-04` | La balance de Zap | Place le contrepoids pour équilibrer le plateau. | levier : appui et distance changent l’effort | levier, appui, contrepoids, plateau | la balance est équilibrée | EV3 02 |
 | `meca-05` | Le pont qui se déplie | Déplie le pont pour traverser. | crémaillère : rotation → translation | moteur, pignon, crémaillère, pont | le pont atteint l’autre rive | EV3 05 |
 | `meca-06` | Le robot qui marche | Relie la manivelle et la bielle pour faire avancer les jambes. | rotation → va-et-vient | moteur, manivelle, bielle, jambes | le robot fait trois pas | EV3 09 (manivelle) |
@@ -511,7 +511,8 @@ Aucun texte en dur.
 Nouveau vocabulaire :
 
 - mécanique : engrenage, axe, roue, ver sans fin, levier, point d’appui,
-  poulie, corde, manivelle, bielle, structure ;
+  crémaillère, manivelle, bielle, structure ; poulie et corde en atelier
+  libre ;
 - robot : capteur, contact, distance, couleur, programme, séquence,
   boucle, condition, essai, debug ;
 - vision : pixel, image, masque, contour, cadre, centre, détecter,
@@ -528,7 +529,7 @@ enregistrés en MP3 dans un second temps.
 Les nouveaux niveaux sont ajoutés à `ALL_LEVEL_METADATA` et à
 `PROGRESS_CONCEPTS` :
 
-- `engrenage`, `levier`, `poulie`, `liaison` ;
+- `engrenage`, `levier`, `cremaillere`, `liaison` ;
 - `capteur`, `boucle`, `condition`, `programme` ;
 - `pixel`, `couleur`, `contour`, `visage` ;
 - `mission`, `equipe`.
@@ -580,7 +581,9 @@ tampons du journal restent sur l’appareil.
   progression.
 - Les messages de sécurité rappellent : couper l’alimentation avant de
   toucher un robot, ne jamais toucher aux prises, attention aux pignons
-  qui pincent, les servos chauffent.
+  qui pincent, les servos chauffent, la batterie et le bouton d’arrêt
+  d’urgence, la tension maximale de 48 V, le câble de commande de 5 m en
+  Junior.
 
 ## 6. Contenu et progressivité
 
@@ -613,8 +616,8 @@ Le mode Défi n’est pas un autre chapitre : c’est une option de niveau
 ### 7.1 Tests unitaires (packages/shared)
 
 - Mécanique : sens alterné, petit→grand lent/fort, grand→petit
-  rapide/faible, ver bloquant, levier, poulie fixe/mobile, bielle,
-  conflit, pièce non reliée.
+  rapide/faible, ver bloquant, levier, crémaillère, bielle, conflit,
+  pièce non reliée ; poulie de l’atelier libre.
 - Blocs : séquence, répétition, condition, attente, capteurs, limite de
   pas, boucle infinie, prise/dépose.
 - Robot : déplacement, collision, distance, couleur, objets, pilotage
