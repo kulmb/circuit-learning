@@ -18,7 +18,7 @@ import {
   activate,
   formatDate,
 } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 interface ChildEntry {
   student: StudentSummary;

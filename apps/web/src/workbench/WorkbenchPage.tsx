@@ -26,6 +26,7 @@ import {
   vibrateShortCircuit,
   vibrateSuccess,
 } from '../feedback/haptics';
+import { useLanguage } from '../i18n/LanguageContext';
 import { useLayout } from '../layout/LayoutContext';
 import { LevelSuccessOverlay } from '../levels/LevelSuccessOverlay';
 import { useLevelSession } from '../levels/useLevelSession';
@@ -43,7 +44,7 @@ import { playBuzzerBeep, playSuccessFanfare, unlockAudio } from './audio';
 import { boardForLevel, CELL_SIZE } from './constants';
 import type { DisplayMode } from './displayMode';
 import { PaletteGlyph } from './PaletteGlyph';
-import { PALETTE_ITEMS, type PaletteItem } from './paletteItems';
+import { buildPaletteItems, type PaletteItem } from './paletteItems';
 import {
   chooseSandboxCuriosity,
   sandboxCuriosityTips,
@@ -136,6 +137,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   sandbox,
   challenge,
 }: WorkbenchPageProps) {
+  const { language } = useLanguage();
   const {
     circuit,
     simulation,
@@ -239,15 +241,17 @@ export const WorkbenchPage = memo(function WorkbenchPage({
       return sandbox.items;
     }
 
+    const available = buildPaletteItems();
+
     if (level === undefined) {
-      return PALETTE_ITEMS;
+      return available;
     }
 
     return level.availableComponents.flatMap((offer) => {
-      const item = PALETTE_ITEMS.find((candidate) => candidate.key === offer.key);
+      const item = available.find((candidate) => candidate.key === offer.key);
       return item === undefined ? [] : [item];
     });
-  }, [level, sandbox]);
+  }, [language, level, sandbox]);
   // On a phone in landscape the tray steals precious height. With no
   // component to offer, the work area gets the whole width instead.
   const paletteVisible = !(isCompact && paletteItems.length === 0);

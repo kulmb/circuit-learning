@@ -6,10 +6,11 @@ import {
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { ApiClientError, apiRequest } from '../api/client';
+import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
 import { useProgress } from '../progress/ProgressContext';
 import { navigate } from '../router';
 import { AdminError, AdminLoading, activate } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 export function InvitePage({ token }: { token: string }) {
   const { setSession } = useProgress();
@@ -86,6 +87,7 @@ export function InvitePage({ token }: { token: string }) {
 
   return (
     <div className="admin-auth">
+      <LanguageSwitcher className="admin-auth__language" />
       <div className="admin-auth__card">
         <p className="admin-auth__brand">{adminTexts.appName}</p>
 
@@ -105,17 +107,17 @@ export function InvitePage({ token }: { token: string }) {
                 : adminTexts.invite.subtitle}
             </p>
             <dl className="admin-invite-preview">
-              <dt>Nom</dt>
+              <dt>{adminTexts.users.name}</dt>
               <dd>{preview.displayName}</dd>
               {preview.username !== null ? (
                 <>
-                  <dt>Identifiant</dt>
+                  <dt>{adminTexts.login.username}</dt>
                   <dd>{preview.username}</dd>
                 </>
               ) : null}
               {preview.childName !== null ? (
                 <>
-                  <dt>Enfant</dt>
+                  <dt>{adminTexts.roles.eleve}</dt>
                   <dd>{preview.childName}</dd>
                 </>
               ) : null}

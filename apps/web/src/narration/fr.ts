@@ -1,7 +1,25 @@
 /**
- * Single source of truth for every French string shown to the child or the adults.
- * Narration services look texts up by id through getText().
+ * French source dictionary for every string shown to the child or the parents.
+ * English and Chinese dictionaries mirror the same keys; getText() selects the
+ * active language and falls back to French if a key is ever missing.
  */
+import { textsEn } from './texts.en';
+import { textsZh } from './texts.zh';
+
+export type Language = 'fr' | 'en' | 'zh';
+
+export const DEFAULT_LANGUAGE: Language = 'fr';
+
+let activeLanguage: Language = DEFAULT_LANGUAGE;
+
+export function setActiveLanguage(language: Language): void {
+  activeLanguage = language;
+}
+
+export function getActiveLanguage(): Language {
+  return activeLanguage;
+}
+
 export const texts = {
   'home.eyebrow': 'Avec Zap, le petit robot',
   'home.title': 'Les Circuits de Zap',
@@ -9,7 +27,7 @@ export const texts = {
   'home.play': 'Jouer',
   'home.sandbox': 'Atelier libre',
   'home.back': 'Retour',
-  'home.adultSpace': 'Espace adulte',
+  'home.adultSpace': 'Espace parent',
   'home.parentSettings': 'Réglages parents',
 
   'workbench.title': 'Plan de travail',
@@ -191,7 +209,7 @@ export const texts = {
   'pwa.updateDoneClose': 'Fermer',
 
   'parentSettings.title': 'Réglages parents',
-  'parentSettings.subtitle': 'Pour les adultes qui accompagnent l’enfant.',
+  'parentSettings.subtitle': 'Pour les parents qui accompagnent l’enfant.',
   'parentSettings.back': 'Retour',
   'parentSettings.gateTitle': 'Petite question',
   'parentSettings.question': 'Combien font',
@@ -243,7 +261,7 @@ export const texts = {
     'Ce code ne marche pas. Vérifie avec ton encadrant.',
   'login.delete': 'Effacer',
   'login.guest': 'Jouer en invité',
-  'login.adult': 'Espace adulte',
+  'login.adult': 'Espace parent',
   'login.emptyGroup': 'Aucun élève dans ce groupe pour le moment.',
   'login.chooseAvatar': 'Choisis ton avatar',
   'login.pictureTitle': 'Touche tes trois images',
@@ -275,7 +293,7 @@ export const texts = {
 
   'progress.saveError':
     'Oups, je n’arrive pas à sauvegarder. On réessaie plus tard !',
-  'progress.mergeAdult': 'Pour l’adulte',
+  'progress.mergeAdult': 'Pour le parent',
   'progress.mergeTitle': 'Progression d’invité',
   'progress.mergeQuestion':
     'Cet appareil a une progression d’invité. La fusionner avec ce compte ?',
@@ -582,8 +600,18 @@ export const texts = {
 
 export type TextId = keyof typeof texts;
 
+const dictionaries: Record<Language, Record<string, string>> = {
+  fr: texts,
+  en: textsEn,
+  zh: textsZh,
+};
+
 export function getText(id: string): string {
-  return texts[id as TextId] ?? '';
+  return (
+    dictionaries[activeLanguage][id] ??
+    texts[id as TextId] ??
+    ''
+  );
 }
 
 export interface VocabularyEntry {
@@ -597,7 +625,7 @@ export function getVocabulary(id: string): VocabularyEntry | null {
   return word === '' ? null : { word, definition };
 }
 
-export const fr = {
+const frBase = {
   home: {
     eyebrow: texts['home.eyebrow'],
     title: texts['home.title'],
@@ -720,3 +748,71 @@ export const fr = {
     unmute: texts['zap.unmute'],
   },
 } as const;
+
+function textKeyForPath(path: string): string {
+  if (path.startsWith('components.')) {
+    return `component.${path.slice('components.'.length)}`;
+  }
+
+  switch (path) {
+    case 'workbench.displayMode':
+      return 'display.mode';
+    case 'workbench.displayRealistic':
+      return 'display.realistic';
+    case 'workbench.displaySymbol':
+      return 'display.symbol';
+    case 'workbench.displayOverlay':
+      return 'display.overlay';
+    default:
+      return path;
+  }
+}
+
+function localizeTexts<T>(value: T, prefix: string): T {
+  if (typeof value === 'string') {
+    return getText(textKeyForPath(prefix)) as T;
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const localized: Record<string, unknown> = {};
+
+    for (const [key, child] of Object.entries(value)) {
+      localized[key] = localizeTexts(
+        child,
+        prefix === '' ? key : `${prefix}.${key}`,
+      );
+    }
+
+    return localized as T;
+  }
+
+  return value;
+}
+
+let frCacheLanguage: Language | null = null;
+let frCache: typeof frBase | null = null;
+
+function localizedFr(): typeof frBase {
+  const language = getActiveLanguage();
+
+  if (frCache === null || frCacheLanguage !== language) {
+    frCacheLanguage = language;
+    frCache = localizeTexts(frBase, '');
+  }
+
+  return frCache;
+}
+
+/**
+ * The nested object imported by older components. Property access resolves
+ * against the active language, so callers keep using `fr.home.title`.
+ */
+export const fr = new Proxy({} as typeof frBase, {
+  get(_target, property: string | symbol) {
+    if (typeof property !== 'string') {
+      return undefined;
+    }
+
+    return localizedFr()[property as keyof typeof frBase];
+  },
+});

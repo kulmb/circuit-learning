@@ -6,7 +6,7 @@ import {
 } from '@circuits/shared';
 
 import { getText } from '../narration/fr';
-import { PALETTE_ITEMS, type PaletteItem } from './paletteItems';
+import { buildPaletteItems, type PaletteItem } from './paletteItems';
 
 /**
  * The free workshop offers the same components on every device. The buzzer
@@ -22,7 +22,7 @@ export interface SandboxWorkMeta {
 }
 
 export function sandboxPaletteItems(): PaletteItem[] {
-  return PALETTE_ITEMS.filter(
+  return buildPaletteItems().filter(
     (item) => !SANDBOX_HIDDEN_KEYS.has(item.key),
   );
 }

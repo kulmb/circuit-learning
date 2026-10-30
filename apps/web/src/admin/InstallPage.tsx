@@ -1,4 +1,4 @@
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 export function InstallPage() {
   return (

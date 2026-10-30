@@ -7,7 +7,7 @@ export interface ParentChallenge {
 
 /**
  * A small multiplication gate for the parent settings. It is a child lock,
- * not a security boundary: a determined adult can always bypass client code.
+ * not a security boundary: a determined parent can always bypass client code.
  */
 export function createParentChallenge(
   random: () => number = Math.random,

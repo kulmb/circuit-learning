@@ -1,5 +1,6 @@
 import { useEffect, type PointerEvent as ReactPointerEvent } from 'react';
 
+import { useLanguage } from '../i18n/LanguageContext';
 import { getText } from '../narration/fr';
 import {
   consumePwaUpgradeNotice,
@@ -11,9 +12,10 @@ import './PwaUpdateNotice.css';
 
 /**
  * Lives outside the screens, so the confirmation appears on the home, map,
- * level, sandbox, adult and parent pages alike.
+ * level, sandbox, parent and settings pages alike.
  */
 export function PwaUpdateNotice() {
+  useLanguage();
   const notice = usePwaUpgradeNotice();
 
   useEffect(() => {

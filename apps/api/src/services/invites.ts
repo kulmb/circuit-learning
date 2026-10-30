@@ -144,7 +144,7 @@ export async function createPasswordResetInvite(options: {
     target.role === 'eleve' ||
     (target.disabledAt !== null && target.disabledAt !== undefined)
   ) {
-    throw notFound('Compte adulte introuvable.');
+    throw notFound('Compte parent introuvable.');
   }
 
   const token = generateToken();

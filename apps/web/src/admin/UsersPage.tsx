@@ -27,7 +27,7 @@ import {
   formatDate,
   roleLabel,
 } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 const PAGE_SIZE = 20;
 const FILTERS = ['', 'admin', 'encadrant', 'parent', 'eleve'] as const;
@@ -92,7 +92,11 @@ export function UsersPage() {
         userResponseSchema,
         { method: 'PATCH', body: { disabled: !user.disabled } },
       );
-      setNotice(user.disabled ? 'Compte activé.' : 'Compte désactivé.');
+      setNotice(
+        user.disabled
+          ? adminTexts.users.enabledNotice
+          : adminTexts.users.disabledNotice,
+      );
       await load();
     } catch (caught) {
       setError(
@@ -114,7 +118,7 @@ export function UsersPage() {
         userResponseSchema,
         { method: 'PATCH', body: { role } },
       );
-      setNotice('Rôle modifié.');
+      setNotice(adminTexts.users.roleNotice);
       await load();
     } catch (caught) {
       setError(
@@ -411,9 +415,15 @@ export function UsersPage() {
                           }
                           aria-label={`${adminTexts.users.role} ${user.displayName}`}
                         >
-                          <option value="admin">Administrateur</option>
-                          <option value="encadrant">Encadrant</option>
-                          <option value="parent">Parent</option>
+                          <option value="admin">
+                            {adminTexts.roles.admin}
+                          </option>
+                          <option value="encadrant">
+                            {adminTexts.roles.encadrant}
+                          </option>
+                          <option value="parent">
+                            {adminTexts.roles.parent}
+                          </option>
                         </select>
                       ) : (
                         <span className="admin-badge">

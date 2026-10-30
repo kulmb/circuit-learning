@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useLanguage } from '../i18n/LanguageContext';
 import { setSoundEnabled } from '../settings/preferences';
 import { getText } from './fr';
 import { isNarrationMuted, narrationService } from './narrationService';
@@ -11,6 +12,7 @@ interface NarrationState {
 }
 
 export function useNarration() {
+  const { language } = useLanguage();
   const [state, setState] = useState<NarrationState>({
     textId: null,
     text: '',
@@ -18,6 +20,21 @@ export function useNarration() {
   });
   const [muted, setMuted] = useState(() => isNarrationMuted());
   const currentTextIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const textId = currentTextIdRef.current;
+
+    if (textId === null) {
+      return;
+    }
+
+    narrationService.stop();
+    setState({
+      textId,
+      text: getText(textId),
+      speaking: false,
+    });
+  }, [language]);
 
   const say = useCallback((textId: string) => {
     const text = getText(textId);

@@ -106,4 +106,7 @@ Organisation du front :
 
 ## Langue
 Code, commentaires et noms de variables en anglais. Tout le texte visible par l'enfant et
-par les adultes en français.
+par les adultes est en français par défaut, avec l'anglais et le chinois disponibles via
+le sélecteur en haut à droite. Les textes passent par les dictionnaires
+`narration/fr.ts` + `texts.en.ts` + `texts.zh.ts` et `admin/fr.ts` + `texts.*.ts` ;
+aucun texte visible ne doit être codé en dur dans un composant.

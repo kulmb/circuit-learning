@@ -30,7 +30,7 @@ import {
   AdminLoading,
   activate,
 } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 function chapterPrefix(level: LevelDefinition): string {
   const chapter = getChapterForLevel(level.id);
@@ -51,12 +51,12 @@ function levelTitle(level: LevelDefinition): string {
 
 function difficultyLevelLabel(level: LevelDefinition | undefined): string {
   if (level === undefined) {
-    return 'à ce niveau';
+    return adminTexts.dashboard.levelHere;
   }
 
   return level.number === null
-    ? 'à la transition'
-    : `au niveau ${levelShortLabel(level)}`;
+    ? adminTexts.dashboard.levelTransition
+    : adminTexts.dashboard.levelAt(levelShortLabel(level));
 }
 
 export function GroupDashboardPage({ groupId }: { groupId: string }) {
@@ -148,7 +148,10 @@ export function GroupDashboardPage({ groupId }: { groupId: string }) {
               <XAxis dataKey="label" tickLine={false} />
               <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
               <Tooltip
-                formatter={(value) => [`${String(value)} %`, 'Réussite']}
+                formatter={(value) => [
+                  `${String(value)} %`,
+                  adminTexts.dashboard.completion,
+                ]}
                 labelFormatter={(_label, payload) =>
                   payload[0]?.payload?.niveau ?? ''
                 }

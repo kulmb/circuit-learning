@@ -2,10 +2,11 @@ import { authSessionResponseSchema } from '@circuits/shared';
 import { useState, type FormEvent } from 'react';
 
 import { ApiClientError, apiRequest } from '../api/client';
+import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
 import { useProgress } from '../progress/ProgressContext';
 import { navigate } from '../router';
 import { AdminError, activate } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 export function AdminLoginPage() {
   const { setSession } = useProgress();
@@ -49,6 +50,7 @@ export function AdminLoginPage() {
 
   return (
     <div className="admin-auth">
+      <LanguageSwitcher className="admin-auth__language" />
       <div className="admin-auth__card">
         <p className="admin-auth__brand">{adminTexts.appName}</p>
         <h1>{adminTexts.login.title}</h1>

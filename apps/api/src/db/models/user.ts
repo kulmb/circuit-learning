@@ -121,7 +121,7 @@ userSchema.pre('validate', function validateRoles() {
     if (this.username !== null && this.username !== undefined) {
       this.invalidate(
         'username',
-        'Un élève n’a pas d’identifiant de connexion adulte.',
+        'Un élève n’a pas d’identifiant de connexion.',
       );
     }
     if (this.email !== null && this.email !== undefined) {

@@ -135,7 +135,7 @@ describe('AdminApp', () => {
     renderAdmin('/admin', null);
 
     expect(
-      screen.getByRole('heading', { name: 'Connexion adulte' }),
+      screen.getByRole('heading', { name: 'Connexion parent' }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Identifiant')).toBeInTheDocument();
     expect(screen.getByLabelText('Mot de passe')).toBeInTheDocument();

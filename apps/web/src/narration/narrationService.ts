@@ -1,3 +1,4 @@
+import { getActiveLanguage } from './fr';
 import { Mp3NarrationService } from './mp3Narration';
 import { SpeechNarrationService } from './speechNarration';
 import type { NarrationService } from './types';
@@ -15,19 +16,23 @@ class PreferredNarrationService implements NarrationService {
       return;
     }
 
-    // Never await the manifest before speaking: mobile browsers only allow
-    // the first utterance inside the user gesture. A ready recording starts
-    // synchronously; otherwise the synthesizer speaks right away.
-    const recording = this.recordings.playIfAvailable(textId);
+    // Recordings are French only. In English or Chinese, go straight to the
+    // synthesizer so a French MP3 never plays over translated text.
+    if (getActiveLanguage() === 'fr') {
+      // Never await the manifest before speaking: mobile browsers only allow
+      // the first utterance inside the user gesture. A ready recording starts
+      // synchronously; otherwise the synthesizer speaks right away.
+      const recording = this.recordings.playIfAvailable(textId);
 
-    if (recording !== null) {
-      this.speech.stop();
-      try {
-        await recording;
-      } catch {
-        await this.speech.speak(textId);
+      if (recording !== null) {
+        this.speech.stop();
+        try {
+          await recording;
+        } catch {
+          await this.speech.speak(textId);
+        }
+        return;
       }
-      return;
     }
 
     this.recordings.stop();

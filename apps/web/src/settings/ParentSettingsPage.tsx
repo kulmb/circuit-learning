@@ -5,6 +5,8 @@ import {
 } from 'react';
 
 import { vibrateSuccess, supportsVibration } from '../feedback/haptics';
+import { useLanguage } from '../i18n/LanguageContext';
+import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
 import { getText } from '../narration/fr';
 import { narrationService, unlockNarration } from '../narration/narrationService';
 import { usePerformance } from '../performance/PerformanceContext';
@@ -34,6 +36,7 @@ const RATE_OPTIONS: readonly {
 ];
 
 export function ParentSettingsPage({ onBack }: ParentSettingsPageProps) {
+  useLanguage();
   const {
     lowPerformance,
     autoLow,
@@ -128,6 +131,8 @@ export function ParentSettingsPage({ onBack }: ParentSettingsPageProps) {
           <h1>{getText('parentSettings.title')}</h1>
           <p>{getText('parentSettings.subtitle')}</p>
         </div>
+
+        <LanguageSwitcher />
       </header>
 
       {!unlocked ? (

@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { App } from './App';
+import { setActiveLanguage } from './narration/fr';
 import {
   PWA_UPDATE_NOTICE_KEY,
   resetPwaUpgradeNotice,
@@ -16,12 +17,35 @@ describe('App', () => {
     resetPwaUpgradeNotice();
   });
 
+  afterEach(() => {
+    setActiveLanguage('fr');
+    document.documentElement.lang = 'fr';
+    document.title = 'Les Circuits de Zap';
+  });
+
   it('shows the title and the two main actions', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: 'Les Circuits de Zap' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /jouer/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /atelier libre/i })).toBeInTheDocument();
+  });
+
+  it('switches the whole home page language without reloading', () => {
+    render(<App />);
+
+    fireEvent.change(
+      screen.getByRole('combobox', { name: /langue/i }),
+      { target: { value: 'en' } },
+    );
+
+    expect(
+      screen.getByRole('heading', { name: "Zap's Circuits" }),
+    ).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe('en');
+    expect(window.localStorage.getItem('circuits-de-zap:language')).toBe(
+      'en',
+    );
   });
 
   it('stores and displays the application version', () => {
@@ -66,15 +90,15 @@ describe('App', () => {
     ).toBeInTheDocument();
   });
 
-  it('loads the adult space on its own route', async () => {
+  it('loads the parent space on its own route', async () => {
     render(<App />);
 
     fireEvent.pointerDown(
-      screen.getByRole('button', { name: /espace adulte/i }),
+      screen.getByRole('button', { name: /espace parent/i }),
     );
 
     expect(
-      await screen.findByRole('heading', { name: 'Connexion adulte' }),
+      await screen.findByRole('heading', { name: 'Connexion parent' }),
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/admin');
   });
@@ -117,10 +141,10 @@ describe('App', () => {
     ).toBeInTheDocument();
 
     fireEvent.pointerDown(
-      screen.getByRole('button', { name: /espace adulte/i }),
+      screen.getByRole('button', { name: /espace parent/i }),
     );
     expect(
-      await screen.findByRole('heading', { name: 'Connexion adulte' }),
+      await screen.findByRole('heading', { name: 'Connexion parent' }),
     ).toBeInTheDocument();
     expect(
       screen.getByText('Mise à jour terminée !'),

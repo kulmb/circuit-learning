@@ -425,16 +425,22 @@ zoom, un déplacement ou une rotation d'écran.
 
 ## Narration et Zap
 
-Tous les textes français sont dans `apps/web/src/narration/fr.ts`, indexés par un
-identifiant (`zap.hint.open.1`, `workbench.statusClosed`, etc.).
+Tous les textes sont indexés par un identifiant (`zap.hint.open.1`,
+`workbench.statusClosed`, etc.). Le français est dans
+`apps/web/src/narration/fr.ts`, l'anglais dans `texts.en.ts` et le chinois dans
+`texts.zh.ts` ; les textes adultes suivent le même principe dans
+`apps/web/src/admin/texts.*.ts`. Le bouton en haut à droite passe de FR à EN
+puis 中文 sans recharger la page, et mémorise le choix dans `localStorage`.
 
-- La voix utilise la Web Speech API en `fr-FR`, avec une préférence pour les voix
-  Google, Amélie et Thomas, un débit de 0,9 par défaut (réglable par un parent)
-  et une hauteur légèrement plus aiguë. La liste `voiceschanged` est écoutée
-  pour iOS.
-- Si un enregistrement existe, `/audio/{textId}.mp3` est préféré à la synthèse.
-  Pour l'activer, déposer le MP3 dans `apps/web/public/audio/` et ajouter son
-  identifiant dans `apps/web/public/audio/manifest.json`.
+- La voix utilise la Web Speech API dans la langue active (`fr-FR`, `en-US`,
+  `zh-CN`), avec une préférence pour les voix Google/Amélie/Thomas en français,
+  un débit de 0,9 par défaut (réglable par un parent) et une hauteur légèrement
+  plus aiguë. La liste `voiceschanged` est écoutée pour iOS.
+- Si un enregistrement existe et que la langue est le français,
+  `/audio/{textId}.mp3` est préféré à la synthèse. Pour l'activer, déposer le MP3
+  dans `apps/web/public/audio/` et ajouter son identifiant dans
+  `apps/web/public/audio/manifest.json`. En anglais ou en chinois, la synthèse
+  est toujours utilisée pour ne pas jouer une voix française.
 - Sans voix française, la bulle de texte reste visible. Si la liste des voix
   n'est pas encore chargée (fréquent au premier geste sur mobile), le texte est
   tout de même confié au moteur avec `lang="fr-FR"`.

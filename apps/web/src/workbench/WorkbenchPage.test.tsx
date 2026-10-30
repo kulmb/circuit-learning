@@ -521,6 +521,44 @@ describe('workbench interactions', () => {
     });
   });
 
+  it('deletes a palette component dropped onto an existing wire', () => {
+    const level = getLevelById('current-02');
+    if (!level) throw new Error('Level missing');
+
+    render(<WorkbenchPage level={level} onBack={() => undefined} />);
+    getSvg();
+
+    act(() => {
+      const store = useWorkbenchStore.getState();
+      const wire = store.circuit.wires[0];
+      if (wire === undefined) throw new Error('Wire missing');
+      store.addComponentOnWire(
+        'battery',
+        {},
+        { x: 5, y: 4 },
+        'battery',
+        wire.id,
+        0,
+      );
+    });
+
+    expect(
+      useWorkbenchStore
+        .getState()
+        .circuit.components.some((component) => component.id === 'battery-2'),
+    ).toBe(true);
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: getText('workbench.delete') }),
+    );
+
+    expect(
+      useWorkbenchStore
+        .getState()
+        .circuit.components.some((component) => component.id === 'battery-2'),
+    ).toBe(false);
+  });
+
   it('plays the first level to success and shows the learned words', async () => {
     const level = getLevelById('light-01');
     if (!level) throw new Error('Level missing');

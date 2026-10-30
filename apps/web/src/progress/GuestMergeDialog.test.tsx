@@ -28,7 +28,7 @@ describe('GuestMergeDialog', () => {
     window.localStorage.clear();
   });
 
-  it('asks the adult once and remembers a declined merge', async () => {
+  it('asks the parent once and remembers a declined merge', async () => {
     const local = new LocalProgressRepository();
     const attempt = await local.startAttempt('light-01');
     await local.finishAttempt(attempt, {

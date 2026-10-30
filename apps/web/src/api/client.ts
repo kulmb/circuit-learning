@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config';
+import { getApiErrorText } from '../narration/apiErrors';
 
 interface ResponseSchema<T> {
   parse(value: unknown): T;
@@ -48,7 +49,8 @@ export async function apiRequest<T>(
     throw new ApiClientError(
       0,
       'network_error',
-      'Le serveur ne répond pas. Vérifie la connexion.',
+      getApiErrorText('network_error') ??
+        'Le serveur ne répond pas. Vérifie la connexion.',
     );
   } finally {
     clearTimeout(timeout);
@@ -64,7 +66,11 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     const error = readErrorBody(body);
-    throw new ApiClientError(response.status, error.code, error.message);
+    throw new ApiClientError(
+      response.status,
+      error.code,
+      getApiErrorText(error.code) ?? error.message,
+    );
   }
 
   return schema.parse(body);
@@ -90,5 +96,8 @@ function readErrorBody(body: unknown): { code: string; message: string } {
     };
   }
 
-  return { code: 'api_error', message: 'La demande a échoué.' };
+  return {
+    code: 'api_error',
+    message: getApiErrorText('api_error') ?? 'La demande a échoué.',
+  };
 }

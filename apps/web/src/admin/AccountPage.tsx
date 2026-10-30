@@ -9,7 +9,7 @@ import {
   AvatarPill,
   roleLabel,
 } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 export function AccountPage() {
   const { session } = useProgress();

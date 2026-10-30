@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getText } from './fr';
-import { pickFrenchVoice, SpeechNarrationService } from './speechNarration';
+import { getText, setActiveLanguage } from './fr';
+import {
+  pickFrenchVoice,
+  pickVoice,
+  SpeechNarrationService,
+} from './speechNarration';
+import { textsEn } from './texts.en';
 
 function voice(name: string, lang: string, isDefault = false): SpeechSynthesisVoice {
   return { name, lang, default: isDefault } as SpeechSynthesisVoice;
@@ -91,6 +96,7 @@ function installSpeech(
 
 afterEach(() => {
   vi.useRealTimers();
+  setActiveLanguage('fr');
   Reflect.deleteProperty(window, 'speechSynthesis');
   Reflect.deleteProperty(window, 'SpeechSynthesisUtterance');
 });
@@ -120,6 +126,18 @@ describe('French voice selection', () => {
 
   it('returns null when the device has no French voice', () => {
     expect(pickFrenchVoice([voice('English', 'en-US')])).toBeNull();
+  });
+
+  it('selects an English or Chinese voice for the active language', () => {
+    const voices = [
+      voice('Thomas', 'fr-FR'),
+      voice('Samantha', 'en-US'),
+      voice('Ting-Ting', 'zh-CN'),
+    ];
+
+    expect(pickVoice(voices, 'en')?.name).toBe('Samantha');
+    expect(pickVoice(voices, 'zh')?.name).toBe('Ting-Ting');
+    expect(pickVoice([voice('Thomas', 'fr-FR')], 'en')).toBeNull();
   });
 });
 
@@ -173,6 +191,20 @@ describe('mobile speech unlock', () => {
 
     expect(fake.spoken).toHaveLength(1);
     expect(fake.spoken[0]?.text).toBe(getText('zap.welcome'));
+
+    service.destroy();
+  });
+
+  it('speaks the English text with an English voice', async () => {
+    setActiveLanguage('en');
+    const fake = installSpeech([voice('Samantha', 'en-US')]);
+    const service = new SpeechNarrationService();
+
+    await service.speak('home.play');
+
+    expect(fake.spoken.at(-1)?.text).toBe(textsEn['home.play']);
+    expect(fake.spoken.at(-1)?.lang).toBe('en-US');
+    expect(fake.spoken.at(-1)?.voice?.name).toBe('Samantha');
 
     service.destroy();
   });

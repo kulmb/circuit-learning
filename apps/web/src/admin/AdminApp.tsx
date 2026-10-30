@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { useLanguage } from '../i18n/LanguageContext';
 import { useProgress } from '../progress/ProgressContext';
 import { matchPath, navigate, usePathname } from '../router';
 import { AccountPage } from './AccountPage';
@@ -7,7 +8,7 @@ import { AdminLayout } from './AdminLayout';
 import { AdminLoginPage } from './AdminLoginPage';
 import { AdminLoading, activate } from './AdminShared';
 import { AuditLogsPage } from './AuditLogsPage';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 import { GroupDashboardPage } from './GroupDashboardPage';
 import { GroupDetailPage } from './GroupDetailPage';
 import { GroupsPage } from './GroupsPage';
@@ -23,6 +24,7 @@ export interface AdminAppProps {
 }
 
 export default function AdminApp({ path: pathOverride }: AdminAppProps = {}) {
+  useLanguage();
   const currentPath = usePathname();
   const path = pathOverride ?? currentPath;
   const { session, ready } = useProgress();
@@ -89,8 +91,8 @@ function DeniedPage() {
   return (
     <section className="admin-page">
       <div className="admin-card">
-        <h1>Accès refusé</h1>
-        <p>Ton rôle ne permet pas d’ouvrir cette page.</p>
+        <h1>{adminTexts.deniedPage.title}</h1>
+        <p>{adminTexts.deniedPage.text}</p>
         <button
           type="button"
           className="admin-button admin-button--secondary"
@@ -98,7 +100,7 @@ function DeniedPage() {
             activate(event, () => navigate('/admin'))
           }
         >
-          Retour
+          {adminTexts.deniedPage.back}
         </button>
       </div>
     </section>
@@ -109,8 +111,8 @@ function NotFoundPage() {
   return (
     <section className="admin-page">
       <div className="admin-card">
-        <h1>Page introuvable</h1>
-        <p>Cette adresse n’existe pas dans l’espace adulte.</p>
+        <h1>{adminTexts.notFoundPage.title}</h1>
+        <p>{adminTexts.notFoundPage.text}</p>
         <button
           type="button"
           className="admin-button admin-button--secondary"
@@ -118,7 +120,7 @@ function NotFoundPage() {
             activate(event, () => navigate('/admin'))
           }
         >
-          {adminTexts.nav.groups}
+          {adminTexts.notFoundPage.back}
         </button>
       </div>
     </section>

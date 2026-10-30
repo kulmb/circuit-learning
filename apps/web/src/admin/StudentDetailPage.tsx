@@ -23,7 +23,7 @@ import {
   copyText,
   PicturePasswordList,
 } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 import { StudentProgressSections } from './StudentProgressSections';
 
 export function StudentDetailPage({ studentId }: { studentId: string }) {

@@ -25,7 +25,7 @@ import {
   copyText,
   PicturePasswordList,
 } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 export function GroupDetailPage({ groupId }: { groupId: string }) {
   const [group, setGroup] = useState<GroupDetail | null>(null);
@@ -157,7 +157,7 @@ export function GroupDetailPage({ groupId }: { groupId: string }) {
           ? current
           : { ...current, name: response.group.name },
       );
-    }, 'Groupe renommé.');
+    }, adminTexts.group.renamed);
   }
 
   async function toggleArchive(): Promise<void> {
@@ -191,7 +191,7 @@ export function GroupDetailPage({ groupId }: { groupId: string }) {
           ? current
           : { ...current, joinCode: response.group.joinCode },
       );
-    }, 'Nouveau code créé.');
+    }, adminTexts.group.rekeyed);
   }
 
   async function pinDevice(): Promise<void> {
@@ -339,7 +339,7 @@ export function GroupDetailPage({ groupId }: { groupId: string }) {
               ? adminTexts.group.pinned
               : pinned === 'other'
                 ? adminTexts.group.pinnedOther
-                : 'Cet appareil n’est fixé à aucun groupe.'}
+                : adminTexts.group.notPinned}
           </p>
           <div className="admin-actions">
             {pinned === 'this' ? (

@@ -7,6 +7,7 @@ import { CollectionPage } from './levels/CollectionPage';
 import { LevelMapPage } from './levels/LevelMapPage';
 import { MaterialsLevelPage } from './levels/MaterialsLevelPage';
 import { SymbolMatchingPage } from './levels/SymbolMatchingPage';
+import { useLanguage } from './i18n/LanguageContext';
 import { unlockNarration } from './narration/narrationService';
 import { unlockAudio } from './workbench/audio';
 import { SandboxPage } from './workbench/SandboxPage';
@@ -37,6 +38,7 @@ export function GameShell({
   levelId,
   onNavigate,
 }: GameShellProps) {
+  useLanguage();
   const [sandboxReturn, setSandboxReturn] = useState<'home' | 'map'>('home');
   const level = levelId === null ? undefined : getLevelById(levelId);
 

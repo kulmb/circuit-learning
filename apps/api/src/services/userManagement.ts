@@ -231,7 +231,7 @@ export async function unlockAdultAccount(options: {
   const target = await UserModel.findById(options.userId);
 
   if (target === null || target.role === 'eleve') {
-    throw notFound('Compte adulte introuvable.');
+    throw notFound('Compte parent introuvable.');
   }
 
   target.failedLogins = 0;

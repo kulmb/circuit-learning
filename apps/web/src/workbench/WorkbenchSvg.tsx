@@ -19,6 +19,7 @@ import {
 } from 'react';
 
 import { IconPaths } from '../components/icons';
+import { useLanguage } from '../i18n/LanguageContext';
 import { fr } from '../narration/fr';
 import { unlockAudio } from './audio';
 import { useLayout } from '../layout/LayoutContext';
@@ -210,6 +211,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
   onSetRheostatWiper,
   onAddWire,
 }: WorkbenchSvgProps) {
+  useLanguage();
   const isCompact = useLayout().size === 'compact';
   const gestureRef = useRef<BoardGesture | null>(null);
   const pinchRef = useRef<PinchGesture | null>(null);
