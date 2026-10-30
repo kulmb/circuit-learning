@@ -1,31 +1,46 @@
-import { getText } from './fr';
+import { getActiveLanguage, getText, type Language } from './fr';
 import type { NarrationService } from './types';
 
-const PREFERRED_VOICE_NAMES = [
-  'google',
-  'amélie',
-  'amelie',
-  'thomas',
-  'siri',
-  'audrey',
-  'aurelie',
-  'marie',
-];
+const VOICE_LOCALES: Record<Language, string> = {
+  fr: 'fr-FR',
+  en: 'en-US',
+  zh: 'zh-CN',
+};
 
-export function pickFrenchVoice(
+const PREFERRED_VOICE_NAMES: Record<Language, readonly string[]> = {
+  fr: [
+    'google',
+    'amélie',
+    'amelie',
+    'thomas',
+    'siri',
+    'audrey',
+    'aurelie',
+    'marie',
+  ],
+  en: ['google', 'siri', 'samantha', 'daniel', 'alex'],
+  zh: ['ting-ting', 'tingting', 'mei-jia', 'meijia', 'sin-ji', 'sinji'],
+};
+
+export function pickVoice(
   voices: readonly SpeechSynthesisVoice[],
+  language: Language,
 ): SpeechSynthesisVoice | null {
-  const french = voices.filter((voice) => voice.lang.toLowerCase().startsWith('fr'));
-  if (french.length === 0) {
+  const matching = voices.filter((voice) =>
+    voice.lang.toLowerCase().startsWith(language),
+  );
+
+  if (matching.length === 0) {
     return null;
   }
 
-  const france = french.filter(
-    (voice) => voice.lang.toLowerCase() === 'fr-fr',
+  const exactLocale = VOICE_LOCALES[language].toLowerCase();
+  const exact = matching.filter(
+    (voice) => voice.lang.toLowerCase() === exactLocale,
   );
-  const pool = france.length > 0 ? france : french;
+  const pool = exact.length > 0 ? exact : matching;
 
-  for (const preferredName of PREFERRED_VOICE_NAMES) {
+  for (const preferredName of PREFERRED_VOICE_NAMES[language]) {
     const match = pool.find((voice) =>
       voice.name.toLowerCase().includes(preferredName),
     );
@@ -35,6 +50,12 @@ export function pickFrenchVoice(
   }
 
   return pool.find((voice) => voice.default) ?? pool[0] ?? null;
+}
+
+export function pickFrenchVoice(
+  voices: readonly SpeechSynthesisVoice[],
+): SpeechSynthesisVoice | null {
+  return pickVoice(voices, 'fr');
 }
 
 export class SpeechNarrationService implements NarrationService {
@@ -88,7 +109,7 @@ export class SpeechNarrationService implements NarrationService {
     this.priming = true;
 
     const utterance = new Utterance(' ');
-    utterance.lang = 'fr-FR';
+    utterance.lang = VOICE_LOCALES[getActiveLanguage()];
     utterance.volume = 0.01;
     utterance.rate = 2;
 
@@ -140,11 +161,12 @@ export class SpeechNarrationService implements NarrationService {
       this.voices = currentVoices;
     }
 
-    const voice = pickFrenchVoice(this.voices);
+    const language = getActiveLanguage();
+    const voice = pickVoice(this.voices, language);
     if (this.voices.length > 0 && voice === null) {
-      // A known voice list without French keeps the text bubble only; an
-      // empty list is different: the device has not reported its voices yet,
-      // so let the engine pick a French voice from `lang`.
+      // A known voice list without the active language keeps the text bubble
+      // only; an empty list is different: the device has not reported its
+      // voices yet, so let the engine pick from `lang`.
       return;
     }
 
@@ -172,7 +194,7 @@ export class SpeechNarrationService implements NarrationService {
       this.pendingResolve = finish;
 
       const utterance = new Utterance(text);
-      utterance.lang = voice?.lang || 'fr-FR';
+      utterance.lang = voice?.lang || VOICE_LOCALES[language];
       if (voice !== undefined) {
         utterance.voice = voice;
       }

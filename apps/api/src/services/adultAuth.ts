@@ -1,8 +1,12 @@
-import type { UserDocument } from '../db/models/index.js';
-import { UserModel } from '../db/models/index.js';
+import type {
+  LoginThrottleDocument,
+  UserDocument,
+} from '../db/models/index.js';
+import { LoginThrottleModel, UserModel } from '../db/models/index.js';
 import { ApiError } from './errors.js';
 import { verifySecret } from './secrets.js';
 import { createSession, type CreatedSession } from './sessions.js';
+import { normalizeUsername } from './username.js';
 
 export const ADULT_MAX_FAILED_LOGINS = 8;
 export const ADULT_LOCK_MS = 15 * 60 * 1000;
@@ -18,6 +22,8 @@ export interface AdultLoginOptions {
   username: string;
   password: string;
   userAgent: string;
+  /** Client address behind Caddy; part of the lockout key. */
+  ip: string;
 }
 
 export interface AdultLoginResult {
@@ -33,20 +39,110 @@ function invalidCredentials(): ApiError {
   );
 }
 
-function accountLocked(): ApiError {
+function tooManyAttempts(retryAfter: number): ApiError {
   return new ApiError(
-    423,
-    'account_locked',
-    'Ce compte est bloqué pendant quelques minutes. Réessaie plus tard.',
+    429,
+    'too_many_attempts',
+    'Trop de tentatives. Réessaie dans quelques minutes.',
+    retryAfter,
   );
+}
+
+function throttleKey(username: string, ip: string): string {
+  return `${username}:${ip}`;
+}
+
+function retryAfterOf(lockedUntil: Date): number {
+  return Math.max(
+    1,
+    Math.ceil((lockedUntil.getTime() - Date.now()) / 1000),
+  );
+}
+
+async function readThrottle(
+  username: string,
+  ip: string,
+): Promise<LoginThrottleDocument | null> {
+  return LoginThrottleModel.findOne({
+    key: throttleKey(username, ip),
+  });
+}
+
+/**
+ * Atomically increments the username+IP counter. The account document is not
+ * touched: a wrong password from one address never locks the real user out
+ * from another address.
+ */
+async function registerFailure(
+  username: string,
+  ip: string,
+): Promise<{ locked: boolean; retryAfter: number }> {
+  const now = new Date();
+  const key = throttleKey(username, ip);
+  const nextCount = { $add: [{ $ifNull: ['$failures', 0] }, 1] };
+  const reachedLimit = { $gte: [nextCount, ADULT_MAX_FAILED_LOGINS] };
+  const lockedUntil = new Date(now.getTime() + ADULT_LOCK_MS);
+
+  const throttle = await LoginThrottleModel.findOneAndUpdate(
+    { key },
+    [
+      {
+        $set: {
+          key,
+          username,
+          ip,
+          failures: { $cond: [reachedLimit, 0, nextCount] },
+          lockedUntil: {
+            $cond: [reachedLimit, lockedUntil, { $ifNull: ['$lockedUntil', null] }],
+          },
+          createdAt: { $ifNull: ['$createdAt', now] },
+          updatedAt: now,
+        },
+      },
+    ],
+    {
+      upsert: true,
+      returnDocument: 'after',
+      updatePipeline: true,
+      setDefaultsOnInsert: true,
+    },
+  );
+
+  if (
+    throttle !== null &&
+    throttle.lockedUntil !== null &&
+    throttle.lockedUntil.getTime() > now.getTime()
+  ) {
+    return {
+      locked: true,
+      retryAfter: retryAfterOf(throttle.lockedUntil),
+    };
+  }
+
+  return { locked: false, retryAfter: 0 };
+}
+
+export async function clearAdultLoginThrottle(
+  username: string,
+): Promise<void> {
+  await LoginThrottleModel.deleteMany({ username: normalizeUsername(username) });
 }
 
 export async function loginAdult(
   options: AdultLoginOptions,
 ): Promise<AdultLoginResult> {
-  const user = await UserModel.findOne({ username: options.username }).select(
-    '+passwordHash',
-  );
+  const username = normalizeUsername(options.username);
+  const throttle = await readThrottle(username, options.ip);
+
+  if (
+    throttle !== null &&
+    throttle.lockedUntil !== null &&
+    throttle.lockedUntil.getTime() > Date.now()
+  ) {
+    throw tooManyAttempts(retryAfterOf(throttle.lockedUntil));
+  }
+
+  const user = await UserModel.findOne({ username }).select('+passwordHash');
 
   if (
     user === null ||
@@ -55,34 +151,41 @@ export async function loginAdult(
     user.passwordHash === undefined
   ) {
     await verifySecret(DUMMY_PASSWORD_HASH, options.password);
+    const failure = await registerFailure(username, options.ip);
+
+    if (failure.locked) {
+      throw tooManyAttempts(failure.retryAfter);
+    }
+
     throw invalidCredentials();
   }
 
   if (user.disabledAt !== null && user.disabledAt !== undefined) {
     await verifySecret(DUMMY_PASSWORD_HASH, options.password);
-    throw invalidCredentials();
-  }
+    const failure = await registerFailure(username, options.ip);
 
-  if (user.lockedUntil !== null && user.lockedUntil.getTime() > Date.now()) {
-    throw accountLocked();
+    if (failure.locked) {
+      throw tooManyAttempts(failure.retryAfter);
+    }
+
+    throw invalidCredentials();
   }
 
   const valid = await verifySecret(user.passwordHash, options.password);
 
   if (!valid) {
-    user.failedLogins += 1;
+    const failure = await registerFailure(username, options.ip);
 
-    if (user.failedLogins >= ADULT_MAX_FAILED_LOGINS) {
-      user.failedLogins = 0;
-      user.lockedUntil = new Date(Date.now() + ADULT_LOCK_MS);
-      await user.save();
-      throw accountLocked();
+    if (failure.locked) {
+      throw tooManyAttempts(failure.retryAfter);
     }
 
-    await user.save();
     throw invalidCredentials();
   }
 
+  await LoginThrottleModel.deleteOne({
+    key: throttleKey(username, options.ip),
+  });
   user.failedLogins = 0;
   user.lockedUntil = null;
   user.lastSeenAt = new Date();

@@ -62,6 +62,14 @@ pnpm install --frozen-lockfile
 pnpm --filter @circuits/shared build
 pnpm --filter @circuits/web build
 
+echo "Préparation de l'authentification MongoDB"
+export MONGO_KEYFILE_PATH="${MONGO_KEYFILE_PATH:-/srv/circuits/mongo-keyfile}"
+"$root_dir/scripts/ensure-mongo-keyfile.sh"
+"$root_dir/scripts/mongo-auth-setup.sh" \
+  "$env_file" \
+  "$temp_dir/docker-compose.yml" \
+  circuits-de-zap
+
 echo "Construction de l'image API"
 "${compose[@]}" \
   --env-file "$env_file" \

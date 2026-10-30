@@ -2,10 +2,16 @@ import { config } from '../config.js';
 import { connectDatabase, disconnectDatabase } from '../db/connection.js';
 import {
   DEMO_GROUP_NAME,
-  DEMO_PICTURE_PATTERN,
   DEMO_STUDENTS,
   seedDemoData,
 } from '../services/seedDemoData.js';
+
+if (config.nodeEnv === 'production') {
+  console.error(
+    'Le seed de démonstration est interdit en production. Créez un administrateur avec admin:create.',
+  );
+  process.exit(1);
+}
 
 const adminUsername = process.env.ADMIN_USERNAME?.trim() ?? '';
 const adminPassword = process.env.ADMIN_PASSWORD ?? '';
@@ -33,9 +39,6 @@ try {
   );
   console.log(
     `Élèves : ${DEMO_STUDENTS.map((student) => student.displayName).join(', ')}`,
-  );
-  console.log(
-    `Motif de démonstration : ${DEMO_PICTURE_PATTERN.join(' → ')}`,
   );
   console.log(
     `Créés : admin ${result.createdAdmin ? 'oui' : 'déjà présent'}, groupe ${result.createdGroup ? 'oui' : 'déjà présent'}, ${result.createdStudents} élève(s).`,

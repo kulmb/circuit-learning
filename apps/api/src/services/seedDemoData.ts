@@ -1,3 +1,4 @@
+import type { PicturePatternId } from '@circuits/shared';
 import mongoose from 'mongoose';
 
 import {
@@ -7,6 +8,7 @@ import {
 } from '../db/models/index.js';
 import { createAdminAccount } from './adminAccounts.js';
 import { generateJoinCode } from './joinCode.js';
+import { randomPicturePattern } from './picturePasswords.js';
 import { hashSecret, pictureSecretFromPattern } from './secrets.js';
 
 export const DEMO_GROUP_NAME = 'Équipe Camelot';
@@ -16,9 +18,6 @@ export const DEMO_STUDENTS = [
   { displayName: 'Noé', avatarId: 'panda' },
   { displayName: 'Mila', avatarId: 'fusee' },
 ] as const;
-
-/** Pictures are matched in order; Prompt 10 turns this into the tap grid. */
-export const DEMO_PICTURE_PATTERN = ['renard', 'pomme', 'ballon'] as const;
 
 export const DEMO_VOCABULARY = ['circuitFerme', 'fil'] as const;
 
@@ -37,6 +36,8 @@ export interface SeedResult {
   createdAdmin: boolean;
   createdGroup: boolean;
   createdStudents: number;
+  /** The random demo tap pattern. Never printed by the production seed. */
+  picturePattern: PicturePatternId[];
 }
 
 /**
@@ -85,8 +86,9 @@ export async function seedDemoData(
       $in: DEMO_STUDENTS.map((student) => student.displayName),
     }),
   });
+  const picturePattern = randomPicturePattern();
   const pictureHash = await hashSecret(
-    pictureSecretFromPattern(DEMO_PICTURE_PATTERN),
+    pictureSecretFromPattern(picturePattern),
   );
   const now = new Date();
   const students: UserDocument[] = [];
@@ -132,5 +134,6 @@ export async function seedDemoData(
     createdAdmin,
     createdGroup,
     createdStudents,
+    picturePattern,
   };
 }

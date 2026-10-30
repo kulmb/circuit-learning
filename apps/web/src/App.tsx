@@ -9,6 +9,11 @@ import { motion, MotionConfig, useReducedMotion } from 'framer-motion';
 
 import { ZapCharacter } from './components/Zap';
 import type { AppScreen } from './GameShell';
+import {
+  LanguageProvider,
+  useLanguage,
+} from './i18n/LanguageContext';
+import { LanguageSwitcher } from './i18n/LanguageSwitcher';
 import { LayoutProvider } from './layout/LayoutContext';
 import { fr, getText } from './narration/fr';
 import { unlockNarration } from './narration/narrationService';
@@ -39,11 +44,13 @@ export function App() {
   }, []);
 
   return (
-    <LayoutProvider>
-      <PerformanceProvider>
-        <PerformanceShell />
-      </PerformanceProvider>
-    </LayoutProvider>
+    <LanguageProvider>
+      <LayoutProvider>
+        <PerformanceProvider>
+          <PerformanceShell />
+        </PerformanceProvider>
+      </LayoutProvider>
+    </LanguageProvider>
   );
 }
 
@@ -69,6 +76,7 @@ function RouteLoading() {
 }
 
 function RootRoutes() {
+  useLanguage();
   const path = usePathname();
   const adminRoute =
     path === '/admin' ||
@@ -100,6 +108,7 @@ function RootRoutes() {
 }
 
 function AppContent() {
+  useLanguage();
   const [screen, setScreen] = useState<AppScreen>('home');
   const [levelId, setLevelId] = useState<string | null>(null);
   const { session } = useProgress();
@@ -137,10 +146,18 @@ function AppContent() {
       transition={{ duration: reduceMotion ? 0 : 0.35, ease: 'easeOut' }}
     >
       <main className="home">
+        <div className="home__topbar">
+          <p className="home__version" aria-label={`Version ${APP_VERSION}`}>
+            Version {APP_VERSION}
+          </p>
+          <LanguageSwitcher />
+        </div>
         <ZapCharacter expression="content" speaking={false} className="zap-face" />
         <header className="home__header">
           <p className="home__eyebrow">{fr.home.eyebrow}</p>
-          <h1 className="home__title">{fr.home.title}</h1>
+          <h1 className="home__title">
+            <span>{fr.home.title}</span>
+          </h1>
           <p className="home__tagline">{fr.home.tagline}</p>
         </header>
         <div className="home__actions">
@@ -189,9 +206,6 @@ function AppContent() {
             {getText('home.parentSettings')}
           </button>
         </div>
-        <p className="home__version" aria-label={`Version ${APP_VERSION}`}>
-          Version {APP_VERSION}
-        </p>
       </main>
     </motion.div>
   );

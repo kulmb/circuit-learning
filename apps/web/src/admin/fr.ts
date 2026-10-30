@@ -1,6 +1,13 @@
+import {
+  getActiveLanguage,
+  type Language,
+} from '../narration/fr';
+import { adminTextsEn } from './texts.en';
+import { adminTextsZh } from './texts.zh';
+
 export const adminTexts = {
   appName: 'Les Circuits de Zap',
-  adultSpace: 'Espace adulte',
+  adultSpace: 'Espace parent',
   backToGame: 'Retour au jeu',
   loading: 'Chargement…',
   cancel: 'Annuler',
@@ -11,6 +18,16 @@ export const adminTexts = {
   retry: 'Réessayer',
   error: 'La demande a échoué. Réessaie.',
   required: 'Ce champ est obligatoire.',
+  deniedPage: {
+    title: 'Accès refusé',
+    text: 'Ton rôle ne permet pas d’ouvrir cette page.',
+    back: 'Retour',
+  },
+  notFoundPage: {
+    title: 'Page introuvable',
+    text: 'Cette adresse n’existe pas dans l’espace parent.',
+    back: 'Retour',
+  },
   roles: {
     admin: 'Administrateur',
     encadrant: 'Encadrant',
@@ -27,7 +44,7 @@ export const adminTexts = {
     logout: 'Se déconnecter',
   },
   login: {
-    title: 'Connexion adulte',
+    title: 'Connexion parent',
     subtitle: 'Entre ton identifiant et ton mot de passe.',
     username: 'Identifiant',
     password: 'Mot de passe',
@@ -78,6 +95,9 @@ export const adminTexts = {
     bulkTitle: 'Ajouter plusieurs élèves',
     bulkHint: 'Un prénom par ligne (40 maximum).',
     bulk: 'Créer les élèves',
+    renamed: 'Groupe renommé.',
+    rekeyed: 'Nouveau code créé.',
+    notPinned: 'Cet appareil n’est fixé à aucun groupe.',
     createdTitle: 'Mots de passe créés',
     createdHint:
       'Montre chaque suite d’images à l’élève. Elle ne sera plus affichée.',
@@ -110,6 +130,8 @@ export const adminTexts = {
     parents: 'Parents',
     noParents: 'Aucun parent rattaché.',
     linkParent: 'Rattacher un parent existant',
+    linkParentAdminOnly:
+      'Pour rattacher un parent, utilise l’invitation parent ci-dessous. Seul un administrateur peut lier un compte existant.',
     parentUsername: 'Identifiant du parent',
     link: 'Rattacher',
     unlink: 'Retirer',
@@ -137,11 +159,22 @@ export const adminTexts = {
     disable: 'Désactiver',
     resetLink: 'Lien de mot de passe',
     resetReady: 'Lien de réinitialisation à transmettre',
+    enabledNotice: 'Compte activé.',
+    disabledNotice: 'Compte désactivé.',
+    roleNotice: 'Rôle modifié.',
+    unlock: 'Débloquer',
+    unlocked: 'Compte débloqué.',
     inviteTeacherTitle: 'Inviter un encadrant',
     inviteTeacherName: 'Nom affiché',
     inviteTeacherUsername: 'Identifiant',
     inviteTeacherSubmit: 'Créer le lien d’invitation',
     inviteTeacherReady: 'Lien d’invitation à transmettre',
+    inactiveTitle: 'Élèves sans activité depuis 24 mois',
+    inactiveHint: 'Vérifie la fiche avant de supprimer un compte.',
+    inactiveShow: 'Afficher la liste',
+    inactiveEmpty: 'Aucun élève inactif depuis 24 mois.',
+    inactiveSince: (date: string) => `Dernière activité : ${date}`,
+    open: 'Voir la fiche',
     self: 'Ton propre compte',
     previous: 'Précédent',
     next: 'Suivant',
@@ -150,7 +183,7 @@ export const adminTexts = {
   },
   audit: {
     title: 'Journal d’audit',
-    subtitle: 'Les actions sensibles des adultes.',
+    subtitle: 'Les actions sensibles des parents.',
     date: 'Date',
     actor: 'Auteur',
     action: 'Action',
@@ -195,7 +228,9 @@ export const adminTexts = {
     title: 'Mon compte',
     role: 'Rôle',
     passwordTitle: 'Changer mon mot de passe',
-    passwordHint: 'L’ancien mot de passe n’est pas demandé.',
+    passwordHint:
+      'Ton mot de passe actuel est demandé pour confirmer que c’est bien toi.',
+    currentPassword: 'Mot de passe actuel',
     newPassword: 'Nouveau mot de passe (12 caractères minimum)',
     confirm: 'Confirme le mot de passe',
     submit: 'Changer le mot de passe',
@@ -222,6 +257,9 @@ export const adminTexts = {
     studentsInGroup: 'Élèves dans le groupe',
     activeLast7: 'Actifs ces 7 derniers jours',
     chartTitle: 'Taux de réussite par niveau',
+    levelHere: 'à ce niveau',
+    levelTransition: 'à la transition',
+    levelAt: (label: string) => `au niveau ${label}`,
     statsTitle: 'Statistiques par niveau',
     difficultiesTitle: 'Difficultés fréquentes',
     noDifficulties: 'Aucune difficulté relevée pour le moment.',
@@ -294,3 +332,51 @@ export const adminTexts = {
     invite: 'Invitation',
   } as Record<string, string>,
 } as const;
+
+const adminDictionaries: Record<Language, typeof adminTexts> = {
+  fr: adminTexts,
+  en: adminTextsEn,
+  zh: adminTextsZh,
+};
+
+function adminNode(path: readonly string[]): unknown {
+  let node: unknown = adminDictionaries[getActiveLanguage()];
+
+  for (const key of path) {
+    if (typeof node !== 'object' || node === null) {
+      return undefined;
+    }
+
+    node = (node as Record<string, unknown>)[key];
+  }
+
+  return node;
+}
+
+function adminProxy(path: readonly string[]): unknown {
+  return new Proxy(
+    {},
+    {
+      get(_target, property: string | symbol) {
+        if (typeof property !== 'string') {
+          return undefined;
+        }
+
+        const nextPath = [...path, property];
+        const node = adminNode(nextPath);
+
+        if (typeof node === 'object' && node !== null) {
+          return adminProxy(nextPath);
+        }
+
+        return node;
+      },
+    },
+  );
+}
+
+/**
+ * Translated admin texts. Existing screens import it under the local alias
+ * `adminTexts`, so their property accesses stay unchanged.
+ */
+export const adminTextsI18n = adminProxy([]) as typeof adminTexts;

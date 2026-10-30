@@ -23,13 +23,14 @@ import {
   copyText,
   PicturePasswordList,
 } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 import { StudentProgressSections } from './StudentProgressSections';
 
 export function StudentDetailPage({ studentId }: { studentId: string }) {
   const { session } = useProgress();
   const teacher =
     session?.user.role === 'admin' || session?.user.role === 'encadrant';
+  const isAdmin = session?.user.role === 'admin';
   const [student, setStudent] = useState<StudentSummary | null>(null);
   const [parents, setParents] = useState<ParentSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +120,37 @@ export function StudentDetailPage({ studentId }: { studentId: string }) {
       setParentUsername('');
       await load();
     });
+  }
+
+  async function exportStudent(): Promise<void> {
+    setBusy(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/students/${encodeURIComponent(studentId)}/export`,
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(adminTexts.error);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `eleve-${studentId}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError(adminTexts.error);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function unlinkParent(parentId: string): Promise<void> {
@@ -226,12 +258,16 @@ export function StudentDetailPage({ studentId }: { studentId: string }) {
             </ul>
           )}
 
-          <a
+          <button
+            type="button"
             className="admin-button admin-button--secondary"
-            href={`${API_BASE_URL}/students/${encodeURIComponent(studentId)}/export`}
+            disabled={busy}
+            onPointerDown={(event) =>
+              activate(event, () => void exportStudent())
+            }
           >
             {adminTexts.student.export}
-          </a>
+          </button>
 
           {teacher ? (
             <button
@@ -288,24 +324,30 @@ export function StudentDetailPage({ studentId }: { studentId: string }) {
               </ul>
             )}
 
-            <form className="admin-form admin-form--compact" onSubmit={(event) => void linkParent(event)}>
-              <label className="admin-field">
-                <span>{adminTexts.student.linkParent}</span>
-                <input
-                  type="text"
-                  value={parentUsername}
-                  onChange={(event) => setParentUsername(event.target.value)}
-                  placeholder={adminTexts.student.parentUsername}
-                />
-              </label>
-              <button
-                type="submit"
-                className="admin-button admin-button--secondary"
-                disabled={busy}
-              >
-                {adminTexts.student.link}
-              </button>
-            </form>
+            {isAdmin ? (
+              <form className="admin-form admin-form--compact" onSubmit={(event) => void linkParent(event)}>
+                <label className="admin-field">
+                  <span>{adminTexts.student.linkParent}</span>
+                  <input
+                    type="text"
+                    value={parentUsername}
+                    onChange={(event) => setParentUsername(event.target.value)}
+                    placeholder={adminTexts.student.parentUsername}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="admin-button admin-button--secondary"
+                  disabled={busy}
+                >
+                  {adminTexts.student.link}
+                </button>
+              </form>
+            ) : (
+              <p className="admin-muted">
+                {adminTexts.student.linkParentAdminOnly}
+              </p>
+            )}
           </section>
         ) : null}
       </div>

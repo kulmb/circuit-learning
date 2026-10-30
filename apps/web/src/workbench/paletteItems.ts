@@ -19,77 +19,88 @@ export interface PaletteItem extends ComponentVisual {
   options?: PaletteComponentOptions;
 }
 
-const METAL_VISUAL: ComponentVisual = {
-  label: fr.components.metal.label,
-  color: '#90a4ae',
-};
+function metalVisual(): ComponentVisual {
+  return {
+    label: fr.components.metal.label,
+    color: '#90a4ae',
+  };
+}
 
-const GUM_VISUAL: ComponentVisual = {
-  label: fr.components.gum.label,
-  color: '#a5d6a7',
-};
+function gumVisual(): ComponentVisual {
+  return {
+    label: fr.components.gum.label,
+    color: '#a5d6a7',
+  };
+}
 
-export const COMPONENT_VISUALS: Record<ComponentType, ComponentVisual> = {
-  battery: {
-    label: fr.components.battery.label,
-    color: '#f4a261',
-  },
-  bulb: {
-    label: fr.components.bulb.label,
-    color: '#ffd166',
-  },
-  switch: {
-    label: fr.components.switch.label,
-    color: '#2a9d8f',
-  },
-  wire: {
-    label: fr.components.wire.label,
-    color: '#78909c',
-  },
-  motor: {
-    label: fr.components.motor.label,
-    color: '#4d96ff',
-  },
-  buzzer: {
-    label: fr.components.buzzer.label,
-    color: '#9b5de5',
-  },
-  led: {
-    label: fr.components.led.label,
-    color: '#ef476f',
-  },
-  resistor: {
-    label: fr.components.resistor.label,
-    color: '#8d6e63',
-  },
-  rheostat: {
-    label: fr.components.rheostat.label,
-    color: '#b08968',
-  },
-  material: METAL_VISUAL,
-};
+function componentVisuals(): Record<ComponentType, ComponentVisual> {
+  return {
+    battery: {
+      label: fr.components.battery.label,
+      color: '#f4a261',
+    },
+    bulb: {
+      label: fr.components.bulb.label,
+      color: '#ffd166',
+    },
+    switch: {
+      label: fr.components.switch.label,
+      color: '#2a9d8f',
+    },
+    wire: {
+      label: fr.components.wire.label,
+      color: '#78909c',
+    },
+    motor: {
+      label: fr.components.motor.label,
+      color: '#4d96ff',
+    },
+    buzzer: {
+      label: fr.components.buzzer.label,
+      color: '#9b5de5',
+    },
+    led: {
+      label: fr.components.led.label,
+      color: '#ef476f',
+    },
+    resistor: {
+      label: fr.components.resistor.label,
+      color: '#8d6e63',
+    },
+    rheostat: {
+      label: fr.components.rheostat.label,
+      color: '#b08968',
+    },
+    material: metalVisual(),
+  };
+}
 
-export const PALETTE_ITEMS: PaletteItem[] = [
-  paletteItem('battery', 'battery', COMPONENT_VISUALS.battery),
-  paletteItem('bulb', 'bulb', COMPONENT_VISUALS.bulb),
-  paletteItem('switch', 'switch', COMPONENT_VISUALS.switch, { closed: false }),
-  paletteItem('motor', 'motor', COMPONENT_VISUALS.motor),
-  paletteItem('buzzer', 'buzzer', COMPONENT_VISUALS.buzzer),
-  paletteItem('led', 'led', COMPONENT_VISUALS.led),
-  paletteItem('resistor', 'resistor', COMPONENT_VISUALS.resistor),
-  paletteItem('rheostat', 'rheostat', COMPONENT_VISUALS.rheostat, {
-    wiperPosition: 0,
-  }),
-  paletteItem('metal', 'material', METAL_VISUAL, { conductive: true }),
-  paletteItem('gum', 'material', GUM_VISUAL, { conductive: false }),
-];
+/** Built per render so the palette follows the active language. */
+export function buildPaletteItems(): PaletteItem[] {
+  const visuals = componentVisuals();
+
+  return [
+    paletteItem('battery', 'battery', visuals.battery),
+    paletteItem('bulb', 'bulb', visuals.bulb),
+    paletteItem('switch', 'switch', visuals.switch, { closed: false }),
+    paletteItem('motor', 'motor', visuals.motor),
+    paletteItem('buzzer', 'buzzer', visuals.buzzer),
+    paletteItem('led', 'led', visuals.led),
+    paletteItem('resistor', 'resistor', visuals.resistor),
+    paletteItem('rheostat', 'rheostat', visuals.rheostat, {
+      wiperPosition: 0,
+    }),
+    paletteItem('metal', 'material', metalVisual(), { conductive: true }),
+    paletteItem('gum', 'material', gumVisual(), { conductive: false }),
+  ];
+}
 
 export function getComponentVisual(component: CircuitComponent): ComponentVisual {
   if (component.type === 'material') {
-    return component.conductive ? METAL_VISUAL : GUM_VISUAL;
+    return component.conductive ? metalVisual() : gumVisual();
   }
 
-  return COMPONENT_VISUALS[component.type];
+  return componentVisuals()[component.type];
 }
 
 function paletteItem(

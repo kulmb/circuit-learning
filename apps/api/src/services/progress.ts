@@ -133,6 +133,9 @@ async function assertLevelUnlocked(
   return level;
 }
 
+/** Per-child daily ceiling, far above a normal play session. */
+export const MAX_ATTEMPTS_PER_DAY = 500;
+
 export async function startLevelAttempt(options: {
   userId: Types.ObjectId;
   groupId: Types.ObjectId | null;
@@ -144,6 +147,27 @@ export async function startLevelAttempt(options: {
   const clientId =
     options.attemptId ?? new Types.ObjectId().toString();
   const now = new Date();
+  const existing = await LevelAttemptModel.exists({
+    userId: options.userId,
+    clientId,
+  });
+
+  if (existing === null) {
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const todayCount = await LevelAttemptModel.countDocuments({
+      userId: options.userId,
+      startedAt: mongoose.trusted({ $gte: startOfDay }),
+    });
+
+    if (todayCount >= MAX_ATTEMPTS_PER_DAY) {
+      throw new ApiError(
+        429,
+        'attempt_quota',
+        'Tu as beaucoup joué aujourd’hui. Reviens demain !',
+      );
+    }
+  }
 
   const attempt = await LevelAttemptModel.findOneAndUpdate(
     { userId: options.userId, clientId },

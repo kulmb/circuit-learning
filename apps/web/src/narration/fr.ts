@@ -1,7 +1,25 @@
 /**
- * Single source of truth for every French string shown to the child or the adults.
- * Narration services look texts up by id through getText().
+ * French source dictionary for every string shown to the child or the parents.
+ * English and Chinese dictionaries mirror the same keys; getText() selects the
+ * active language and falls back to French if a key is ever missing.
  */
+import { textsEn } from './texts.en';
+import { textsZh } from './texts.zh';
+
+export type Language = 'fr' | 'en' | 'zh';
+
+export const DEFAULT_LANGUAGE: Language = 'fr';
+
+let activeLanguage: Language = DEFAULT_LANGUAGE;
+
+export function setActiveLanguage(language: Language): void {
+  activeLanguage = language;
+}
+
+export function getActiveLanguage(): Language {
+  return activeLanguage;
+}
+
 export const texts = {
   'home.eyebrow': 'Avec Zap, le petit robot',
   'home.title': 'Les Circuits de Zap',
@@ -9,7 +27,7 @@ export const texts = {
   'home.play': 'Jouer',
   'home.sandbox': 'Atelier libre',
   'home.back': 'Retour',
-  'home.adultSpace': 'Espace adulte',
+  'home.adultSpace': 'Espace parent',
   'home.parentSettings': 'Réglages parents',
 
   'workbench.title': 'Plan de travail',
@@ -191,7 +209,7 @@ export const texts = {
   'pwa.updateDoneClose': 'Fermer',
 
   'parentSettings.title': 'Réglages parents',
-  'parentSettings.subtitle': 'Pour les adultes qui accompagnent l’enfant.',
+  'parentSettings.subtitle': 'Pour les parents qui accompagnent l’enfant.',
   'parentSettings.back': 'Retour',
   'parentSettings.gateTitle': 'Petite question',
   'parentSettings.question': 'Combien font',
@@ -243,7 +261,7 @@ export const texts = {
     'Ce code ne marche pas. Vérifie avec ton encadrant.',
   'login.delete': 'Effacer',
   'login.guest': 'Jouer en invité',
-  'login.adult': 'Espace adulte',
+  'login.adult': 'Espace parent',
   'login.emptyGroup': 'Aucun élève dans ce groupe pour le moment.',
   'login.chooseAvatar': 'Choisis ton avatar',
   'login.pictureTitle': 'Touche tes trois images',
@@ -275,7 +293,7 @@ export const texts = {
 
   'progress.saveError':
     'Oups, je n’arrive pas à sauvegarder. On réessaie plus tard !',
-  'progress.mergeAdult': 'Pour l’adulte',
+  'progress.mergeAdult': 'Pour le parent',
   'progress.mergeTitle': 'Progression d’invité',
   'progress.mergeQuestion':
     'Cet appareil a une progression d’invité. La fusionner avec ce compte ?',
@@ -317,20 +335,20 @@ export const texts = {
   'level.04.hint.2': 'Regarde si l’ampoule s’allume.',
   'level.04.hint.3': 'Range les matériaux dans la bonne boîte.',
 
-  'level.05.title': 'Deux ampoules en file',
+  'level.05.title': 'Deux ampoules en série',
   'level.05.goal': 'Relie les deux ampoules l’une après l’autre.',
   'level.05.intro':
-    'Avec deux ampoules en file, la lumière est plus faible.',
+    'En série, les ampoules brillent moins fort.',
   'level.05.hint.1': 'Place la deuxième ampoule.',
   'level.05.hint.2': 'Relie-les l’une après l’autre.',
   'level.05.hint.3': 'Les deux ampoules doivent être plus faibles.',
 
-  'level.06.title': 'Deux ampoules côte à côte',
-  'level.06.goal': 'Relie les deux ampoules côte à côte.',
-  'level.06.intro': 'Côte à côte, les ampoules brillent autant.',
+  'level.06.title': 'Deux ampoules en parallèle',
+  'level.06.goal': 'Relie chaque ampoule directement à la pile.',
+  'level.06.intro': 'En parallèle, les ampoules brillent autant.',
   'level.06.hint.1': 'Place la deuxième ampoule.',
   'level.06.hint.2': 'Relie chaque ampoule directement à la pile.',
-  'level.06.hint.3': 'Les ampoules côte à côte brillent normalement.',
+  'level.06.hint.3': 'Les ampoules en parallèle brillent normalement.',
 
   'level.07.title': 'Danger : court-circuit !',
   'level.07.goal': 'Enlève le court-circuit.',
@@ -420,33 +438,33 @@ export const texts = {
   'level.current.07.hint.3':
     'Plus la lumière monte, plus la puissance augmente.',
 
-  'level.assembly.01.title': 'L’un après l’autre',
-  'level.assembly.01.goal': 'Relie les deux ampoules en file.',
+  'level.assembly.01.title': 'En série',
+  'level.assembly.01.goal': 'Relie les deux ampoules en série.',
   'level.assembly.01.intro':
-    'En file, le courant passe par les deux.',
+    'En série, le courant passe par les deux.',
   'level.assembly.01.hint.1': 'Place la deuxième ampoule.',
   'level.assembly.01.hint.2': 'Relie-la après la première.',
   'level.assembly.01.hint.3':
     'Les deux ampoules doivent être plus faibles.',
 
-  'level.assembly.02.title': 'Côte à côte',
+  'level.assembly.02.title': 'En parallèle',
   'level.assembly.02.goal': 'Relie chaque ampoule à la pile.',
   'level.assembly.02.intro':
-    'Côte à côte, chaque ampoule a son chemin.',
+    'En parallèle, chaque ampoule a son chemin.',
   'level.assembly.02.hint.1': 'Place la deuxième ampoule.',
   'level.assembly.02.hint.2':
     'Relie chaque ampoule directement à la pile.',
   'level.assembly.02.hint.3':
     'Les deux ampoules brillent normalement.',
 
-  'level.assembly.03.title': 'Le mélange',
+  'level.assembly.03.title': 'Le circuit combiné',
   'level.assembly.03.goal': 'Une ampoule forte, deux faibles.',
   'level.assembly.03.intro':
-    'Mélange une ampoule en file et deux côte à côte.',
+    'Mélange une ampoule en série et deux en parallèle.',
   'level.assembly.03.hint.1':
     'La première ampoule est seule sur son chemin.',
   'level.assembly.03.hint.2':
-    'Les deux autres sont côte à côte.',
+    'Les deux autres sont en parallèle.',
   'level.assembly.03.hint.3':
     'Relie les deux dernières à la même borne.',
 
@@ -551,9 +569,9 @@ export const texts = {
   'vocab.isolant.word': 'Isolant',
   'vocab.isolant.definition': 'Il bloque le courant.',
   'vocab.serie.word': 'En série',
-  'vocab.serie.definition': 'Les ampoules sont l’une après l’autre.',
+  'vocab.serie.definition': 'Elles sont sur le même chemin.',
   'vocab.parallele.word': 'En parallèle',
-  'vocab.parallele.definition': 'Les ampoules sont côte à côte.',
+  'vocab.parallele.definition': 'Chaque ampoule a son propre chemin.',
   'vocab.courtCircuit.word': 'Court-circuit',
   'vocab.courtCircuit.definition':
     'Le courant passe directement, la pile chauffe.',
@@ -582,8 +600,18 @@ export const texts = {
 
 export type TextId = keyof typeof texts;
 
+const dictionaries: Record<Language, Record<string, string>> = {
+  fr: texts,
+  en: textsEn,
+  zh: textsZh,
+};
+
 export function getText(id: string): string {
-  return texts[id as TextId] ?? '';
+  return (
+    dictionaries[activeLanguage][id] ??
+    texts[id as TextId] ??
+    ''
+  );
 }
 
 export interface VocabularyEntry {
@@ -597,7 +625,7 @@ export function getVocabulary(id: string): VocabularyEntry | null {
   return word === '' ? null : { word, definition };
 }
 
-export const fr = {
+const frBase = {
   home: {
     eyebrow: texts['home.eyebrow'],
     title: texts['home.title'],
@@ -720,3 +748,71 @@ export const fr = {
     unmute: texts['zap.unmute'],
   },
 } as const;
+
+function textKeyForPath(path: string): string {
+  if (path.startsWith('components.')) {
+    return `component.${path.slice('components.'.length)}`;
+  }
+
+  switch (path) {
+    case 'workbench.displayMode':
+      return 'display.mode';
+    case 'workbench.displayRealistic':
+      return 'display.realistic';
+    case 'workbench.displaySymbol':
+      return 'display.symbol';
+    case 'workbench.displayOverlay':
+      return 'display.overlay';
+    default:
+      return path;
+  }
+}
+
+function localizeTexts<T>(value: T, prefix: string): T {
+  if (typeof value === 'string') {
+    return getText(textKeyForPath(prefix)) as T;
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const localized: Record<string, unknown> = {};
+
+    for (const [key, child] of Object.entries(value)) {
+      localized[key] = localizeTexts(
+        child,
+        prefix === '' ? key : `${prefix}.${key}`,
+      );
+    }
+
+    return localized as T;
+  }
+
+  return value;
+}
+
+let frCacheLanguage: Language | null = null;
+let frCache: typeof frBase | null = null;
+
+function localizedFr(): typeof frBase {
+  const language = getActiveLanguage();
+
+  if (frCache === null || frCacheLanguage !== language) {
+    frCacheLanguage = language;
+    frCache = localizeTexts(frBase, '');
+  }
+
+  return frCache;
+}
+
+/**
+ * The nested object imported by older components. Property access resolves
+ * against the active language, so callers keep using `fr.home.title`.
+ */
+export const fr = new Proxy({} as typeof frBase, {
+  get(_target, property: string | symbol) {
+    if (typeof property !== 'string') {
+      return undefined;
+    }
+
+    return localizedFr()[property as keyof typeof frBase];
+  },
+});

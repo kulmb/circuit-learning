@@ -17,7 +17,10 @@ import {
   type Vec2,
   type Wire,
 } from '@circuits/shared';
-import type { LevelDefinition } from '@circuits/shared/levels';
+import type {
+  LevelAvailableComponent,
+  LevelDefinition,
+} from '@circuits/shared/levels';
 import { create } from 'zustand';
 
 import { nextDisplayMode, type DisplayMode } from './displayMode';
@@ -47,6 +50,7 @@ export interface WorkbenchState {
   levelId: string | null;
   lockedComponentIds: string[];
   availableCounts: Record<string, number> | null;
+  availableOffers: readonly LevelAvailableComponent[];
   history: CircuitSnapshot[];
   sandboxActive: boolean;
   sandboxOwnerKey: string | null;
@@ -104,6 +108,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
   levelId: null,
   lockedComponentIds: [],
   availableCounts: null,
+  availableOffers: [],
   history: [],
   sandboxActive: false,
   sandboxOwnerKey: null,
@@ -132,6 +137,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
         .filter((entry) => entry.locked)
         .map((entry) => entry.component.id),
       availableCounts,
+      availableOffers: level.availableComponents,
       history: [],
       sandboxActive: false,
       sandboxOwnerKey: null,
@@ -153,6 +159,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       levelId: null,
       lockedComponentIds: [],
       availableCounts: null,
+      availableOffers: [],
       history: [],
       sandboxActive: true,
       sandboxOwnerKey: ownerKey,
@@ -179,6 +186,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       levelId: null,
       lockedComponentIds: [],
       availableCounts: null,
+      availableOffers: [],
       history: [],
       sandboxActive: true,
       sandboxWork: null,
@@ -428,9 +436,10 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       (wire) =>
         wire.from.componentId !== componentId && wire.to.componentId !== componentId,
     );
+    const availableCounts = restoredAvailableCounts(state, target);
 
     set({
-      ...nextCircuitState(state, { components, wires }),
+      ...nextCircuitState(state, { components, wires }, availableCounts),
       selected: null,
       pendingTerminal:
         state.pendingTerminal?.componentId === componentId
@@ -465,6 +474,14 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       return;
     }
 
+    const target = state.circuit.components.find(
+      (component) => component.id === selection.id,
+    );
+
+    if (target === undefined) {
+      return;
+    }
+
     const components = state.circuit.components.filter(
       (component) => component.id !== selection.id,
     );
@@ -472,9 +489,10 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       (wire) =>
         wire.from.componentId !== selection.id && wire.to.componentId !== selection.id,
     );
+    const availableCounts = restoredAvailableCounts(state, target);
 
     set({
-      ...nextCircuitState(state, { components, wires }),
+      ...nextCircuitState(state, { components, wires }, availableCounts),
       selected: null,
       pendingTerminal: null,
     });
@@ -585,6 +603,7 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
       levelId: null,
       lockedComponentIds: [],
       availableCounts: null,
+      availableOffers: [],
       history: [],
       sandboxActive: false,
       sandboxOwnerKey: null,
@@ -607,6 +626,43 @@ function createInitialCircuit(): Circuit {
       }),
     ],
     wires: [],
+  };
+}
+
+/**
+ * Gives back one palette slot when a child removes a component they placed.
+ * Without this, deleting the only offered bulb would leave the palette empty
+ * and the child unable to try again. Locked preplaced components never reach
+ * this helper.
+ */
+function restoredAvailableCounts(
+  state: WorkbenchState,
+  component: CircuitComponent,
+): Record<string, number> | null {
+  if (state.availableCounts === null) {
+    return null;
+  }
+
+  const offer = state.availableOffers.find(
+    (candidate) =>
+      candidate.type === component.type &&
+      (component.type !== 'material' ||
+        (candidate.key === 'metal') === component.conductive),
+  );
+
+  if (offer === undefined) {
+    return state.availableCounts;
+  }
+
+  const remaining = state.availableCounts[offer.key] ?? 0;
+
+  if (remaining >= offer.count) {
+    return state.availableCounts;
+  }
+
+  return {
+    ...state.availableCounts,
+    [offer.key]: remaining + 1,
   };
 }
 

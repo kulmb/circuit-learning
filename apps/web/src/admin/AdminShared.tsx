@@ -1,7 +1,8 @@
 import { avatarEmoji, type PicturePatternId } from '@circuits/shared';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 
-import { adminTexts } from './fr';
+import { getActiveLanguage } from '../narration/fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 export function activate(
   event: ReactPointerEvent<HTMLButtonElement>,
@@ -32,7 +33,11 @@ export function formatDate(value: string | number | null): string {
     return '—';
   }
 
-  return new Intl.DateTimeFormat('fr-FR', {
+  const language = getActiveLanguage();
+  const locale =
+    language === 'zh' ? 'zh-CN' : language === 'en' ? 'en-US' : 'fr-FR';
+
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(date);

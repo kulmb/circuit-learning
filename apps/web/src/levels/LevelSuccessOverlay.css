@@ -17,8 +17,6 @@
 
 .level-complete-card {
   width: min(560px, 100%);
-  max-height: min(45dvh, 460px);
-  overflow-y: auto;
   padding: clamp(1rem, 2.5vw, 1.6rem);
   text-align: left;
   pointer-events: auto;
@@ -197,7 +195,6 @@
 }
 
 [data-layout='compact'] .level-complete-card {
-  max-height: 32dvh;
   padding: 10px 12px;
   border-radius: 18px;
 }
@@ -234,4 +231,22 @@
 
 [data-layout='compact'] .level-vocabulary-card {
   padding: 8px 10px;
+}
+
+/* Landscape phones have little vertical room: side-by-side actions keep the
+   banner fully visible without an internal scrollbar. */
+[data-layout='compact'][data-orientation='landscape'] .level-complete-actions {
+  flex-direction: row;
+}
+
+[data-layout='compact'][data-orientation='landscape'] .level-vocabulary {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+[data-layout='compact'][data-orientation='landscape']
+  .level-complete-actions
+  .level-complete-button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
 }

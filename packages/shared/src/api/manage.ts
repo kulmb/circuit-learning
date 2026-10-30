@@ -221,6 +221,32 @@ export const usersQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+export const inactiveStudentsQuerySchema = z.object({
+  months: z.coerce.number().int().min(1).max(120).default(24),
+  limit: z.coerce.number().int().min(1).max(500).default(200),
+});
+
+export const inactiveStudentSchema = z.object({
+  id: objectIdSchema,
+  displayName: z.string(),
+  avatarId: z.string().nullable(),
+  createdAt: dateTimeSchema,
+  lastSeenAt: nullableDateTimeSchema,
+  lastActivityAt: dateTimeSchema,
+  groups: z.array(
+    z.object({
+      id: objectIdSchema,
+      name: z.string(),
+    }),
+  ),
+});
+
+export const inactiveStudentsResponseSchema = z.object({
+  months: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+  students: z.array(inactiveStudentSchema),
+});
+
 export const updateUserStatusRequestSchema = z
   .object({ disabled: z.boolean() })
   .strict();
@@ -326,5 +352,6 @@ export type BulkCreatedStudentsResponse = z.infer<
   typeof bulkCreatedStudentsResponseSchema
 >;
 export type AdminUser = z.infer<typeof adminUserSchema>;
+export type InactiveStudent = z.infer<typeof inactiveStudentSchema>;
 export type AuditLogEntry = z.infer<typeof auditLogSchema>;
 export type StudentExport = z.infer<typeof studentExportSchema>;

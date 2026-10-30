@@ -18,6 +18,7 @@ blob-report/
 !.env.example
 !.env.dev.example
 .github_key
+deploy/mongo/keyfile
 
 # Logs
 *.log

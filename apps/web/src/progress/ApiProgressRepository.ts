@@ -136,6 +136,24 @@ export class ApiProgressRepository implements ProgressRepository {
     this.now = options.now ?? Date.now;
   }
 
+  /**
+   * Removes everything this account cached on this device. Called on logout
+   * so the next child on a shared tablet cannot read the previous one's
+   * progress or replay their queued writes.
+   */
+  clearUserCache(): void {
+    if (this.storage === null) {
+      return;
+    }
+
+    try {
+      this.storage.removeItem(this.cacheKey());
+      this.storage.removeItem(this.queueKey());
+    } catch {
+      // Private browsing or a blocked storage: nothing else to clear.
+    }
+  }
+
   async getProgress(): Promise<PlayerProgress> {
     if (this.readQueue().length > 0) {
       void this.flushQueue();

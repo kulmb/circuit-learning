@@ -12,6 +12,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 
+import { useLanguage } from '../i18n/LanguageContext';
 import { fr } from '../narration/fr';
 import { useProgress } from '../progress/ProgressContext';
 import { DEFAULT_BOARD } from './constants';
@@ -90,7 +91,11 @@ export function SandboxPage({
   const photoBusyRef = useRef(false);
   const openingRef = useRef(false);
 
-  const paletteItems = useMemo(() => sandboxPaletteItems(), []);
+  const { language } = useLanguage();
+  const paletteItems = useMemo(
+    () => sandboxPaletteItems(),
+    [language],
+  );
   const currentName = sandboxWork?.name ?? nextSandboxName(works);
   const fingerprint = useMemo(
     () => sandboxFingerprint(circuit),

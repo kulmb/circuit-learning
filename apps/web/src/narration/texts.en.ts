@@ -1,0 +1,580 @@
+import type { TextId } from './fr';
+
+export const textsEn: Record<TextId, string> = {
+  'home.eyebrow': 'With Zap, the little robot',
+  'home.title': "Zap's Circuits",
+  'home.tagline': 'Light up the lights by connecting the right wires!',
+  'home.play': 'Play',
+  'home.sandbox': 'Free workshop',
+  'home.back': 'Back',
+  'home.adultSpace': 'Parent space',
+  'home.parentSettings': 'Parent settings',
+
+  'workbench.title': 'Workbench',
+  'workbench.hint': 'Connect the components with wires.',
+  'workbench.back': 'Back',
+  'workbench.undo': 'Undo',
+  'workbench.trash': 'Trash',
+  'workbench.rotate': 'Rotate',
+  'workbench.delete': 'Delete',
+  'workbench.instructions': 'Instructions',
+  'workbench.close': 'Close',
+  'workbench.rotateDevice': 'Turn your phone!',
+  'workbench.rotateDeviceHint': 'The workbench is played in landscape.',
+  'workbench.showAll': 'See all',
+  'workbench.zoomHint': 'Two fingers to zoom',
+  'workbench.paletteTitle': 'Components',
+  'workbench.empty': 'Drag a component onto the board.',
+  'workbench.statusClosed': 'The circuit is closed!',
+  'workbench.statusOpen': 'The circuit is open.',
+  'workbench.statusShort': 'Careful, short circuit!',
+  'workbench.statusMissingBattery': 'A battery is missing.',
+  'workbench.statusSwitchOpen': 'The switch is open.',
+  'workbench.statusInsulator': 'This material does not let current through.',
+  'workbench.statusLedReversed': 'The LED is backwards.',
+  'workbench.statusBulbOneSide': 'The bulb is connected on one side only.',
+  'workbench.statusError': "Oops, I can't work out the circuit.",
+
+  'sandbox.title': 'Free workshop',
+  'sandbox.subtitle': 'Invent your own circuit!',
+  'sandbox.intro':
+    'Welcome to my workshop! Invent the circuit you want.',
+  'sandbox.myWorkshop': 'My workshop',
+  'sandbox.panelTitle': 'My workshop',
+  'sandbox.close': 'Close',
+  'sandbox.save': 'Save',
+  'sandbox.saving': 'Saving…',
+  'sandbox.saved': 'Circuit saved!',
+  'sandbox.saveError': 'I could not save it. Try again.',
+  'sandbox.unsaved': 'Not saved yet',
+  'sandbox.current': 'On the board',
+  'sandbox.photo': 'Take a photo',
+  'sandbox.photoBusy': 'Getting your photo ready…',
+  'sandbox.photoReady': 'Your photo is ready!',
+  'sandbox.photoError': 'I could not take the photo. Try again.',
+  'sandbox.photoSaved': 'Your circuit is saved with the photo.',
+  'sandbox.photoNotSaved':
+    'The photo is ready, but the circuit is not saved.',
+  'sandbox.photoAlt': 'Your circuit in a photo',
+  'sandbox.download': 'Download the photo',
+  'sandbox.clear': 'Clear everything',
+  'sandbox.clearTitle': 'Clear everything?',
+  'sandbox.clearText': 'All the components will disappear from the board.',
+  'sandbox.clearYes': 'Yes, clear it all',
+  'sandbox.clearNo': 'No, keep it',
+  'sandbox.worksTitle': 'My creations',
+  'sandbox.noWorks': 'No creations yet.',
+  'sandbox.worksHint': 'Choose a creation to open it again.',
+  'sandbox.worksError': 'I could not read your creations.',
+  'sandbox.openWork': 'Open',
+  'sandbox.defaultName': 'My circuit',
+  'sandbox.photoTitle': "Zap's Circuits",
+  'sandbox.photoFooter': 'Made with Zap',
+  'sandbox.loading': 'Opening my workshop…',
+  'sandbox.curiosity.empty': 'What if you placed a battery and a bulb?',
+  'sandbox.curiosity.battery': 'What if you added a battery?',
+  'sandbox.curiosity.bulb': 'What if you added a bulb?',
+  'sandbox.curiosity.secondBattery':
+    'What if you added a second battery?',
+  'sandbox.curiosity.secondBulb':
+    'What if you added a second bulb?',
+  'sandbox.curiosity.switch': 'What if you added a switch?',
+  'sandbox.curiosity.motor': 'What if you added a motor?',
+  'sandbox.curiosity.led': 'What if you added an LED?',
+  'sandbox.curiosity.material':
+    'What if you tried the metal and the eraser?',
+  'sandbox.curiosity.photo':
+    'What if you took a photo of your circuit?',
+  'sandbox.curiosity.rotate': 'What if you rotated a component?',
+
+  'display.mode': 'Display',
+  'display.realistic': 'Realistic',
+  'display.symbol': 'Symbols',
+  'display.overlay': 'Both',
+
+  'workbench.meters': "Zap's measurements",
+  'meter.tension': 'Voltage',
+  'meter.tension.low': 'gentle push',
+  'meter.tension.medium': 'medium push',
+  'meter.tension.high': 'strong push',
+  'meter.courant': 'Current',
+  'meter.courant.low': 'low flow',
+  'meter.courant.medium': 'medium flow',
+  'meter.courant.high': 'strong flow',
+  'meter.resistance': 'Resistance',
+  'meter.resistance.low': 'weak brake',
+  'meter.resistance.medium': 'medium brake',
+  'meter.resistance.high': 'strong brake',
+  'meter.puissance': 'Power',
+  'meter.puissance.low': 'a little energy',
+  'meter.puissance.medium': 'medium energy',
+  'meter.puissance.high': 'lots of energy',
+  'meter.off': 'open circuit',
+  'meter.alert': 'warning',
+
+  'challenge.new': 'New challenge',
+  'challenge.badge': 'Challenge',
+  'challenge.hint': 'Each challenge mixes up the parts.',
+
+  'component.battery.label': 'Battery',
+  'component.bulb.label': 'Bulb',
+  'component.switch.label': 'Switch',
+  'component.motor.label': 'Motor',
+  'component.buzzer.label': 'Buzzer',
+  'component.led.label': 'LED',
+  'component.resistor.label': 'Resistor',
+  'component.rheostat.label': 'Dimmer',
+  'component.wire.label': 'Wire',
+  'component.metal.label': 'Metal',
+  'component.gum.label': 'Eraser',
+
+  'zap.help': 'Help',
+  'zap.hide': 'Hide Zap',
+  'zap.show': 'Show Zap',
+  'zap.hintAria': 'Ask Zap for a hint',
+  'zap.replay': 'Listen again',
+  'zap.mute': 'Mute the sound',
+  'zap.unmute': 'Turn on the sound',
+  'zap.welcome': "Hello! I'm Zap. Connect the components with wires.",
+  'zap.successBulb': 'Great job! The bulb is on, your circuit is closed!',
+  'zap.successGeneric': 'Great job, the circuit is closed!',
+  'zap.short':
+    'Careful! Both ends of the battery are touching. It is a short circuit, the battery is getting hot!',
+  'zap.error': "Oops, I can't read the circuit.",
+
+  'zap.hint.open.1': 'Look closely: the current must go all the way around!',
+  'zap.hint.open.2': 'A wire may not be touching its neighbor.',
+  'zap.hint.open.3': 'The orange terminals are not connected.',
+  'zap.hint.bulb.1': 'The wire touches only one side of the bulb.',
+  'zap.hint.bulb.2': 'Connect the other side of the bulb.',
+  'zap.hint.bulb.3': 'Touch the free terminal of the bulb.',
+  'zap.hint.switch.1': 'There is a switch in the way.',
+  'zap.hint.switch.2': 'The switch is open.',
+  'zap.hint.switch.3': 'Touch the switch to close it.',
+  'zap.hint.insulator.1': 'Not everything lets current through.',
+  'zap.hint.insulator.2': 'This material blocks the current.',
+  'zap.hint.insulator.3': 'Try a material that lets current through.',
+  'zap.hint.led.1': 'An LED only works one way.',
+  'zap.hint.led.2': 'The + of the battery goes to A.',
+  'zap.hint.led.3': 'The − of the battery goes to K.',
+  'zap.hint.battery.1': 'Something is missing to give energy.',
+  'zap.hint.battery.2': 'Add a battery to the circuit.',
+  'zap.hint.battery.3': 'Take a battery from the palette.',
+  'zap.hint.short.1': 'Careful, the current is flowing too fast!',
+  'zap.hint.short.2': 'Both ends of the battery are touching.',
+  'zap.hint.short.3': 'Separate the two battery terminals.',
+  'zap.hint.error.1': "Oops, I don't understand this circuit yet.",
+  'zap.hint.error.2': 'Try moving a component.',
+  'zap.hint.error.3': 'Check the terminals of the circuit.',
+
+  'chapter.light.title': 'Chapter 1: Light',
+  'chapter.current.title': 'Chapter 2: The power of current',
+  'chapter.assemblies.title': 'Chapter 3: Series or parallel?',
+  'chapter.challenges.title': "Chapter 4: Zap's challenges",
+  'map.title': 'Level map',
+  'map.subtitle': 'Choose a level.',
+  'map.back': 'Home',
+  'map.locked': 'Locked',
+  'map.level': 'Level',
+  'map.transition': 'Transition',
+  'map.final': 'Chapter complete!',
+  'map.guestNotice':
+    'You are playing as a guest. Your progress stays on this device.',
+  'map.collection': 'My collection',
+  'map.sandbox': 'Free workshop',
+  'map.bye': 'Goodbye',
+
+  'pwa.updateDone': 'Update complete!',
+  'pwa.updateDoneDetail': 'You are playing the latest version.',
+  'pwa.updateDoneClose': 'Close',
+
+  'parentSettings.title': 'Parent settings',
+  'parentSettings.subtitle': 'For the parents helping the child.',
+  'parentSettings.back': 'Back',
+  'parentSettings.gateTitle': 'A little question',
+  'parentSettings.question': 'How much is',
+  'parentSettings.gateError': 'That is not the right answer. Try again.',
+  'parentSettings.gateHint':
+    'This question protects the settings from young children.',
+  'parentSettings.unlocked': 'Settings unlocked.',
+  'parentSettings.soundTitle': 'Sound',
+  'parentSettings.soundHint': "Zap's voice and the sound effects.",
+  'parentSettings.soundOn': 'Sound on',
+  'parentSettings.soundOff': 'Sound off',
+  'parentSettings.voiceTitle': 'Voice speed',
+  'parentSettings.voiceHint': 'Choose the pace that suits the child.',
+  'parentSettings.voiceSlow': 'Slow',
+  'parentSettings.voiceNormal': 'Normal',
+  'parentSettings.voiceFast': 'Fast',
+  'parentSettings.voiceSample': "Hello! I'm Zap. This is my voice.",
+  'parentSettings.vibrationTitle': 'Vibrations',
+  'parentSettings.vibrationHint':
+    'One little vibration when a level is passed, two for a short circuit.',
+  'parentSettings.vibrationOn': 'Vibrations on',
+  'parentSettings.vibrationOff': 'Vibrations off',
+  'parentSettings.vibrationUnsupported':
+    'Vibrations are not available on this device.',
+  'parentSettings.lowTitle': 'Low performance mode',
+  'parentSettings.lowHint':
+    'Fewer current dots and fewer light effects.',
+  'parentSettings.lowOn': 'On',
+  'parentSettings.lowOff': 'Off',
+  'parentSettings.lowAuto': 'Turned down automatically because the game is slowing down.',
+  'parentSettings.lowReduced': 'Turned down by the system settings.',
+  'parentSettings.resetTitle': 'Local progress',
+  'parentSettings.resetHint':
+    'Erases the levels and stars saved on this device. Workshop creations are kept.',
+  'parentSettings.resetAccountNote':
+    "A child account's progress is still saved on the server.",
+  'parentSettings.reset': 'Erase local progress',
+  'parentSettings.resetConfirmTitle': 'Erase local progress?',
+  'parentSettings.resetConfirmText':
+    'This device’s levels and stars will be erased.',
+  'parentSettings.resetYes': 'Yes, erase',
+  'parentSettings.resetNo': 'No, keep',
+  'parentSettings.resetDone': 'Local progress has been erased.',
+
+  'login.title': 'Who is playing?',
+  'login.groupTitle': 'Enter the group code',
+  'login.groupHint': 'Ask your coach for the code.',
+  'login.groupError':
+    'That code does not work. Check it with your coach.',
+  'login.delete': 'Erase',
+  'login.guest': 'Play as a guest',
+  'login.adult': 'Parent space',
+  'login.emptyGroup': 'No students in this group yet.',
+  'login.chooseAvatar': 'Choose your avatar',
+  'login.pictureTitle': 'Tap your three pictures',
+  'login.pictureHint': 'In the right order.',
+  'login.back': 'Back',
+  'login.pinned': 'This device is already linked to this group.',
+  'login.wrong': 'That is not the right picture. Try again.',
+  'login.locked': 'Ask your coach for help.',
+  'login.connectionError':
+    'Oops, I cannot connect you. Try again.',
+  'login.retry': 'Start again',
+
+  'collection.title': 'My collection',
+  'collection.subtitle': 'The words you have learned.',
+  'collection.empty': 'Play levels to win words!',
+  'collection.listen': 'Listen',
+  'collection.back': 'Level map',
+  'collection.wordAria': 'Listen to the word',
+
+  'picture.renard': 'The fox',
+  'picture.panda': 'The panda',
+  'picture.grenouille': 'The frog',
+  'picture.pomme': 'The apple',
+  'picture.banane': 'The banana',
+  'picture.fraise': 'The strawberry',
+  'picture.ballon': 'The ball',
+  'picture.voiture': 'The car',
+  'picture.etoile': 'The star',
+
+  'progress.saveError':
+    "Oops, I can't save. We'll try again later!",
+  'progress.mergeAdult': 'For the parent',
+  'progress.mergeTitle': 'Guest progress',
+  'progress.mergeQuestion':
+    'This device has guest progress. Merge it with this account?',
+  'progress.mergeYes': 'Yes, merge',
+  'progress.mergeNo': 'No, keep the account',
+  'progress.mergeBusy': 'Merging…',
+  'progress.mergeError':
+    'The merge did not work. Try again later.',
+
+  'level.backToMap': 'Level map',
+
+  'level.01.title': 'Light the bulb',
+  'level.01.goal': 'Connect the battery to the bulb.',
+  'level.01.intro':
+    'Zap needs you. Connect the battery and the bulb with two wires.',
+  'level.01.hint.1': 'Connect the + of the battery to one side of the bulb.',
+  'level.01.hint.2': 'Connect the other side of the bulb to the − of the battery.',
+  'level.01.hint.3': 'Both wires must make a full loop.',
+
+  'level.02.title': 'The closed circuit',
+  'level.02.goal': 'Find the missing wire.',
+  'level.02.intro': 'The current needs a full loop.',
+  'level.02.hint.1': 'A wire is missing to close the loop.',
+  'level.02.hint.2': 'Look at the free terminals.',
+  'level.02.hint.3':
+    'Connect the free terminal of the bulb to the free terminal of the battery.',
+
+  'level.03.title': 'The switch',
+  'level.03.goal': 'Close the switch to light the bulb.',
+  'level.03.intro': 'The switch opens and closes the path.',
+  'level.03.hint.1': 'The switch is open.',
+  'level.03.hint.2': 'Touch the switch to close it.',
+  'level.03.hint.3': 'The current will flow when it is closed.',
+
+  'level.04.title': 'Conductor or insulator?',
+  'level.04.goal': 'Sort the materials.',
+  'level.04.intro':
+    'Some materials let current through, others do not.',
+  'level.04.hint.1': 'Drag a material into the circuit.',
+  'level.04.hint.2': 'See if the bulb lights up.',
+  'level.04.hint.3': 'Put the materials in the right box.',
+
+  'level.05.title': 'Two bulbs in series',
+  'level.05.goal': 'Connect the two bulbs one after the other.',
+  'level.05.intro':
+    'In series, the bulbs shine less brightly.',
+  'level.05.hint.1': 'Place the second bulb.',
+  'level.05.hint.2': 'Connect them one after the other.',
+  'level.05.hint.3': 'Both bulbs must be dimmer.',
+
+  'level.06.title': 'Two bulbs in parallel',
+  'level.06.goal': 'Connect each bulb directly to the battery.',
+  'level.06.intro': 'In parallel, the bulbs shine just as brightly.',
+  'level.06.hint.1': 'Place the second bulb.',
+  'level.06.hint.2': 'Connect each bulb directly to the battery.',
+  'level.06.hint.3': 'Bulbs in parallel shine normally.',
+
+  'level.07.title': 'Danger: short circuit!',
+  'level.07.goal': 'Remove the short circuit.',
+  'level.07.intro':
+    'Careful! The battery is getting hot. Find the wire that connects its two terminals.',
+  'level.07.hint.1': 'Look for a wire that goes from one terminal to the other.',
+  'level.07.hint.2': 'Remove that wire.',
+  'level.07.hint.3': 'The bulb must light up without a short circuit.',
+
+  'level.08.title': 'The motor',
+  'level.08.goal': 'Make the motor spin.',
+  'level.08.intro': 'The motor turns current into movement.',
+  'level.08.hint.1': 'Place the motor on the board.',
+  'level.08.hint.2': 'Connect the motor to the battery.',
+  'level.08.hint.3': 'The motor must spin.',
+
+  'level.09.title': 'The direction of current',
+  'level.09.goal': 'Light the LED.',
+  'level.09.intro':
+    'An LED has two different sides. Look closely at A and K.',
+  'level.09.hint.1': 'Place the LED on the board.',
+  'level.09.hint.2': 'The + of the battery goes to A.',
+  'level.09.hint.3': 'The − of the battery goes to K.',
+
+  'level.10.title': 'Final challenge',
+  'level.10.goal': 'One switch for the motor, one for the bulb.',
+  'level.10.intro': 'Two switches, two devices. Your turn!',
+  'level.10.hint.1':
+    'Place both switches, the motor and the bulb.',
+  'level.10.hint.2': 'Make two separate paths.',
+  'level.10.hint.3': 'Each switch controls its device.',
+
+  'level.current.01.title': 'The two terminals',
+  'level.current.01.goal': 'Light the LED.',
+  'level.current.01.intro': 'Current flows out through + and back through −.',
+  'level.current.01.hint.1': 'Look at the + and − signs.',
+  'level.current.01.hint.2': 'The + of the battery goes to A.',
+  'level.current.01.hint.3': 'The − of the battery goes to K.',
+
+  'level.current.02.title': 'Battery power',
+  'level.current.02.goal': 'Make the bulb shine more brightly.',
+  'level.current.02.intro':
+    'With one battery, the bulb shines. With two, it shines brightly!',
+  'level.current.02.hint.1': 'Take a battery from the palette.',
+  'level.current.02.hint.2': 'Put the battery on the + wire.',
+  'level.current.02.hint.3':
+    'Undo, then start again on the + wire.',
+
+  'level.current.03.title': 'Current',
+  'level.current.03.goal': "Put the bulb on the motor's path.",
+  'level.current.03.intro': 'The same current flows through the whole circuit.',
+  'level.current.03.hint.1': 'Take a bulb from the palette.',
+  'level.current.03.hint.2': 'Put it on a wire.',
+  'level.current.03.hint.3': 'The current must flow through both.',
+
+  'level.current.04.title': 'Resistance',
+  'level.current.04.goal': 'Make the bulb shine dimly.',
+  'level.current.04.intro': 'Resistance slows the current down.',
+  'level.current.04.hint.1': 'Take the resistor from the palette.',
+  'level.current.04.hint.2': 'Put it on a wire.',
+  'level.current.04.hint.3': 'The current flows through the resistor.',
+
+  'level.current.05.title': 'The dimmer',
+  'level.current.05.goal': 'Dim the light.',
+  'level.current.05.intro':
+    'Touch the dimmer, then drag the slider.',
+  'level.current.05.hint.1': 'Touch the dimmer.',
+  'level.current.05.hint.2': 'Drag the slider to the right.',
+  'level.current.05.hint.3': 'The bulb must shine dimly.',
+
+  'level.current.06.title': 'The night light',
+  'level.current.06.goal': 'Turn on the night light gently.',
+  'level.current.06.intro':
+    'A switch and a dimmer for the night light.',
+  'level.current.06.hint.1':
+    'Place the switch, the bulb and the dimmer.',
+  'level.current.06.hint.2': 'Connect them in a line with the battery.',
+  'level.current.06.hint.3':
+    'Close the switch and lower the light.',
+
+  'level.current.07.title': 'Power',
+  'level.current.07.goal': 'Make the bulb shine very brightly.',
+  'level.current.07.intro':
+    'The brighter the bulb, the more energy it uses.',
+  'level.current.07.hint.1': 'Touch the dimmer.',
+  'level.current.07.hint.2': 'Drag the slider to the left.',
+  'level.current.07.hint.3':
+    'As the light rises, the power goes up.',
+
+  'level.assembly.01.title': 'In series',
+  'level.assembly.01.goal': 'Connect the two bulbs in series.',
+  'level.assembly.01.intro':
+    'In series, the current flows through both.',
+  'level.assembly.01.hint.1': 'Place the second bulb.',
+  'level.assembly.01.hint.2': 'Connect it after the first.',
+  'level.assembly.01.hint.3':
+    'Both bulbs must be dimmer.',
+
+  'level.assembly.02.title': 'In parallel',
+  'level.assembly.02.goal': 'Connect each bulb to the battery.',
+  'level.assembly.02.intro':
+    'In parallel, each bulb has its own path.',
+  'level.assembly.02.hint.1': 'Place the second bulb.',
+  'level.assembly.02.hint.2':
+    'Connect each bulb directly to the battery.',
+  'level.assembly.02.hint.3':
+    'Both bulbs shine normally.',
+
+  'level.assembly.03.title': 'The combined circuit',
+  'level.assembly.03.goal': 'One bright bulb, two dim ones.',
+  'level.assembly.03.intro':
+    'Mix one bulb in series and two in parallel.',
+  'level.assembly.03.hint.1':
+    'The first bulb is alone on its path.',
+  'level.assembly.03.hint.2':
+    'The other two are in parallel.',
+  'level.assembly.03.hint.3':
+    'Connect the last two to the same terminal.',
+
+  'level.assembly.04.title': 'The two controls',
+  'level.assembly.04.goal':
+    'One switch for everything, one for a bulb.',
+  'level.assembly.04.intro':
+    'The first turns everything off, the second turns off one bulb.',
+  'level.assembly.04.hint.1':
+    'The first switch controls both bulbs.',
+  'level.assembly.04.hint.2':
+    'The second controls only the second bulb.',
+  'level.assembly.04.hint.3':
+    'Connect the first switch before the two paths.',
+
+  'level.defi.01.title': 'First light',
+  'level.defi.01.goal': 'Light the bulb.',
+  'level.defi.01.intro':
+    'Zap mixed up the parts. Your turn!',
+  'level.defi.01.hint.1': 'A wire may be missing.',
+  'level.defi.01.hint.2': 'Connect the battery to the bulb.',
+  'level.defi.01.hint.3':
+    'The current must make a full loop.',
+
+  'level.defi.02.title': 'Two bulbs',
+  'level.defi.02.goal': 'Connect the two bulbs in a line.',
+  'level.defi.02.intro':
+    'Same number of parts, a new circuit.',
+  'level.defi.02.hint.1': 'Place the second bulb.',
+  'level.defi.02.hint.2': 'Connect them one after the other.',
+  'level.defi.02.hint.3':
+    'The current flows through both bulbs.',
+
+  'level.defi.03.title': 'The two paths',
+  'level.defi.03.goal':
+    'One switch for just one bulb.',
+  'level.defi.03.intro':
+    'Two paths, one switch. Can you find it?',
+  'level.defi.03.hint.1':
+    'Each bulb has its own path.',
+  'level.defi.03.hint.2':
+    'The switch cuts only one path.',
+  'level.defi.03.hint.3':
+    'Close the switch to light the second bulb.',
+
+  'level.defi.04.title': 'The motor workshop',
+  'level.defi.04.goal':
+    'The motor spins and the bulb stays dim.',
+  'level.defi.04.intro':
+    'A motor, a bulb and a dimmer.',
+  'level.defi.04.hint.1':
+    'The motor and the bulb each have their own path.',
+  'level.defi.04.hint.2':
+    'The switch controls the motor.',
+  'level.defi.04.hint.3':
+    'Lower the light with the dimmer.',
+
+  'symbols.title': 'Symbols',
+  'symbols.goal': 'Match each drawing to its symbol.',
+  'symbols.intro':
+    'Engineers draw components with symbols.',
+  'symbols.hint.1': 'Look at the shape of the symbol.',
+  'symbols.hint.2': 'A battery has one long bar and one short bar.',
+  'symbols.hint.3': 'A bulb has a cross inside a circle.',
+  'symbols.instructions': 'Drag each drawing onto its symbol.',
+  'symbols.component': 'The component',
+  'symbols.symbol': 'The symbol',
+  'symbols.wrong': 'Try again.',
+  'symbols.correct': 'Well done!',
+
+  'material.key': 'Metal key',
+  'material.gum': 'Eraser',
+  'material.spoon': 'Spoon',
+  'material.pencil': 'Wooden pencil',
+  'material.aluminum': 'Aluminum foil',
+  'materials.tray': 'Materials',
+  'materials.conductiveBin': 'Current flows',
+  'materials.insulatingBin': 'Current does not flow',
+  'materials.instructions':
+    'Drag a material into the circuit, then sort it.',
+  'materials.gap': 'The circuit is waiting for a material.',
+  'materials.wrong': 'See if the bulb lights up.',
+  'materials.correct': 'Well done!',
+
+  'level.noComponents': 'Use the components already on the board.',
+  'success.title': 'Great job!',
+  'success.continue': 'Continue',
+  'success.learned': 'You learned…',
+  'success.next': 'Next level',
+  'success.map': 'Level map',
+
+  'vocab.circuitFerme.word': 'Closed circuit',
+  'vocab.circuitFerme.definition': 'Current can go all the way around.',
+  'vocab.fil.word': 'Wire',
+  'vocab.fil.definition': 'It carries the current.',
+  'vocab.circuitOuvert.word': 'Open circuit',
+  'vocab.circuitOuvert.definition': 'Current cannot flow.',
+  'vocab.interrupteur.word': 'Switch',
+  'vocab.interrupteur.definition': 'It opens or closes the circuit.',
+  'vocab.conducteur.word': 'Conductor',
+  'vocab.conducteur.definition': 'It lets current flow.',
+  'vocab.isolant.word': 'Insulator',
+  'vocab.isolant.definition': 'It blocks the current.',
+  'vocab.serie.word': 'In series',
+  'vocab.serie.definition': 'They are on the same path.',
+  'vocab.parallele.word': 'In parallel',
+  'vocab.parallele.definition': 'Each bulb has its own path.',
+  'vocab.courtCircuit.word': 'Short circuit',
+  'vocab.courtCircuit.definition':
+    'Current flows straight through, the battery heats up.',
+  'vocab.moteur.word': 'Motor',
+  'vocab.moteur.definition': 'Current makes it spin.',
+  'vocab.polarite.word': 'Polarity',
+  'vocab.polarite.definition': 'An LED has an A side and a K side.',
+  'vocab.borne.word': 'Terminal',
+  'vocab.borne.definition': 'The + and − of the battery.',
+  'vocab.tension.word': 'Voltage',
+  'vocab.tension.definition': 'It is the push that moves current.',
+  'vocab.courant.word': 'Current',
+  'vocab.courant.definition': 'It is what flows in the wires.',
+  'vocab.resistance.word': 'Resistance',
+  'vocab.resistance.definition': 'It slows the current down.',
+  'vocab.variateur.word': 'Dimmer',
+  'vocab.variateur.definition': 'It sets the strength of the current.',
+  'vocab.puissance.word': 'Power',
+  'vocab.puissance.definition': 'It is the energy the bulb uses.',
+  'vocab.combinaison.word': 'Combination',
+  'vocab.combinaison.definition':
+    'Several paths in the same circuit.',
+  'vocab.symbole.word': 'Symbol',
+  'vocab.symbole.definition': 'A simple drawing for a component.',
+};

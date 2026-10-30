@@ -180,23 +180,72 @@ export async function loginChild(
   );
 
   if (!valid) {
-    student.failedLogins += 1;
+    const now = new Date();
+    const nextCount = {
+      $add: [{ $ifNull: ['$failedLogins', 0] }, 1],
+    };
+    const reachedLimit = {
+      $gte: [nextCount, CHILD_MAX_FAILED_LOGINS],
+    };
 
-    if (student.failedLogins >= CHILD_MAX_FAILED_LOGINS) {
-      student.failedLogins = 0;
-      student.lockedUntil = new Date(Date.now() + CHILD_LOCK_MS);
-      await student.save();
+    // One atomic pipeline update: concurrent wrong taps cannot overwrite one
+    // another's counter, and the threshold and lock are written together.
+    const failed = await UserModel.findOneAndUpdate(
+      {
+        _id: student._id,
+        $or: [
+          { lockedUntil: null },
+          { lockedUntil: mongoose.trusted({ $lte: now }) },
+        ],
+      },
+      [
+        {
+          $set: {
+            failedLogins: {
+              $cond: [reachedLimit, 0, nextCount],
+            },
+            lockedUntil: {
+              $cond: [
+                reachedLimit,
+                new Date(now.getTime() + CHILD_LOCK_MS),
+                '$lockedUntil',
+              ],
+            },
+          },
+        },
+      ],
+      { returnDocument: 'after', updatePipeline: true },
+    );
+
+    if (failed === null) {
       throw new ApiError(423, 'picture_locked', LOCKED_MESSAGE);
     }
 
-    await student.save();
+    if (
+      failed.lockedUntil !== null &&
+      failed.lockedUntil !== undefined &&
+      failed.lockedUntil.getTime() > now.getTime()
+    ) {
+      throw new ApiError(423, 'picture_locked', LOCKED_MESSAGE);
+    }
+
     throw new ApiError(401, 'picture_wrong', WRONG_PICTURE_MESSAGE);
   }
 
+  const now = new Date();
   student.failedLogins = 0;
   student.lockedUntil = null;
-  student.lastSeenAt = new Date();
-  await student.save();
+  student.lastSeenAt = now;
+  await UserModel.updateOne(
+    { _id: student._id },
+    {
+      $set: {
+        failedLogins: 0,
+        lockedUntil: null,
+        lastSeenAt: now,
+      },
+    },
+  );
 
   const created = await createSession({
     userId: student._id,

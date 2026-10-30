@@ -18,6 +18,7 @@ import {
   InviteModel,
   LevelAttemptModel,
   LevelProgressModel,
+  LoginThrottleModel,
   SandboxCircuitModel,
   SessionModel,
   UserModel,
@@ -35,10 +36,7 @@ import {
   generateJoinCode,
   JOIN_CODE_PATTERN,
 } from '../src/services/joinCode.js';
-import {
-  DEMO_PICTURE_PATTERN,
-  seedDemoData,
-} from '../src/services/seedDemoData.js';
+import { seedDemoData } from '../src/services/seedDemoData.js';
 import {
   hashSecret,
   pictureSecretFromPattern,
@@ -123,6 +121,16 @@ describe('indexes', () => {
       key: { tokenHash: 1 },
       unique: true,
       partialFilterExpression: { tokenHash: { $type: 'string' } },
+    });
+
+    expect(
+      await indexNamed(LoginThrottleModel, 'loginthrottles_key_unique'),
+    ).toMatchObject({ key: { key: 1 }, unique: true });
+    expect(
+      await indexNamed(LoginThrottleModel, 'loginthrottles_updated_ttl'),
+    ).toMatchObject({
+      key: { updatedAt: 1 },
+      expireAfterSeconds: 24 * 60 * 60,
     });
 
     expect(
@@ -617,7 +625,7 @@ describe('seed', () => {
     expect(
       await verifySecret(
         student.pictureSecretHash,
-        pictureSecretFromPattern(DEMO_PICTURE_PATTERN),
+        pictureSecretFromPattern(first.picturePattern),
       ),
     ).toBe(true);
 
@@ -840,12 +848,14 @@ describe('migration', () => {
     const third = await loadMigration('20261024000003-session-token-index.js');
     const fourth = await loadMigration('20261024000004-client-ids.js');
     const fifth = await loadMigration('20261024000005-dashboard-indexes.js');
+    const sixth = await loadMigration('20261029000001-login-throttle-indexes.js');
 
     await first.up(db);
     await second.up(db);
     await third.up(db);
     await fourth.up(db);
     await fifth.up(db);
+    await sixth.up(db);
 
     const names = async (collection: string): Promise<(string | undefined)[]> =>
       (await db.collection(collection).indexes()).map((index) => index.name);
@@ -880,6 +890,12 @@ describe('migration', () => {
     expect(await names('sandboxcircuits')).toContain(
       'sandbox_user_updated',
     );
+    expect(await names('loginthrottles')).toContain(
+      'loginthrottles_key_unique',
+    );
+    expect(await names('loginthrottles')).toContain(
+      'loginthrottles_updated_ttl',
+    );
 
     const emailIndex = (await db.collection('users').indexes()).find(
       (index) => index.name === 'users_email_unique',
@@ -900,6 +916,7 @@ describe('migration', () => {
     );
     expect(sessionTtl?.expireAfterSeconds).toBe(0);
 
+    await sixth.down(db);
     await fifth.down(db);
     await fourth.down(db);
     await third.down(db);
@@ -930,6 +947,12 @@ describe('migration', () => {
     );
     expect(await names('sandboxcircuits')).not.toContain(
       'sandbox_user_updated',
+    );
+    expect(await names('loginthrottles')).not.toContain(
+      'loginthrottles_key_unique',
+    );
+    expect(await names('loginthrottles')).not.toContain(
+      'loginthrottles_updated_ttl',
     );
 
     await db.dropDatabase();

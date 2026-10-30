@@ -24,11 +24,23 @@ compose_args=(
   -f "$root_dir/docker-compose.dev-deploy.yml"
 )
 
-# 1. MongoDB d'abord, pour appliquer les migrations avant le démarrage de l'API.
-# --wait attend que le healthcheck (replica set élu primaire) soit au vert.
-"${compose[@]}" "${compose_args[@]}" up --detach --wait --build mongo
+# 1. KeyFile + authentification MongoDB (idempotent).
+"$root_dir/scripts/ensure-mongo-keyfile.sh"
+"$root_dir/scripts/mongo-auth-setup.sh" \
+  "$env_file" \
+  "$root_dir/docker-compose.dev-deploy.yml" \
+  circuits-de-zap-dev-host
 
-MONGODB_URI='mongodb://127.0.0.1:27019/circuits?directConnection=true' \
+# shellcheck disable=SC1090
+set -a
+. "$env_file"
+set +a
+
+: "${MONGO_APP_USER:?Definis MONGO_APP_USER dans .env.dev}"
+: "${MONGO_APP_PASSWORD:?Definis MONGO_APP_PASSWORD dans .env.dev}"
+
+# 2. Migrations avant le démarrage de l'API, avec le compte applicatif.
+MONGODB_URI="mongodb://${MONGO_APP_USER}:${MONGO_APP_PASSWORD}@127.0.0.1:27019/${MONGO_APP_DB:-circuits}?directConnection=true&authSource=${MONGO_APP_DB:-circuits}" \
   pnpm --filter @circuits/api db:migrate
 
 # 2. API + front de développement.

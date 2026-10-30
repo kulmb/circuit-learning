@@ -9,8 +9,15 @@ import {
 
 export const SESSION_COOKIE = 'zap_session';
 export const DEVICE_PIN_COOKIE = 'zap_device';
+/**
+ * The __Host- prefix pins the cookie to this exact origin: it must be Secure,
+ * Path=/, and carry no Domain. It blocks cookie tossing from a sibling
+ * subdomain. Development runs on http, where the prefix is not allowed.
+ */
+export const SECURE_SESSION_COOKIE = '__Host-zap_session';
+export const SECURE_DEVICE_PIN_COOKIE = '__Host-zap_device';
 
-export const DEVICE_PIN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+export const DEVICE_PIN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface CookieSettings {
   secure: boolean;
@@ -25,13 +32,21 @@ function cookieBase(settings: CookieSettings) {
   };
 }
 
+function sessionCookieName(settings: CookieSettings): string {
+  return settings.secure ? SECURE_SESSION_COOKIE : SESSION_COOKIE;
+}
+
+function devicePinCookieName(settings: CookieSettings): string {
+  return settings.secure ? SECURE_DEVICE_PIN_COOKIE : DEVICE_PIN_COOKIE;
+}
+
 export function setSessionCookie(
   reply: FastifyReply,
   token: string,
   kind: SessionKind,
   settings: CookieSettings,
 ): void {
-  reply.setCookie(SESSION_COOKIE, token, {
+  reply.setCookie(sessionCookieName(settings), token, {
     ...cookieBase(settings),
     maxAge:
       (kind === 'adult' ? ADULT_SESSION_TTL_MS : CHILD_SESSION_TTL_MS) / 1000,
@@ -43,10 +58,15 @@ export function clearSessionCookie(
   settings: CookieSettings,
 ): void {
   reply.clearCookie(SESSION_COOKIE, cookieBase(settings));
+
+  if (settings.secure) {
+    reply.clearCookie(SECURE_SESSION_COOKIE, cookieBase(settings));
+  }
 }
 
 export function readSessionCookie(request: FastifyRequest): string | null {
-  const value = request.cookies[SESSION_COOKIE];
+  const value =
+    request.cookies[SECURE_SESSION_COOKIE] ?? request.cookies[SESSION_COOKIE];
 
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
@@ -60,7 +80,7 @@ export function setDevicePinCookie(
   groupId: string,
   settings: CookieSettings,
 ): void {
-  reply.setCookie(DEVICE_PIN_COOKIE, devicePinValue(groupId), {
+  reply.setCookie(devicePinCookieName(settings), devicePinValue(groupId), {
     ...cookieBase(settings),
     signed: true,
     maxAge: DEVICE_PIN_TTL_MS / 1000,
@@ -72,6 +92,10 @@ export function clearDevicePinCookie(
   settings: CookieSettings,
 ): void {
   reply.clearCookie(DEVICE_PIN_COOKIE, cookieBase(settings));
+
+  if (settings.secure) {
+    reply.clearCookie(SECURE_DEVICE_PIN_COOKIE, cookieBase(settings));
+  }
 }
 
 /**
@@ -79,7 +103,9 @@ export function clearDevicePinCookie(
  * from editing the group id in the browser.
  */
 export function readDevicePin(request: FastifyRequest): string | null {
-  const raw = request.cookies[DEVICE_PIN_COOKIE];
+  const raw =
+    request.cookies[SECURE_DEVICE_PIN_COOKIE] ??
+    request.cookies[DEVICE_PIN_COOKIE];
 
   if (typeof raw !== 'string' || raw.length === 0) {
     return null;

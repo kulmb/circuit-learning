@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 import {
   SandboxCircuitModel,
@@ -6,6 +6,9 @@ import {
   type SandboxCircuitDocument,
 } from '../db/models/index.js';
 import { ApiError } from './errors.js';
+
+/** Per-child ceiling. Each record can hold 200 KB plus a 300 KB thumbnail. */
+export const MAX_SANDBOX_CIRCUITS = 20;
 
 export interface SandboxInput {
   name: string;
@@ -34,6 +37,26 @@ export async function saveSandboxCircuit(options: {
       'invalid_sandbox',
       'Le circuit est invalide ou dépasse 200 Ko.',
     );
+  }
+
+  const existing = await SandboxCircuitModel.exists({
+    userId: options.userId,
+    clientId: options.id,
+  });
+
+  if (existing === null) {
+    const count = await SandboxCircuitModel.countDocuments({
+      userId: options.userId,
+      clientId: mongoose.trusted({ $type: 'string' }),
+    });
+
+    if (count >= MAX_SANDBOX_CIRCUITS) {
+      throw new ApiError(
+        429,
+        'sandbox_quota',
+        'Tu as assez de créations. Supprime-en une avant d’en garder une nouvelle.',
+      );
+    }
   }
 
   const circuit = await SandboxCircuitModel.findOneAndUpdate(

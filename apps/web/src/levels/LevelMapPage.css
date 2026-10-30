@@ -384,6 +384,14 @@
   width: 56px;
 }
 
+/* Narrow portrait phones need the width for the heading, back button and
+   language picker. The robot is decorative here, so it yields to the controls. */
+@media (max-width: 520px) and (orientation: portrait) {
+  [data-layout='compact'] .level-map__zap {
+    display: none;
+  }
+}
+
 [data-layout='compact'] .level-map__path {
   position: relative;
   flex-direction: column;

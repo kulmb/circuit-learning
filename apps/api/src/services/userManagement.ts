@@ -2,6 +2,7 @@ import mongoose, { Types } from 'mongoose';
 
 import {
   AuditLogModel,
+  LoginThrottleModel,
   SessionModel,
   UserModel,
   type AuditLogDocument,
@@ -208,6 +209,45 @@ export async function setUserRole(options: {
   } finally {
     await session.endSession();
   }
+
+  return target;
+}
+
+/**
+ * Removes every per-IP login throttle for an adult account. The account
+ * itself was never locked, so this is mainly a support action after an
+ * attack or a forgotten password.
+ */
+export async function unlockAdultAccount(options: {
+  actor: UserDocument;
+  userId: string;
+}): Promise<UserDocument> {
+  requireAdmin(options.actor);
+
+  if (!Types.ObjectId.isValid(options.userId)) {
+    throw notFound('Compte introuvable.');
+  }
+
+  const target = await UserModel.findById(options.userId);
+
+  if (target === null || target.role === 'eleve') {
+    throw notFound('Compte parent introuvable.');
+  }
+
+  target.failedLogins = 0;
+  target.lockedUntil = null;
+  await target.save();
+
+  if (target.username !== null) {
+    await LoginThrottleModel.deleteMany({ username: target.username });
+  }
+
+  await AuditLogModel.create({
+    actorId: options.actor._id,
+    action: 'unlock_user',
+    targetType: 'user',
+    targetId: target._id,
+  });
 
   return target;
 }

@@ -7,12 +7,12 @@ Monorepo pnpm :
 | Paquet | Rôle |
 |---|---|
 | `apps/web` | Front React 18 + Vite + Zustand + framer-motion |
-| `apps/api` | API Node 20 + Fastify 4 |
+| `apps/api` | API Node 22 + Fastify 5 |
 | `packages/shared` | Moteur de circuit, niveaux, règles et schémas partagés |
 
 ## Prérequis
 
-- Node.js 20.19 ou plus récent (`nvm use` lit `.nvmrc`)
+- Node.js 22.19 ou plus récent (`nvm use` lit `.nvmrc`)
 - pnpm 10 ou plus récent
 - Docker, pour MongoDB 7 en développement
 
@@ -39,8 +39,9 @@ connecte à MongoDB au démarrage : sans base, elle s'arrête avec une erreur.
 L'API de production tourne séparément dans Docker sur le port 3100.
 
 Le seed est idempotent. Il affiche le code à six caractères du groupe
-« Équipe Camelot » et le motif de démonstration des trois élèves
-(`renard → pomme → ballon`).
+« Équipe Camelot ». Le motif de démonstration des trois élèves est désormais
+aléatoire et n'est plus affiché : utilisez « Réinitialiser le mot de passe
+image » dans l'espace encadrant pour en obtenir un.
 
 ### Compte administrateur
 
@@ -424,16 +425,22 @@ zoom, un déplacement ou une rotation d'écran.
 
 ## Narration et Zap
 
-Tous les textes français sont dans `apps/web/src/narration/fr.ts`, indexés par un
-identifiant (`zap.hint.open.1`, `workbench.statusClosed`, etc.).
+Tous les textes sont indexés par un identifiant (`zap.hint.open.1`,
+`workbench.statusClosed`, etc.). Le français est dans
+`apps/web/src/narration/fr.ts`, l'anglais dans `texts.en.ts` et le chinois dans
+`texts.zh.ts` ; les textes adultes suivent le même principe dans
+`apps/web/src/admin/texts.*.ts`. Le bouton en haut à droite passe de FR à EN
+puis 中文 sans recharger la page, et mémorise le choix dans `localStorage`.
 
-- La voix utilise la Web Speech API en `fr-FR`, avec une préférence pour les voix
-  Google, Amélie et Thomas, un débit de 0,9 par défaut (réglable par un parent)
-  et une hauteur légèrement plus aiguë. La liste `voiceschanged` est écoutée
-  pour iOS.
-- Si un enregistrement existe, `/audio/{textId}.mp3` est préféré à la synthèse.
-  Pour l'activer, déposer le MP3 dans `apps/web/public/audio/` et ajouter son
-  identifiant dans `apps/web/public/audio/manifest.json`.
+- La voix utilise la Web Speech API dans la langue active (`fr-FR`, `en-US`,
+  `zh-CN`), avec une préférence pour les voix Google/Amélie/Thomas en français,
+  un débit de 0,9 par défaut (réglable par un parent) et une hauteur légèrement
+  plus aiguë. La liste `voiceschanged` est écoutée pour iOS.
+- Si un enregistrement existe et que la langue est le français,
+  `/audio/{textId}.mp3` est préféré à la synthèse. Pour l'activer, déposer le MP3
+  dans `apps/web/public/audio/` et ajouter son identifiant dans
+  `apps/web/public/audio/manifest.json`. En anglais ou en chinois, la synthèse
+  est toujours utilisée pour ne pas jouer une voix française.
 - Sans voix française, la bulle de texte reste visible. Si la liste des voix
   n'est pas encore chargée (fréquent au premier geste sur mobile), le texte est
   tout de même confié au moteur avec `lang="fr-FR"`.
@@ -688,9 +695,11 @@ L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
   `/srv/circuits/web` (servi par Caddy).
 - L'API tourne dans Docker Compose et écoute uniquement sur `127.0.0.1:3100`.
 - MongoDB 7 tourne dans le même Compose, en replica set `rs0`, avec le volume
-  `mongo-data`. Son port n'est publié que sur `127.0.0.1:27018`, pour les
-  migrations et les seeds lancés depuis l'hôte ; l'API le joint par
-  `mongo:27017` sur le réseau Compose.
+  `mongo-data`. Il exige une authentification par keyFile ; l'API le joint par
+  `mongo:27017` avec un compte `readWrite` limité à la base `circuits`. Aucun
+  port n'est publié en production : la maintenance passe par
+  `docker compose exec mongo mongosh` ou par l'overlay
+  `docker-compose.migrate.yml` pour les migrations.
 - Caddy sert le front à la racine et `/api/*` en reverse proxy. Le bloc de site
   est fourni dans `deploy/caddy/circuit-learning.caddy`. Le service worker et le
   manifest sont servis avec `Cache-Control: no-cache` ; le manifest reçoit aussi
@@ -709,18 +718,30 @@ L'application est publiée sous `https://circuit-learning.87543362.xyz/`.
 # Une seule fois : créer le dossier servi par Caddy
 sudo install -d -o "$(id -un)" -g "$(id -gn)" -m 755 /srv/circuits/web
 
-# Une seule fois : ajouter COOKIE_SECRET au .env de production
+# Une seule fois : secrets de production
 printf 'COOKIE_SECRET=%s\n' "$(openssl rand -base64 48)" >> .env
+printf 'MONGO_APP_PASSWORD=%s\n' "$(openssl rand -hex 24)" >> .env
+printf 'MONGO_ROOT_PASSWORD=%s\n' "$(openssl rand -hex 24)" >> .env
 
-# Déployer MongoDB, l'API et le front
+# Avant la première bascule vers MongoDB authentifié : sauvegarder le volume.
+#   docker run --rm -v circuits-de-zap_mongo-data:/data -v "$PWD":/backup \
+#     mongo:7 tar czf /backup/mongo-data-before-auth.tgz -C /data .
+
+# Déployer MongoDB, l'API et le front.
+# deploy.sh crée /srv/circuits/mongo-keyfile, initie le replica set et crée
+# le compte root puis le compte applicatif. MONGO_ROOT_PASSWORD est requis
+# uniquement pour cette première bascule.
 ./scripts/deploy.sh
 
-# Appliquer les migrations sur la base de production
-MONGODB_URI='mongodb://127.0.0.1:27018/circuits?directConnection=true' \
+# Appliquer les migrations : ouvrir temporairement le port loopback.
+docker compose -f docker-compose.yml -f docker-compose.migrate.yml up -d mongo
+set -a; . ./.env; set +a
+MONGODB_URI="mongodb://${MONGO_APP_USER:-circuitsApp}:${MONGO_APP_PASSWORD}@127.0.0.1:27018/circuits?directConnection=true&authSource=circuits" \
   pnpm --filter @circuits/api db:migrate
+docker compose -f docker-compose.yml -f docker-compose.migrate.yml stop mongo
 
 # Créer l'administrateur (une seule fois, avec un vrai mot de passe)
-MONGODB_URI='mongodb://127.0.0.1:27018/circuits?directConnection=true' \
+MONGODB_URI="mongodb://${MONGO_APP_USER:-circuitsApp}:${MONGO_APP_PASSWORD}@127.0.0.1:27018/circuits?directConnection=true&authSource=circuits" \
 ADMIN_USERNAME='...' ADMIN_PASSWORD='...' ADMIN_NAME='...' \
   pnpm --filter @circuits/api admin:create
 ```
@@ -738,21 +759,25 @@ cours de développement, totalement isolée de la production :
 
 - front dans `/srv/circuits/web-dev` (servi par Caddy) ;
 - API dédiée sur `127.0.0.1:3200`, image `circuits-api:dev` ;
-- MongoDB dédié sur `127.0.0.1:27019`, volume `mongo-dev-host-data` ;
+- MongoDB dédié authentifié sur `127.0.0.1:27019`, volume
+  `mongo-dev-host-data` ;
 - bloc Caddy fourni dans `deploy/caddy/circuit-learning-dev.caddy`, avec
   `X-Robots-Tag: noindex, nofollow` pour ne pas indexer l'environnement de test.
 
 ```bash
-# Une seule fois : dossier servi par Caddy, puis secret du fichier .env.dev
+# Une seule fois : dossier servi par Caddy, puis secrets du fichier .env.dev
 sudo install -d -o "$(id -un)" -g "$(id -gn)" -m 755 /srv/circuits/web-dev
 cp .env.dev.example .env.dev
 printf 'COOKIE_SECRET=%s\n' "$(openssl rand -base64 48)" >> .env.dev
+printf 'MONGO_APP_PASSWORD=%s\n' "$(openssl rand -hex 24)" >> .env.dev
+printf 'MONGO_ROOT_PASSWORD=%s\n' "$(openssl rand -hex 24)" >> .env.dev
 
-# Déployer : migrations, API puis front
+# Déployer : keyFile, authentification, migrations, API puis front
 ./scripts/deploy-dev.sh
 
 # Créer un administrateur de test (une seule fois)
-MONGODB_URI='mongodb://127.0.0.1:27019/circuits?directConnection=true' \
+set -a; . ./.env.dev; set +a
+MONGODB_URI="mongodb://${MONGO_APP_USER:-circuitsApp}:${MONGO_APP_PASSWORD}@127.0.0.1:27019/circuits?directConnection=true&authSource=circuits" \
 ADMIN_USERNAME='...' ADMIN_PASSWORD='...' ADMIN_NAME='...' \
   pnpm --filter @circuits/api admin:create
 ```
@@ -768,5 +793,6 @@ curl -fsS https://circuit-learning-dev.87543362.xyz/api/health
 - La police Nunito est auto-hébergée dans `apps/web/src/assets/fonts` (licence OFL) :
   aucune ressource n'est chargée depuis un CDN.
 - Les secrets et fichiers d'environnement ne sont jamais versionnés.
-- `argon2` est épinglé à 0.41.1 : les binaires précompilés de 0.45.x plantent au
-  chargement sur Node 20 / arm64. Vérifier ce point avant toute montée de version.
+- `argon2` est épinglé à 0.41.1 : les binaires précompilés de 0.45.x plantaient au
+  chargement sur Node 20 / arm64. La montée Node 22 doit être revérifiée sur l’OCI
+  arm64 avant la production.

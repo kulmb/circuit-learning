@@ -1,10 +1,12 @@
 import type { PointerEvent as ReactPointerEvent } from 'react';
 
+import { useLanguage } from '../i18n/LanguageContext';
 import { getText } from '../narration/fr';
 import { useProgress } from './ProgressContext';
 import './GuestMergeDialog.css';
 
 export function GuestMergeDialog() {
+  useLanguage();
   const { mergePrompt, mergeGuestProgress, keepAccountOnly } = useProgress();
 
   if (!mergePrompt.open) {

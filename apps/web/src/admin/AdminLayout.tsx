@@ -1,11 +1,13 @@
 import type { AuthSessionResponse } from '@circuits/shared';
 import type { ReactNode } from 'react';
 
+import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
+import { useLanguage } from '../i18n/LanguageContext';
 import { useProgress } from '../progress/ProgressContext';
 import { navigate, usePathname } from '../router';
 import { APP_VERSION } from '../version';
 import { activate, AvatarPill, roleLabel } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 interface NavigationItem {
   label: string;
@@ -78,6 +80,7 @@ export function AdminLayout({
   session: AuthSessionResponse;
   children: ReactNode;
 }) {
+  useLanguage();
   const path = usePathname();
   const { logout } = useProgress();
   const navigation = navigationFor(session.user.role);
@@ -100,6 +103,7 @@ export function AdminLayout({
         </button>
 
         <div className="admin-top__user">
+          <LanguageSwitcher className="admin-top__language" />
           <AvatarPill
             avatarId={session.user.avatarId}
             name={`${session.user.displayName} · ${roleLabel(session.user.role)}`}

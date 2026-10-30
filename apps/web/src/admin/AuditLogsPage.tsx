@@ -12,7 +12,7 @@ import {
   activate,
   formatDate,
 } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 const PAGE_SIZE = 25;
 

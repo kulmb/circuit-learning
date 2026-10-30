@@ -455,8 +455,13 @@ export async function linkParentToStudent(
   studentId: string,
   username: string,
 ): Promise<ReturnType<typeof parentSummary>> {
-  if (actor.role !== 'admin' && actor.role !== 'encadrant') {
-    throw forbidden();
+  // Attaching an existing account to a child grants that account access to
+  // the child's data. A teacher must use the parent invitation flow so the
+  // parent consents; only an admin may link an existing account directly.
+  if (actor.role !== 'admin') {
+    throw forbidden(
+      'Seul un administrateur peut rattacher un compte parent existant.',
+    );
   }
 
   await getStudentFor(actor, studentId);

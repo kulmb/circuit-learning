@@ -2,6 +2,8 @@ name: circuits-de-zap-dev
 
 # Local development only: a single MongoDB node in replica-set mode, so
 # transactions work without running the whole production stack.
+# It stays unauthenticated but is bound to 127.0.0.1 only; the hosted dev
+# deployment (docker-compose.dev-deploy.yml) uses keyFile authentication.
 services:
   mongo:
     image: mongo:7

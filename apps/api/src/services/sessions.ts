@@ -38,13 +38,15 @@ export async function createSession(
   options: CreateSessionOptions,
 ): Promise<CreatedSession> {
   const token = generateToken();
-  const expiresAt = new Date(Date.now() + sessionTtlMs(options.kind));
+  const now = Date.now();
+  const expiresAt = new Date(now + sessionTtlMs(options.kind));
 
   const session = await SessionModel.create({
     userId: options.userId,
     tokenHash: hashToken(token),
     groupId: options.groupId,
     expiresAt,
+    absoluteExpiresAt: expiresAt,
     userAgent: options.userAgent.slice(0, 512),
     kind: options.kind,
   });
@@ -77,6 +79,19 @@ export async function loadSession(
     return null;
   }
 
+  // Sliding renewal must never extend a stolen session forever. Sessions
+  // created before the field existed fall back to their creation time.
+  const absoluteExpiresAt =
+    session.absoluteExpiresAt ??
+    new Date(
+      session.createdAt.getTime() + sessionTtlMs(session.kind),
+    );
+
+  if (absoluteExpiresAt.getTime() <= now.getTime()) {
+    await SessionModel.deleteOne({ _id: session._id });
+    return null;
+  }
+
   const user = await UserModel.findById(session.userId);
 
   if (
@@ -88,7 +103,14 @@ export async function loadSession(
   }
 
   if (session.kind === 'adult') {
-    session.expiresAt = new Date(Date.now() + ADULT_SESSION_TTL_MS);
+    // The absolute deadline caps the sliding window: if it is nearer than
+    // thirty days, use it; otherwise the normal renewal applies.
+    session.expiresAt = new Date(
+      Math.min(
+        Date.now() + ADULT_SESSION_TTL_MS,
+        absoluteExpiresAt.getTime(),
+      ),
+    );
     await session.save();
   }
 

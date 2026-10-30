@@ -10,6 +10,8 @@ import {
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { ZapCharacter } from '../components/Zap';
+import { useLanguage } from '../i18n/LanguageContext';
+import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
 import { getText } from '../narration/fr';
 import {
   PROGRESS_SYNCED_EVENT,
@@ -30,6 +32,7 @@ export function LevelMapPage({
   onCollection,
   onSandbox,
 }: LevelMapPageProps) {
+  useLanguage();
   const [progress, setProgress] = useState<PlayerProgress | null>(null);
   const { repository, isGuest, ready, session, logout } = useProgress();
   const child = session?.user.role === 'eleve' ? session.user : null;
@@ -77,6 +80,8 @@ export function LevelMapPage({
           <h1>{getText('map.title')}</h1>
           <p>{getText('map.subtitle')}</p>
         </div>
+
+        <LanguageSwitcher className="level-map__language" />
 
         <ZapCharacter
           expression="content"

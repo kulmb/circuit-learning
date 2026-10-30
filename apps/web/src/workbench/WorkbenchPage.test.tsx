@@ -487,6 +487,78 @@ describe('workbench interactions', () => {
     ).toBeInTheDocument();
   });
 
+  it('deletes a component added from the palette in a level', () => {
+    const level = getLevelById('light-05');
+    if (!level) throw new Error('Level missing');
+
+    render(<WorkbenchPage level={level} onBack={() => undefined} />);
+    getSvg();
+
+    act(() => {
+      useWorkbenchStore
+        .getState()
+        .addComponent('bulb', {}, { x: 9, y: 4 }, 'bulb');
+    });
+
+    expect(
+      useWorkbenchStore
+        .getState()
+        .circuit.components.some((component) => component.id === 'bulb-2'),
+    ).toBe(true);
+
+    const deleteButton = screen.getByRole('button', {
+      name: getText('workbench.delete'),
+    });
+    fireEvent.pointerDown(deleteButton);
+
+    expect(
+      useWorkbenchStore
+        .getState()
+        .circuit.components.some((component) => component.id === 'bulb-2'),
+    ).toBe(false);
+    expect(useWorkbenchStore.getState().availableCounts).toEqual({
+      bulb: 1,
+    });
+  });
+
+  it('deletes a palette component dropped onto an existing wire', () => {
+    const level = getLevelById('current-02');
+    if (!level) throw new Error('Level missing');
+
+    render(<WorkbenchPage level={level} onBack={() => undefined} />);
+    getSvg();
+
+    act(() => {
+      const store = useWorkbenchStore.getState();
+      const wire = store.circuit.wires[0];
+      if (wire === undefined) throw new Error('Wire missing');
+      store.addComponentOnWire(
+        'battery',
+        {},
+        { x: 5, y: 4 },
+        'battery',
+        wire.id,
+        0,
+      );
+    });
+
+    expect(
+      useWorkbenchStore
+        .getState()
+        .circuit.components.some((component) => component.id === 'battery-2'),
+    ).toBe(true);
+
+    fireEvent.pointerDown(
+      screen.getByRole('button', { name: getText('workbench.delete') }),
+    );
+
+    expect(
+      useWorkbenchStore
+        .getState()
+        .circuit.components.some((component) => component.id === 'battery-2'),
+    ).toBe(false);
+  });
+
   it('plays the first level to success and shows the learned words', async () => {
     const level = getLevelById('light-01');
     if (!level) throw new Error('Level missing');
@@ -889,6 +961,35 @@ describe('workbench responsive layout', () => {
     expect(
       screen.queryByText(getText(level.goalTextId)),
     ).not.toBeInTheDocument();
+  });
+
+  it('deletes a palette component on a compact screen', () => {
+    const level = getLevelById('light-05');
+    if (!level) throw new Error('Level missing');
+
+    render(
+      <LayoutContext.Provider value={compactLandscape}>
+        <WorkbenchPage level={level} onBack={() => undefined} />
+      </LayoutContext.Provider>,
+    );
+    getSvg();
+
+    act(() => {
+      useWorkbenchStore
+        .getState()
+        .addComponent('bulb', {}, { x: 9, y: 4 }, 'bulb');
+    });
+
+    const deleteButton = screen.getByRole('button', {
+      name: getText('workbench.delete'),
+    });
+    fireEvent.pointerDown(deleteButton);
+
+    expect(
+      useWorkbenchStore
+        .getState()
+        .circuit.components.some((component) => component.id === 'bulb-2'),
+    ).toBe(false);
   });
 
   it('keeps the component rail on the left and hides an empty palette', () => {

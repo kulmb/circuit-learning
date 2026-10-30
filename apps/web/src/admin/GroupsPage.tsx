@@ -13,7 +13,7 @@ import {
   AdminLoading,
   activate,
 } from './AdminShared';
-import { adminTexts } from './fr';
+import { adminTextsI18n as adminTexts } from './fr';
 
 export function GroupsPage() {
   const [groups, setGroups] = useState<ManagedGroup[] | null>(null);

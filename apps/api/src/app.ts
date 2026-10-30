@@ -6,9 +6,11 @@ import {
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, {
+  LogController,
   type FastifyInstance,
   type FastifyReply,
   type FastifyRequest,
+  type FastifyServerOptions,
 } from 'fastify';
 import { ZodError } from 'zod';
 
@@ -21,7 +23,7 @@ import { userRoutes } from './routes/users.js';
 import { ApiError } from './services/errors.js';
 
 export interface BuildAppOptions {
-  logger?: boolean;
+  logger?: FastifyServerOptions['logger'];
   cookieSecret?: string;
   secureCookies?: boolean;
   publicOrigin?: string;
@@ -37,7 +39,26 @@ export function buildApp({
   rateLimitMax = 10,
   trustProxy = config.trustProxy,
 }: BuildAppOptions = {}): FastifyInstance {
-  const app = Fastify({ logger, trustProxy });
+  const app = Fastify({
+    logger,
+    trustProxy,
+    // Fastify's default request log writes the raw URL. Invite and password
+    // reset tokens live in the path, so that would put account-takeover
+    // credentials in the logs. Log the route template instead.
+    logController: new LogController({ disableRequestLogging: true }),
+  });
+
+  app.addHook('onResponse', async (request, reply) => {
+    request.log.info(
+      {
+        method: request.method,
+        route: request.routeOptions.url ?? null,
+        status: reply.statusCode,
+        durationMs: Math.round(reply.elapsedTime),
+      },
+      'request',
+    );
+  });
 
   app.decorateRequest('auth', null);
 
@@ -106,6 +127,9 @@ export function buildApp({
   app.setErrorHandler(
     (error: unknown, request: FastifyRequest, reply: FastifyReply) => {
       if (error instanceof ApiError) {
+        if (error.retryAfterSeconds !== undefined) {
+          reply.header('Retry-After', String(error.retryAfterSeconds));
+        }
         sendApiError(reply, error.statusCode, error.code, error.message);
         return;
       }
