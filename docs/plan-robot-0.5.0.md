@@ -1,7 +1,8 @@
-# Plan — version 0.5.0 « Le Labo Robot »
+# Plan — version 0.5.0 « Le Labo Robot » (préparation EuroBot Junior)
 
 Date : 30 octobre 2026
-Statut : proposition, non implémentée.
+Statut : plan de conception, non implémenté. Aucune maquette ni prototype
+n’est lancé à ce stade.
 Dépendance : la version 0.4.0 (chapitres 5 à 8, composants électroniques)
 doit être livrée avant. Les nouveaux chapitres de ce plan portent donc les
 numéros 9 à 12. Si 0.4.0 change de numérotation, renuméroter les chapitres
@@ -43,8 +44,8 @@ non violents (catapulte de balles, distributeur, pont, grue).
 
 Le livre ne couvre pas le gyroscope, le suivi de ligne PID, le travail
 d’équipe ni la présentation de projet. Ces compétences viennent des
-règlements de concours et de la page coach ; le jeu les introduit sans
-formalisme.
+règlements de concours, d’un entraînement général ou de la page coach ;
+le jeu les introduit sans formalisme.
 
 ### 1.2 Ce que retient le livre IA
 
@@ -79,7 +80,7 @@ des règlements de concours.
 |---|---|---|---|---|
 | 01 | Véhicule à une roue | courroie/roue friction, renvoi d’angle, centre de masse | variable de vitesse, boucle | `meca-01`, `meca-02` |
 | 02 | Balance à ultrasons | levier, contrepoids coulissant, quatre-barres | contact, distance, boucle | `meca-04` |
-| 03 | Pistolet à répétition | double élastique, gâchette motorisée, chargeur | variable, 6 tirs, affichage | écarté (arme) ; idée d’interlock pour `robo-01` |
+| 03 | Pistolet à répétition | double élastique, gâchette motorisée, chargeur | variable, 6 tirs, affichage | écarté (arme) ; idée de double condition pour `robo-01` |
 | 04 | Canon anti-aérien | tourelle, balayage, élastique | reset moteur, balayage, arrêt/tir | écarté (arme) ; idée de balayage pour `robo-05` |
 | 05 | Voiture poseuse de pont | crémaillère, pont télescopique | capteur de couleur, distance, état | `meca-05`, `robo-06` |
 | 06 | Pelleteuse | chenilles, petit→grand engrenage, bras | boutons, angle moteur | `meca-02`, `meca-04` |
@@ -153,6 +154,10 @@ un robot autonome sur le même terrain et les mêmes règles.
 | Homologation | statique + dynamique, au moins 3 manches de qualification | identique |
 | Présentation | poster A1 et dossier | identique |
 
+La limite d’âge et certaines modalités peuvent varier selon le comité
+national ; vérifier le règlement de l’organisateur local avant
+l’inscription.
+
 Ce que le jeu doit entraîner :
 
 - lire un terrain et choisir une stratégie ;
@@ -211,9 +216,9 @@ trois indices, vocabulaire, étoiles selon les indices utilisés.
 Interaction : un banc en SVG avec des chevilles. L’enfant glisse les pièces
 sur les chevilles ; elles s’aimantent. Il lance la manivelle avec le doigt
 ou appuie sur « Tourner ». Les engrenages tournent à la bonne vitesse
-relative, le levier se balance, la crémaillère pousse le pont. Aucun nombre
-de dents n’est affiché : on montre « lent/rapide », « faible/fort »,
-« bloque ».
+relative, la pince se ferme, le levier se balance, la crémaillère pousse
+le pont. Aucun nombre de dents n’est affiché : on montre « lent/rapide »,
+« faible/fort », « bloque ».
 
 Le solveur reste qualitatif. En interne, il connaît les tailles et les
 dents pour être exact ; à l’écran, il ne renvoie que trois classes
@@ -372,9 +377,11 @@ Nouvelles conditions de réussite :
 - `vision_task` (case, couleur, contour, centre, visage) ;
 - `mission_score` (nombre d’objectifs, seuil d’étoiles).
 
-`evaluateLevelSuccess` reste la fonction d’entrée et délègue aux
-évaluateurs de chaque type. Les niveaux de circuit existants ne changent
-pas.
+`evaluateLevelSuccess` reste la fonction d’entrée pour les niveaux de
+circuit. Un nouveau `evaluateRobotLevelSuccess(level, runtime)` évalue les
+niveaux mécanique, programmation, vision et mission ; un petit
+dispatcher `evaluateAnyLevelSuccess` choisit selon `level.kind`. Les
+niveaux de circuit existants ne changent pas.
 
 ### 5.3 Mécanique
 
@@ -544,9 +551,10 @@ parent) :
 - plan de préparation en huit semaines ;
 - grille de compétences par élève (mécanique, pilotage, programmation,
   vision, stratégie, équipe) calculée à partir des niveaux terminés ;
-- checklist d’homologation EuroBot : dimensions, hauteur, arrêt
-  d’urgence, tension, câble de commande en Junior, poster A1, au moins
-  trois manches de qualification ;
+- checklist d’homologation EuroBot : périmètre ≤ 1200 mm au départ,
+  hauteur ≤ 350 mm, limite déployée à vérifier dans le règlement 2026,
+  arrêt d’urgence, tension ≤ 48 V, câble de commande de 5 m en Junior,
+  poster A1, au moins trois manches de qualification ;
 - méthode d’itération générique : identifier, concevoir, créer, itérer,
   communiquer ;
 - fiches imprimables de mission et liste de matériel ;
@@ -680,11 +688,12 @@ Le mode Défi n’est pas un autre chapitre : c’est une option de niveau
 
 ## 9. Découpage et estimation
 
-Estimation pour une personne, tests inclus. À ajuster après le prototype.
+Estimation pour une personne, tests inclus. À ajuster après validation du
+plan.
 
 | Phase | Contenu | Livrables | Jours |
 |---|---|---|---:|
-| 0 | Fondation | union de niveaux, modules vides, prototype banc + blocs | 5-7 |
+| 0 | Fondation | union de niveaux, interfaces, modules vides, spécifications d’écran | 5-7 |
 | 1 | Mécanique | solveur, art, 6 niveaux, textes, tests | 8-10 |
 | 2 | Robot | interpréteur, grille, capteurs, 6 niveaux, tests | 12-15 |
 | 3 | Vision | image simulée, filtres, contours, 5 niveaux, tests | 8-10 |
@@ -706,7 +715,7 @@ puis on voit et on concourt.
 
 | Risque | Impact | Réduction |
 |---|---|---|
-| Nouveau domaine trop large | 0.5.0 jamais finie | découpe 0.5.0/0.5.1, prototype avant art |
+| Nouveau domaine trop large | 0.5.0 jamais finie | découpe 0.5.0/0.5.1, spécifications avant art |
 | Mécanique qualitative floue | l’enfant ne comprend pas | animations, classes lent/fort, test enfant |
 | Blocs difficiles au doigt | frustration | ajout par toucher, 5 blocs, pas de double-clic |
 | Vision simulée magique | l’enfant ne relie pas au réel | grille de pixels visible, masque, contour |
@@ -743,23 +752,23 @@ puis on voit et on concourt.
 
 ## 12. Recommandation
 
-Commencer par la mécanique et l’interpréteur de blocs. Ce sont les deux
-briques qui rendent les missions possibles ; la vision est indépendante et
-peut être développée en parallèle. Livrer ensuite les missions, qui
-donnent du sens à tout le reste.
+Le plan est prêt ; aucune maquette n’est lancée. La mécanique et
+l’interpréteur de blocs sont les deux briques qui rendent les missions
+possibles ; la vision est indépendante et peut être développée en
+parallèle. Les missions donnent du sens à tout le reste.
 
-Ordre conseillé :
+Ordre de mise en œuvre conseillé :
 
-1. prototype du banc mécanique et du programme en blocs ;
+1. valider les spécifications du banc mécanique et du programme en blocs ;
 2. chapitre 9 (mécanique) ;
 3. chapitre 10 (cerveau) ;
 4. chapitre 11 (vision) ;
 5. chapitre 12 (missions) ;
 6. page coach, i18n, PWA, tests iPad.
 
-Le premier jalon doit rester petit : un engrenage qui tourne, un robot qui
-avance, un capteur qui arrête. Si ces trois gestes sont agréables au
-doigt, le reste suit.
+Le plan doit rester simple à valider : un engrenage qui tourne, un robot
+qui avance, un capteur qui arrête. Si ces trois gestes sont clairs sur le
+papier, le reste suit.
 
 ## 13. Références
 
