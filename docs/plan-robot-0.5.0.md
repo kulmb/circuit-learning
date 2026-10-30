@@ -192,7 +192,7 @@ de la 0.4.0), soit 21 niveaux.
 | 9 | Les machines de Zap | 6 | transmettre et transformer le mouvement | EV3 |
 | 10 | Le cerveau du robot | 6 | capter, décider, répéter | EV3 + IA ch. 3-4 |
 | 11 | Les yeux du robot | 5 | voir, filtrer, trouver, reconnaître | IA ch. 5-7 |
-| 12 | Mission Robot | 4 | préparer et réussir une manche de concours | WRO/FLL/concours chinois |
+| 12 | Mission Robot | 4 | préparer et réussir une manche EuroBot | EuroBot / EuroBot Junior |
 
 Chaque niveau garde la structure existante : titre, objectif, introduction,
 trois indices, vocabulaire, étoiles selon les indices utilisés.
@@ -228,9 +228,9 @@ contredisent) et les boucles impossibles, et donne un indice.
 | `robo-01` | Écoute ton doigt | Avance quand on touche le capteur. | entrée → action | contact | attendre, avancer | le robot avance après l’appui | EV3 02, IA ch. 4 |
 | `robo-02` | Attention au mur ! | Arrête-toi avant le mur. | condition | distance | si, arrêter | le robot s’arrête près du mur | EV3 02 |
 | `robo-03` | Répète après moi | Traverse le pont en répétant. | boucle | — | répéter, avancer | le robot atteint l’autre rive | EV3 01 |
-| `robo-04` | Suis la ligne | Suis la ligne noire jusqu’au drapeau. | boucle + condition | couleur | répéter, si, tourner | le robot suit la ligne | EV3 05 (capteur de couleur) ; WRO/FLL |
-| `robo-05` | Contourne l’obstacle | Va au drapeau sans toucher la caisse. | distance + décision | distance | si, tourner, avancer | le robot arrive sans collision | EV3 02 ; WRO |
-| `robo-06` | La mission de Zap | Livre le colis dans la zone. | séquence + boucle + condition | contact, distance, couleur | tous | le colis est déposé | EV3 11 ; WRO/FLL |
+| `robo-04` | Suis la ligne | Suis la ligne noire jusqu’au drapeau. | boucle + condition | couleur | répéter, si, tourner | le robot suit la ligne | EV3 05 (capteur de couleur) ; entraînement général |
+| `robo-05` | Contourne l’obstacle | Va au drapeau sans toucher la caisse. | distance + décision | distance | si, tourner, avancer | le robot arrive sans collision | EV3 02, 09 ; entraînement général |
+| `robo-06` | La mission de Zap | Livre la caisse dans la zone. | séquence + boucle + condition | contact, distance, couleur | tous | la caisse est déposée | EV3 11 ; EuroBot (transport) |
 
 Note : le livre EV3 ne traite ni le gyroscope ni le PID. Le suivi de ligne
 est introduit ici comme exigence de concours, avec une règle simple
@@ -264,7 +264,7 @@ le capteur, jamais « Perdu ».
 | ID | Titre | Objectif | Concept | Interaction | Réussite | Source |
 |---|---|---|---|---|---|---|
 | `vision-01` | Que voit le robot ? | Trouve la case allumée dans l’image. | pixel, image | grille de pixels | la bonne case est touchée | IA ch. 5.1-5.2 |
-| `vision-02` | Le monde en couleurs | Isole la balle rouge. | filtre de couleur, masque | pastilles de couleur | le masque ne garde que le rouge | IA ch. 5.3.1-5.3.2 |
+| `vision-02` | Le monde en couleurs | Isole l’objet rouge. | filtre de couleur, masque | pastilles de couleur | le masque ne garde que le rouge | IA ch. 5.3.1-5.3.2 |
 | `vision-03` | Trouve l’objet | Trouve le plus grand contour. | contour, cadre, centre | toucher la forme | la forme et son centre sont trouvés | IA ch. 5.3.3 |
 | `vision-04` | Vise le centre | Garde la cible au centre. | suivi, correction | boutons gauche/droite/haut/bas | la cible reste au centre | IA ch. 6.4-6.5, 7.4 |
 | `vision-05` | Reconnais ton ami | Dis si c’est Zap ou Robo. | détecter ≠ reconnaître | cartes de visages | le bon ami est reconnu | IA ch. 7.1-7.7 |
@@ -447,7 +447,7 @@ nombres.
 ### 5.5 Vision
 
 L’image simulée est une grille de 16 × 12 cellules, chacune avec une
-couleur. Les objets sont des formes dessinées dans la grille (balle,
+couleur. Les objets sont des formes dessinées dans la grille (caisse,
 carré, triangle, visage cartoon). Le module `vision` fournit :
 
 - `toMask(frame, color)` : masque booléen ;
@@ -731,8 +731,11 @@ puis on voit et on concourt.
 7. Que faire des montages à thème d’arme du livre EV3 ?
    Recommandation : les exclure et les remplacer par des mécanismes non
    violents.
-8. Comment suivre les changements de règlement WRO/FLL ?
-   Recommandation : missions génériques + un fichier de saison mis à jour
+8. Faut-il proposer le pilotage et la programmation dès la 0.5.0 ?
+   Recommandation : oui, le pilotage pour EuroBot Junior et la
+   programmation comme passerelle vers EuroBot Open.
+9. Comment suivre le thème EuroBot annuel ?
+   Recommandation : missions génériques + un pack de saison mis à jour
    chaque année, sans toucher au moteur.
 
 ## 12. Recommandation
@@ -757,15 +760,14 @@ doigt, le reste suit.
 
 ## 13. Références
 
-- WRO 2026 RoboMission Elementary, « Robot Rockstars », règles et missions :
-  https://wro-association.org/ et les PDF nationaux 2026.
-- FLL 2026-2027, critères d’évaluation (Robot Game, Robot Design,
-  Innovation Project, Core Values) :
-  https://www.first-lego-league.org/en/2025-26-season/challenge-resources/evaluation
-- Concours chinois de robotique jeunesse, catégories primaires :
-  https://robot.xiaoxiaotong.org/
-- Défi national d’innovation IA jeunesse :
-  http://aiic.china61.org.cn/
+- EuroBot 2026, règlement officiel FR :
+  https://www.eurobot.org/wp-content/uploads/2025/10/Eurobot2026_Rules_1.0_FR.pdf
+- EuroBot 2026, règlement officiel EN :
+  https://www.eurobot.org/wp-content/uploads/2025/10/Eurobot2026_Rules_1.0_EN.pdf
+- EuroBot Junior, règlement général :
+  https://www.coupederobotique.fr/wp-content/uploads/Eurobot_General_Rules_JR_EN.pdf
+- Site officiel EuroBot :
+  https://www.eurobot.org/
 - Livres :
   - 码高机器人教育, 《乐高机器人设计技巧：EV3 结构设计与编程指导》,
     人民邮电出版社, 2017.
