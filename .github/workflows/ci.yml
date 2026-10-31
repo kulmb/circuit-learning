@@ -1,1 +1,45 @@
+name: CI
 
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Refuse known high-severity production advisories
+        run: pnpm audit --prod --audit-level=high
+
+      - name: Validate Compose files
+        run: |
+          MONGO_APP_PASSWORD=test-password \
+          MONGO_ROOT_PASSWORD=test-root \
+          COOKIE_SECRET=01234567890123456789012345678901 \
+            docker compose -f docker-compose.yml config > /dev/null
+          MONGO_APP_PASSWORD=test-password \
+          MONGO_ROOT_PASSWORD=test-root \
+          COOKIE_SECRET=01234567890123456789012345678901 \
+            docker compose -f docker-compose.dev-deploy.yml config > /dev/null
+
+      - run: pnpm --filter @circuits/shared build
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
