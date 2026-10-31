@@ -1,6 +1,6 @@
 # Tests et vérifications sur appareils
 
-Mise à jour : 30 octobre 2026.
+Mise à jour : 31 octobre 2026.
 
 La suite automatisée couvre les parcours adultes et enfants sur sept profils de
 navigateur. Les contrôles qui dépendent du matériel réel (voix, gestes, PWA)
