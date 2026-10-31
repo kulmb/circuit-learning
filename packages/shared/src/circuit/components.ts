@@ -22,6 +22,13 @@ export const COMPONENT_TYPES = [
   'resistor',
   'rheostat',
   'material',
+  'diode',
+  'electromagnet',
+  'reed',
+  'relay',
+  'ldr',
+  'solar',
+  'capacitor',
 ] as const satisfies readonly ComponentType[];
 
 export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
@@ -33,6 +40,21 @@ export const DEFAULT_MOTOR_RESISTANCE = 8;
 export const DEFAULT_BUZZER_RESISTANCE = 15;
 export const DEFAULT_LED_RESISTANCE = 100;
 export const DEFAULT_LED_FORWARD_VOLTAGE = 0.6;
+export const DEFAULT_DIODE_RESISTANCE = 100;
+export const DEFAULT_DIODE_FORWARD_VOLTAGE = 0.6;
+export const DEFAULT_ELECTROMAGNET_RESISTANCE = 8;
+export const DEFAULT_ELECTROMAGNET_TURNS = 40;
+export const DEFAULT_REED_RESISTANCE = 0.01;
+export const DEFAULT_RELAY_COIL_RESISTANCE = 100;
+export const DEFAULT_RELAY_CONTACT_RESISTANCE = 0.01;
+export const DEFAULT_RELAY_THRESHOLD = 0.005;
+export const DEFAULT_LDR_LIGHT_RESISTANCE = 2;
+export const DEFAULT_LDR_DARK_RESISTANCE = 1000;
+export const DEFAULT_LIGHT_LEVEL = 1;
+export const DEFAULT_SOLAR_VOLTAGE = 4.5;
+export const DEFAULT_SOLAR_INTERNAL_RESISTANCE = 0.5;
+export const DEFAULT_CAPACITOR_CAPACITANCE = 0.2;
+export const DEFAULT_CAPACITOR_INITIAL_VOLTAGE = 0;
 export const DEFAULT_SWITCH_RESISTANCE = 0.01;
 export const DEFAULT_MATERIAL_RESISTANCE = 0.01;
 export const DEFAULT_RESISTOR_RESISTANCE = 10;
@@ -46,9 +68,11 @@ export const NOMINAL_CURRENTS = {
   motor: 0.4,
   buzzer: 0.25,
   led: 0.04,
+  diode: 0.04,
+  electromagnet: 0.4,
 } as const;
 
-export const EXPECTED_TERMINAL_IDS: Record<ComponentType, readonly [string, string]> = {
+export const EXPECTED_TERMINAL_IDS: Record<ComponentType, readonly string[]> = {
   battery: ['positive', 'negative'],
   bulb: ['a', 'b'],
   switch: ['a', 'b'],
@@ -59,6 +83,13 @@ export const EXPECTED_TERMINAL_IDS: Record<ComponentType, readonly [string, stri
   resistor: ['a', 'b'],
   rheostat: ['a', 'b'],
   material: ['a', 'b'],
+  diode: ['anode', 'cathode'],
+  electromagnet: ['a', 'b'],
+  reed: ['a', 'b'],
+  relay: ['coilA', 'coilB', 'contactA', 'contactB'],
+  ldr: ['a', 'b'],
+  solar: ['positive', 'negative'],
+  capacitor: ['a', 'b'],
 };
 
 function twoTerminals(): Terminal[] {
@@ -85,6 +116,24 @@ const TERMINAL_LAYOUTS: Record<ComponentType, readonly Terminal[]> = {
   resistor: twoTerminals(),
   rheostat: twoTerminals(),
   material: twoTerminals(),
+  diode: [
+    { id: 'anode', label: 'A', polarity: 'anode', offset: { x: -0.6, y: 0 } },
+    { id: 'cathode', label: 'K', polarity: 'cathode', offset: { x: 0.6, y: 0 } },
+  ],
+  electromagnet: twoTerminals(),
+  reed: twoTerminals(),
+  relay: [
+    { id: 'coilA', label: 'B1', offset: { x: -0.6, y: -0.3 } },
+    { id: 'coilB', label: 'B2', offset: { x: -0.6, y: 0.3 } },
+    { id: 'contactA', label: '1', offset: { x: 0.6, y: -0.3 } },
+    { id: 'contactB', label: '2', offset: { x: 0.6, y: 0.3 } },
+  ],
+  ldr: twoTerminals(),
+  solar: [
+    { id: 'positive', label: '+', polarity: 'positive', offset: { x: -0.6, y: 0 } },
+    { id: 'negative', label: '−', polarity: 'negative', offset: { x: 0.6, y: 0 } },
+  ],
+  capacitor: twoTerminals(),
 };
 
 export interface CreateComponentOptions {
@@ -100,6 +149,18 @@ export interface CreateComponentOptions {
   minResistance?: number;
   maxResistance?: number;
   wiperPosition?: number;
+  turns?: number;
+  magnetNear?: boolean;
+  normallyOpen?: boolean;
+  coilResistance?: number;
+  contactResistance?: number;
+  threshold?: number;
+  normallyClosed?: boolean;
+  lightResistance?: number;
+  darkResistance?: number;
+  lightLevel?: number;
+  capacitance?: number;
+  initialVoltage?: number;
 }
 
 export function isComponentType(value: unknown): value is ComponentType {
@@ -223,6 +284,120 @@ export function createComponent(
         resistanceWhenConductive: positive(
           options.resistance ?? DEFAULT_MATERIAL_RESISTANCE,
           'conductive resistance',
+        ),
+      };
+    case 'diode':
+      return {
+        ...base,
+        type,
+        resistance: positive(
+          options.resistance ?? DEFAULT_DIODE_RESISTANCE,
+          'resistance',
+        ),
+        forwardVoltage: nonNegative(
+          options.forwardVoltage ?? DEFAULT_DIODE_FORWARD_VOLTAGE,
+          'forward voltage',
+        ),
+      };
+    case 'electromagnet':
+      return {
+        ...base,
+        type,
+        resistance: positive(
+          options.resistance ?? DEFAULT_ELECTROMAGNET_RESISTANCE,
+          'resistance',
+        ),
+        turns: positive(
+          options.turns ?? DEFAULT_ELECTROMAGNET_TURNS,
+          'turns',
+        ),
+      };
+    case 'reed':
+      return {
+        ...base,
+        type,
+        magnetNear: options.magnetNear ?? false,
+        normallyOpen: options.normallyOpen ?? true,
+        resistanceWhenClosed: positive(
+          options.resistance ?? DEFAULT_REED_RESISTANCE,
+          'closed resistance',
+        ),
+      };
+    case 'relay': {
+      const normallyClosed = options.normallyClosed ?? false;
+
+      return {
+        ...base,
+        type,
+        coilResistance: positive(
+          options.coilResistance ?? DEFAULT_RELAY_COIL_RESISTANCE,
+          'coil resistance',
+        ),
+        contactResistance: positive(
+          options.contactResistance ?? DEFAULT_RELAY_CONTACT_RESISTANCE,
+          'contact resistance',
+        ),
+        threshold: positive(
+          options.threshold ?? DEFAULT_RELAY_THRESHOLD,
+          'threshold',
+        ),
+        normallyClosed,
+        closed: options.closed ?? normallyClosed,
+      };
+    }
+    case 'ldr': {
+      const lightResistance = positive(
+        options.lightResistance ?? DEFAULT_LDR_LIGHT_RESISTANCE,
+        'light resistance',
+      );
+      const darkResistance = positive(
+        options.darkResistance ?? DEFAULT_LDR_DARK_RESISTANCE,
+        'dark resistance',
+      );
+
+      if (darkResistance <= lightResistance) {
+        throw new CircuitError(
+          'invalid_circuit',
+          `LDR ${id} dark resistance must exceed its light resistance`,
+        );
+      }
+
+      return {
+        ...base,
+        type,
+        lightResistance,
+        darkResistance,
+        lightLevel: unitInterval(
+          options.lightLevel ?? DEFAULT_LIGHT_LEVEL,
+          'light level',
+        ),
+      };
+    }
+    case 'solar':
+      return {
+        ...base,
+        type,
+        voltage: positive(options.voltage ?? DEFAULT_SOLAR_VOLTAGE, 'voltage'),
+        internalResistance: positive(
+          options.internalResistance ?? DEFAULT_SOLAR_INTERNAL_RESISTANCE,
+          'internal resistance',
+        ),
+        lightLevel: unitInterval(
+          options.lightLevel ?? DEFAULT_LIGHT_LEVEL,
+          'light level',
+        ),
+      };
+    case 'capacitor':
+      return {
+        ...base,
+        type,
+        capacitance: positive(
+          options.capacitance ?? DEFAULT_CAPACITOR_CAPACITANCE,
+          'capacitance',
+        ),
+        initialVoltage: nonNegative(
+          options.initialVoltage ?? DEFAULT_CAPACITOR_INITIAL_VOLTAGE,
+          'initial voltage',
         ),
       };
   }

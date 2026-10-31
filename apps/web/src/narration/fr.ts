@@ -49,11 +49,20 @@ export const texts = {
   'workbench.statusOpen': 'Le circuit est ouvert.',
   'workbench.statusShort': 'Attention, court-circuit !',
   'workbench.statusMissingBattery': 'Il manque une pile.',
+  'workbench.statusMissingSource': 'Il manque une source d’énergie.',
   'workbench.statusSwitchOpen': 'L’interrupteur est ouvert.',
   'workbench.statusInsulator': 'Ce matériau ne laisse pas passer le courant.',
   'workbench.statusLedReversed': 'La LED est à l’envers.',
+  'workbench.statusDiodeReversed': 'La diode est à l’envers.',
   'workbench.statusBulbOneSide': 'L’ampoule n’est reliée que d’un côté.',
   'workbench.statusError': 'Oups, je n’arrive pas à calculer le circuit.',
+  'workbench.dayNight': 'Jour / nuit',
+  'workbench.day': 'Jour',
+  'workbench.night': 'Nuit',
+  'workbench.magnet': 'Aimant',
+  'workbench.magnetAria': 'Déplacer l’aimant',
+  'workbench.emptyCapacitor': 'Vider',
+  'workbench.emptyCapacitorAria': 'Vider le condensateur',
 
   'sandbox.title': 'Atelier libre',
   'sandbox.subtitle': 'Invente ton circuit !',
@@ -129,6 +138,16 @@ export const texts = {
   'meter.puissance.low': 'peu d’énergie',
   'meter.puissance.medium': 'énergie moyenne',
   'meter.puissance.high': 'beaucoup d’énergie',
+  'meter.charge': 'Charge',
+  'meter.charge.low': 'presque vide',
+  'meter.charge.medium': 'à moitié',
+  'meter.charge.high': 'plein',
+  'meter.charge.off': 'vide',
+  'meter.aimant': 'Aimant',
+  'meter.aimant.low': 'faible',
+  'meter.aimant.medium': 'moyen',
+  'meter.aimant.high': 'fort',
+  'meter.aimant.off': 'éteint',
   'meter.off': 'circuit ouvert',
   'meter.alert': 'attention',
 
@@ -147,6 +166,17 @@ export const texts = {
   'component.wire.label': 'Fil',
   'component.metal.label': 'Métal',
   'component.gum.label': 'Gomme',
+  'component.diode.label': 'Diode',
+  'component.electromagnet.label': 'Électroaimant',
+  'component.reed.label': 'Lame souple',
+  'component.relay.label': 'Relais',
+  'component.ldr.label': 'Capteur de lumière',
+  'component.solar.label': 'Panneau solaire',
+  'component.capacitor.label': 'Condensateur',
+  'component.capacitorSmall.label': 'Petit condensateur',
+  'component.capacitorLarge.label': 'Grand condensateur',
+  'component.electromagnetShort.label': 'Bobine courte',
+  'component.electromagnetLong.label': 'Bobine longue',
 
   'zap.help': 'Aide',
   'zap.hide': 'Cacher Zap',
@@ -177,6 +207,12 @@ export const texts = {
   'zap.hint.led.1': 'Une LED a un sens.',
   'zap.hint.led.2': 'Le + de la pile va sur A.',
   'zap.hint.led.3': 'Le − de la pile va sur K.',
+  'zap.hint.diode.1': 'Une diode a un sens.',
+  'zap.hint.diode.2': 'Le courant entre par A.',
+  'zap.hint.diode.3': 'Il sort par K.',
+  'zap.hint.source.1': 'Le circuit a besoin d’énergie.',
+  'zap.hint.source.2': 'Ajoute une pile ou un panneau.',
+  'zap.hint.source.3': 'Prends une source dans la palette.',
   'zap.hint.battery.1': 'Il manque quelque chose pour donner de l’énergie.',
   'zap.hint.battery.2': 'Ajoute une pile au circuit.',
   'zap.hint.battery.3': 'Prends une pile dans la palette.',
@@ -191,6 +227,11 @@ export const texts = {
   'chapter.current.title': 'Chapitre 2 : La force du courant',
   'chapter.assemblies.title': 'Chapitre 3 : En série ou en parallèle ?',
   'chapter.challenges.title': 'Chapitre 4 : Les défis de Zap',
+  'chapter.sound.title': 'Chapitre 5 : Le coin des sons',
+  'chapter.diode.title': 'Chapitre 6 : Une porte à sens unique',
+  'chapter.magnet.title': 'Chapitre 7 : L’aimant électrique',
+  'chapter.sensor.title': 'Chapitre 8 : La lumière commande',
+  'chapter.capacitor.title': 'Chapitre 9 : Le réservoir d’électricité',
   'map.title': 'Carte des niveaux',
   'map.subtitle': 'Choisis un niveau.',
   'map.back': 'Accueil',
@@ -522,6 +563,191 @@ export const texts = {
   'level.defi.04.hint.3':
     'Baisse la lumière avec le variateur.',
 
+  'level.sound.01.title': 'La sonnerie',
+  'level.sound.01.goal': 'Fais sonner la sonnerie.',
+  'level.sound.01.intro':
+    'La sonnerie transforme le courant en son.',
+  'level.sound.01.hint.1': 'Relie la pile à la sonnerie.',
+  'level.sound.01.hint.2': 'Ajoute l’interrupteur sur le chemin.',
+  'level.sound.01.hint.3': 'Ferme l’interrupteur.',
+
+  'level.sound.02.title': 'Deux boutons',
+  'level.sound.02.goal': 'Il faut appuyer sur les deux boutons.',
+  'level.sound.02.intro': 'Deux interrupteurs, un seul chemin.',
+  'level.sound.02.hint.1':
+    'Les deux interrupteurs sont sur le même chemin.',
+  'level.sound.02.hint.2': 'Relie-les l’un après l’autre.',
+  'level.sound.02.hint.3': 'Ferme les deux interrupteurs.',
+
+  'level.sound.03.title': 'Moteur et sonnerie',
+  'level.sound.03.goal':
+    'Fais tourner le moteur et sonner la sonnerie.',
+  'level.sound.03.intro': 'Deux appareils, deux chemins.',
+  'level.sound.03.hint.1':
+    'Le moteur et la sonnerie ont chacun leur chemin.',
+  'level.sound.03.hint.2': 'Relie-les côte à côte à la pile.',
+  'level.sound.03.hint.3': 'Ferme l’interrupteur.',
+
+  'level.diode.01.title': 'La porte à sens unique',
+  'level.diode.01.goal': 'Allume l’ampoule avec la diode.',
+  'level.diode.01.intro':
+    'La diode laisse passer le courant dans un sens.',
+  'level.diode.01.hint.1': 'La diode a un côté A et un côté K.',
+  'level.diode.01.hint.2':
+    'Le courant entre par A et sort par K.',
+  'level.diode.01.hint.3':
+    'Tourne la diode si l’ampoule reste éteinte.',
+
+  'level.diode.02.title': 'Le bon sens',
+  'level.diode.02.goal': 'Fais sonner la sonnerie.',
+  'level.diode.02.intro':
+    'À l’envers, la diode bloque le courant.',
+  'level.diode.02.hint.1': 'Regarde les lettres A et K.',
+  'level.diode.02.hint.2': 'Le + de la pile va sur A.',
+  'level.diode.02.hint.3': 'Tourne la diode.',
+
+  'level.diode.03.title': 'Deux chemins',
+  'level.diode.03.goal': 'Allume l’ampoule avec chaque pile.',
+  'level.diode.03.intro':
+    'Deux diodes protègent deux chemins.',
+  'level.diode.03.hint.1': 'Chaque pile a sa propre diode.',
+  'level.diode.03.hint.2': 'Relie chaque diode à l’ampoule.',
+  'level.diode.03.hint.3': 'Vérifie le sens des deux diodes.',
+
+  'level.mag.01.title': 'Le fil qui aimante',
+  'level.mag.01.goal': 'Attire les trombones avec le courant.',
+  'level.mag.01.intro': 'Un courant crée un aimant.',
+  'level.mag.01.hint.1': 'Relie la bobine à la pile.',
+  'level.mag.01.hint.2': 'Ajoute l’interrupteur sur le chemin.',
+  'level.mag.01.hint.3': 'Ferme l’interrupteur.',
+
+  'level.mag.02.title': 'Plus de tours !',
+  'level.mag.02.goal': 'Choisis la bobine qui attire tout.',
+  'level.mag.02.intro': 'Plus de tours, plus d’aimant.',
+  'level.mag.02.hint.1': 'Regarde la longueur des deux bobines.',
+  'level.mag.02.hint.2': 'La grande bobine a plus de tours.',
+  'level.mag.02.hint.3': 'Relie la grande bobine.',
+
+  'level.mag.03.title': 'L’interrupteur aimanté',
+  'level.mag.03.goal': 'Allume l’ampoule avec l’aimant.',
+  'level.mag.03.intro':
+    'La lame souple se ferme près d’un aimant.',
+  'level.mag.03.hint.1': 'Relie la lame souple à la pile.',
+  'level.mag.03.hint.2': 'Approche l’aimant de la lame.',
+  'level.mag.03.hint.3': 'Garde l’aimant près de la lame.',
+
+  'level.mag.04.title': 'Le relais de Zap',
+  'level.mag.04.goal': 'Commande la lampe avec la bobine.',
+  'level.mag.04.intro':
+    'Le relais est un interrupteur commandé.',
+  'level.mag.04.hint.1':
+    'Le petit circuit alimente la bobine.',
+  'level.mag.04.hint.2':
+    'Le grand circuit passe par le contact.',
+  'level.mag.04.hint.3':
+    'Ferme l’interrupteur de la bobine.',
+
+  'level.mag.05.title': 'Le portier',
+  'level.mag.05.goal':
+    'Fais sonner quand l’aimant approche.',
+  'level.mag.05.intro':
+    'La lame souple commande la sonnerie.',
+  'level.mag.05.hint.1': 'Relie la lame à la sonnerie.',
+  'level.mag.05.hint.2': 'Approche l’aimant de la lame.',
+  'level.mag.05.hint.3': 'Garde l’aimant près de la lame.',
+
+  'level.sensor.01.title': 'La résistance qui aime le soleil',
+  'level.sensor.01.goal': 'Regarde l’ampoule à la lumière.',
+  'level.sensor.01.intro':
+    'La lumière change la résistance du capteur.',
+  'level.sensor.01.hint.1': 'Relie le capteur à l’ampoule.',
+  'level.sensor.01.hint.2': 'Appuie sur le bouton jour.',
+  'level.sensor.01.hint.3': 'Compare avec la nuit.',
+
+  'level.sensor.02.title': 'La veilleuse automatique',
+  'level.sensor.02.goal':
+    'Allume la lampe quand il fait nuit.',
+  'level.sensor.02.intro':
+    'Le capteur et le relais font une veilleuse.',
+  'level.sensor.02.hint.1':
+    'Le capteur commande la bobine du relais.',
+  'level.sensor.02.hint.2':
+    'Le contact du relais allume la lampe.',
+  'level.sensor.02.hint.3': 'Essaie le jour, puis la nuit.',
+
+  'level.sensor.03.title': 'Le panneau solaire',
+  'level.sensor.03.goal':
+    'Fais tourner le moteur avec la lumière.',
+  'level.sensor.03.intro':
+    'Le panneau transforme la lumière en électricité.',
+  'level.sensor.03.hint.1': 'Relie le panneau au moteur.',
+  'level.sensor.03.hint.2': 'Appuie sur le bouton jour.',
+  'level.sensor.03.hint.3': 'Regarde le moteur la nuit.',
+
+  'level.cap.01.title': 'La réserve de Zap',
+  'level.cap.01.goal':
+    'Garde l’ampoule allumée après l’ouverture.',
+  'level.cap.01.intro':
+    'Le condensateur garde un peu d’électricité.',
+  'level.cap.01.hint.1':
+    'Relie le condensateur à l’ampoule.',
+  'level.cap.01.hint.2':
+    'Ferme l’interrupteur et attends.',
+  'level.cap.01.hint.3':
+    'Ouvre l’interrupteur et regarde.',
+
+  'level.cap.02.title': 'Ça se remplit',
+  'level.cap.02.goal': 'Remplis le condensateur.',
+  'level.cap.02.intro':
+    'Le condensateur se remplit doucement.',
+  'level.cap.02.hint.1': 'Relie le condensateur à la pile.',
+  'level.cap.02.hint.2': 'Ferme l’interrupteur.',
+  'level.cap.02.hint.3':
+    'Attends que la charge monte.',
+
+  'level.cap.03.title': 'Ça se vide',
+  'level.cap.03.goal':
+    'Allume l’ampoule avec le condensateur.',
+  'level.cap.03.intro':
+    'Le condensateur chargé peut alimenter l’ampoule.',
+  'level.cap.03.hint.1':
+    'Le condensateur est déjà chargé.',
+  'level.cap.03.hint.2': 'Ferme l’interrupteur.',
+  'level.cap.03.hint.3':
+    'Attends que la charge descende.',
+
+  'level.cap.04.title': 'La veilleuse',
+  'level.cap.04.goal':
+    'Fais une lumière qui s’éteint doucement.',
+  'level.cap.04.intro':
+    'Un grand condensateur éclaire plus longtemps.',
+  'level.cap.04.hint.1': 'Utilise le grand condensateur.',
+  'level.cap.04.hint.2':
+    'Charge-le avec l’interrupteur fermé.',
+  'level.cap.04.hint.3':
+    'Ouvre et regarde la lumière.',
+
+  'level.cap.05.title': 'Petit ou grand ?',
+  'level.cap.05.goal': 'Choisis le grand condensateur.',
+  'level.cap.05.intro':
+    'Plus le réservoir est grand, plus la lumière dure.',
+  'level.cap.05.hint.1':
+    'Compare les deux condensateurs.',
+  'level.cap.05.hint.2': 'Relie le grand condensateur.',
+  'level.cap.05.hint.3':
+    'Ouvre l’interrupteur et attends.',
+
+  'level.cap.06.title': 'Le flash de Zap',
+  'level.cap.06.goal': 'Charge, puis fais un flash.',
+  'level.cap.06.intro':
+    'Le condensateur charge lentement et libère vite.',
+  'level.cap.06.hint.1':
+    'Ferme l’interrupteur de charge.',
+  'level.cap.06.hint.2':
+    'Attends que le condensateur soit plein.',
+  'level.cap.06.hint.3':
+    'Ouvre le flash et regarde la LED.',
+
   'symbols.title': 'Les symboles',
   'symbols.goal': 'Associe chaque dessin à son symbole.',
   'symbols.intro':
@@ -594,6 +820,45 @@ export const texts = {
   'vocab.combinaison.word': 'Combinaison',
   'vocab.combinaison.definition':
     'Plusieurs chemins dans le même circuit.',
+  'vocab.sonnerie.word': 'Sonnerie',
+  'vocab.sonnerie.definition':
+    'Elle transforme le courant en son.',
+  'vocab.diode.word': 'Diode',
+  'vocab.diode.definition':
+    'Elle laisse passer le courant dans un sens.',
+  'vocab.sensUnique.word': 'Sens unique',
+  'vocab.sensUnique.definition':
+    'Le courant ne passe que d’un côté.',
+  'vocab.electroAimant.word': 'Électroaimant',
+  'vocab.electroAimant.definition':
+    'Un courant crée un aimant.',
+  'vocab.bobine.word': 'Bobine',
+  'vocab.bobine.definition':
+    'Du fil enroulé qui aimante.',
+  'vocab.relais.word': 'Relais',
+  'vocab.relais.definition':
+    'Un interrupteur commandé par une bobine.',
+  'vocab.lameSouple.word': 'Lame souple',
+  'vocab.lameSouple.definition':
+    'Elle se ferme près d’un aimant.',
+  'vocab.capteurLumiere.word': 'Capteur de lumière',
+  'vocab.capteurLumiere.definition':
+    'Il change avec la lumière.',
+  'vocab.panneauSolaire.word': 'Panneau solaire',
+  'vocab.panneauSolaire.definition':
+    'Il transforme la lumière en électricité.',
+  'vocab.condensateur.word': 'Condensateur',
+  'vocab.condensateur.definition':
+    'Il stocke un peu d’électricité.',
+  'vocab.charge.word': 'Charge',
+  'vocab.charge.definition':
+    'L’électricité gardée dans le condensateur.',
+  'vocab.decharge.word': 'Décharge',
+  'vocab.decharge.definition':
+    'Le condensateur rend son électricité.',
+  'vocab.reserve.word': 'Réserve',
+  'vocab.reserve.definition':
+    'L’énergie gardée pour plus tard.',
   'vocab.symbole.word': 'Symbole',
   'vocab.symbole.definition': 'Un dessin simple pour un composant.',
 } as const;
@@ -654,9 +919,11 @@ const frBase = {
     statusOpen: texts['workbench.statusOpen'],
     statusShort: texts['workbench.statusShort'],
     statusMissingBattery: texts['workbench.statusMissingBattery'],
+    statusMissingSource: texts['workbench.statusMissingSource'],
     statusSwitchOpen: texts['workbench.statusSwitchOpen'],
     statusInsulator: texts['workbench.statusInsulator'],
     statusLedReversed: texts['workbench.statusLedReversed'],
+    statusDiodeReversed: texts['workbench.statusDiodeReversed'],
     statusBulbOneSide: texts['workbench.statusBulbOneSide'],
     statusError: texts['workbench.statusError'],
     displayMode: texts['display.mode'],
@@ -664,6 +931,13 @@ const frBase = {
     displaySymbol: texts['display.symbol'],
     displayOverlay: texts['display.overlay'],
     meters: texts['workbench.meters'],
+    dayNight: texts['workbench.dayNight'],
+    day: texts['workbench.day'],
+    night: texts['workbench.night'],
+    magnet: texts['workbench.magnet'],
+    magnetAria: texts['workbench.magnetAria'],
+    emptyCapacitor: texts['workbench.emptyCapacitor'],
+    emptyCapacitorAria: texts['workbench.emptyCapacitorAria'],
   },
   challenge: {
     new: texts['challenge.new'],
@@ -727,6 +1001,39 @@ const frBase = {
     },
     rheostat: {
       label: texts['component.rheostat.label'],
+    },
+    diode: {
+      label: texts['component.diode.label'],
+    },
+    electromagnet: {
+      label: texts['component.electromagnet.label'],
+    },
+    reed: {
+      label: texts['component.reed.label'],
+    },
+    relay: {
+      label: texts['component.relay.label'],
+    },
+    ldr: {
+      label: texts['component.ldr.label'],
+    },
+    solar: {
+      label: texts['component.solar.label'],
+    },
+    capacitor: {
+      label: texts['component.capacitor.label'],
+    },
+    capacitorSmall: {
+      label: texts['component.capacitorSmall.label'],
+    },
+    capacitorLarge: {
+      label: texts['component.capacitorLarge.label'],
+    },
+    electromagnetShort: {
+      label: texts['component.electromagnetShort.label'],
+    },
+    electromagnetLong: {
+      label: texts['component.electromagnetLong.label'],
     },
     wire: {
       label: texts['component.wire.label'],

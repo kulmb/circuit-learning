@@ -1,4 +1,5 @@
 import { getLevelById } from '@circuits/shared/levels';
+import type { LevelDefinition } from '@circuits/shared/levels';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createEmptySandbox } from './sandbox';
@@ -287,6 +288,68 @@ describe('workbench store', () => {
     store().undo();
     expect(store().circuit.components).toHaveLength(2);
     expect(store().availableCounts).toEqual({ bulb: 1 });
+  });
+
+  it('restores the matching variant after deleting a capacitor', () => {
+    const level: LevelDefinition = {
+      id: 'variant-test',
+      chapterId: 'test',
+      order: 99,
+      number: 1,
+      kind: 'circuit',
+      titleTextId: 'level.sound.01.title',
+      goalTextId: 'level.sound.01.goal',
+      introTextId: 'level.sound.01.intro',
+      board: { columns: 12, rows: 8 },
+      displayMode: 'realistic',
+      preplacedComponents: [],
+      preplacedWires: [],
+      availableComponents: [
+        {
+          key: 'capacitor-small',
+          type: 'capacitor',
+          count: 1,
+          options: { capacitance: 0.2 },
+        },
+        {
+          key: 'capacitor-large',
+          type: 'capacitor',
+          count: 1,
+          options: { capacitance: 0.5 },
+        },
+      ],
+      success: [],
+      hintTextIds: [],
+      vocabularyIds: [],
+      nextLevelId: null,
+    };
+
+    store().loadLevel(level);
+    store().addComponent(
+      'capacitor',
+      { capacitance: 0.5 },
+      { x: 5, y: 4 },
+      'capacitor-large',
+    );
+
+    const added = store().circuit.components.find(
+      (component) => component.type === 'capacitor',
+    );
+    expect(added?.type === 'capacitor' ? added.capacitance : null).toBe(0.5);
+    expect(store().availableCounts).toEqual({
+      'capacitor-small': 1,
+      'capacitor-large': 0,
+    });
+
+    if (added === undefined) {
+      throw new Error('Capacitor missing');
+    }
+    store().deleteComponent(added.id);
+
+    expect(store().availableCounts).toEqual({
+      'capacitor-small': 1,
+      'capacitor-large': 1,
+    });
   });
 
   it('allows a locked switch to be toggled', () => {

@@ -156,7 +156,7 @@
   border-radius: 20px;
   background: #ffffff;
   box-shadow: 0 12px 28px rgba(36, 50, 74, 0.16);
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .zap-bubble::after {
@@ -197,6 +197,7 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
 }
 
 .zap-bubble__replay svg {

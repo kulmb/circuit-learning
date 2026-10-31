@@ -46,18 +46,41 @@ export function computeWireCurrents(
       continue;
     }
 
-    const [firstId, secondId] = EXPECTED_TERMINAL_IDS[component.type];
-    const firstKey = terminalKey({ componentId: component.id, terminalId: firstId });
-    const secondKey = terminalKey({ componentId: component.id, terminalId: secondId });
+    if (component.type === 'relay') {
+      const [coilA, coilB, contactA, contactB] = EXPECTED_TERMINAL_IDS.relay;
+      if (
+        coilA === undefined ||
+        coilB === undefined ||
+        contactA === undefined ||
+        contactB === undefined
+      ) {
+        continue;
+      }
 
-    // The battery state is the current delivered to the external circuit, while
-    // the internal branch flows from negative to positive. All other component
-    // states are already signed from terminals[0] to terminals[1].
+      const coilCurrent = state.branchCurrents?.['coil'] ?? state.current;
+      const contactCurrent = state.branchCurrents?.['contact'] ?? 0;
+
+      addDemand(demand, component.id, coilA, coilB, coilCurrent);
+      addDemand(demand, component.id, contactA, contactB, contactCurrent);
+      continue;
+    }
+
+    const firstId = EXPECTED_TERMINAL_IDS[component.type][0];
+    const secondId = EXPECTED_TERMINAL_IDS[component.type][1];
+
+    if (firstId === undefined || secondId === undefined) {
+      continue;
+    }
+
+    // Sources deliver current to the external circuit, while the internal
+    // branch flows from negative to positive. All other component states are
+    // already signed from terminals[0] to terminals[1].
     const internalCurrent =
-      component.type === 'battery' ? -state.current : state.current;
+      component.type === 'battery' || component.type === 'solar'
+        ? -state.current
+        : state.current;
 
-    demand.set(firstKey, (demand.get(firstKey) ?? 0) + internalCurrent);
-    demand.set(secondKey, (demand.get(secondKey) ?? 0) - internalCurrent);
+    addDemand(demand, component.id, firstId, secondId, internalCurrent);
   }
 
   const edges: WireEdge[] = [];
@@ -81,7 +104,8 @@ export function computeWireCurrents(
     }
 
     componentCurrents[component.id] = 0;
-    const [firstId, secondId] = EXPECTED_TERMINAL_IDS.wire;
+    const firstId = EXPECTED_TERMINAL_IDS.wire[0]!;
+    const secondId = EXPECTED_TERMINAL_IDS.wire[1]!;
     edges.push({
       id: component.id,
       kind: 'component',
@@ -195,6 +219,20 @@ function connect(
   } else {
     list.push(value);
   }
+}
+
+function addDemand(
+  demand: Map<string, number>,
+  componentId: string,
+  firstId: string,
+  secondId: string,
+  current: number,
+): void {
+  const firstKey = terminalKey({ componentId, terminalId: firstId });
+  const secondKey = terminalKey({ componentId, terminalId: secondId });
+
+  demand.set(firstKey, (demand.get(firstKey) ?? 0) + current);
+  demand.set(secondKey, (demand.get(secondKey) ?? 0) - current);
 }
 
 function clean(value: number): number {

@@ -138,7 +138,8 @@ export function ParentHomePage() {
                       <div>
                         {mastered.map((concept) => (
                           <span key={concept.id} className="admin-badge admin-badge--success">
-                            {concept.label}
+                            {adminTexts.dashboard.conceptLabels[concept.id] ??
+                              concept.label}
                           </span>
                         ))}
                       </div>

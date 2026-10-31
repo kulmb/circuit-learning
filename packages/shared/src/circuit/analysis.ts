@@ -8,6 +8,7 @@ import type {
   DiagnosticCode,
   DiagnosticSeverity,
   ShortCircuitInfo,
+  SolarComponent,
   TerminalRef,
 } from './types';
 
@@ -20,7 +21,10 @@ type GraphEdgeKind =
   | 'insulating-material'
   | 'load'
   | 'led'
-  | 'battery';
+  | 'diode'
+  | 'source'
+  | 'relay-coil'
+  | 'relay-contact';
 
 interface GraphEdge {
   from: string;
@@ -36,16 +40,19 @@ interface PathResult {
   cost: number;
 }
 
-export interface BatteryPath {
-  battery: BatteryComponent;
+export type SourceComponent = BatteryComponent | SolarComponent;
+
+export interface SourcePath {
+  source: SourceComponent;
   path: PathResult | null;
 }
 
 export interface CircuitAnalysis {
   model: CircuitModel;
   hasBattery: boolean;
+  hasSource: boolean;
   shortInfo: ShortCircuitInfo | null;
-  batteryPaths: BatteryPath[];
+  sourcePaths: SourcePath[];
   closed: boolean;
   danglingTerminals: TerminalRef[];
   diagnostics: CircuitDiagnostic[];
@@ -62,11 +69,13 @@ export interface DiagnosticDetails {
 
 const DIAGNOSTIC_PRIORITY: Record<DiagnosticCode, number> = {
   missing_battery: 0,
+  missing_source: 0,
   short_circuit: 1,
   switch_open: 2,
   insulating_material: 3,
   bulb_one_side: 4,
   led_reversed: 5,
+  diode_reversed: 5,
   open_circuit: 6,
   simulation_error: 7,
 };
@@ -74,17 +83,20 @@ const DIAGNOSTIC_PRIORITY: Record<DiagnosticCode, number> = {
 export function analyzeCircuit(model: CircuitModel): CircuitAnalysis {
   const diagnostics: CircuitDiagnostic[] = [];
   const batteries = model.components.filter(isBatteryComponent);
+  const sources = model.components.filter(isSourceComponent);
 
   addBulbOneSideDiagnostics(model, diagnostics);
 
-  if (batteries.length === 0) {
+  if (sources.length === 0) {
     addDiagnostic(diagnostics, 'missing_battery');
+    addDiagnostic(diagnostics, 'missing_source');
 
     return {
       model,
       hasBattery: false,
+      hasSource: false,
       shortInfo: null,
-      batteryPaths: [],
+      sourcePaths: [],
       closed: false,
       danglingTerminals: model.danglingTerminals,
       diagnostics: sortDiagnostics(diagnostics),
@@ -95,15 +107,25 @@ export function analyzeCircuit(model: CircuitModel): CircuitAnalysis {
   }
 
   const { allEdges, zero: zeroGraph } = buildGraphs(model);
-  const batteryPaths: BatteryPath[] = [];
+  const sourcePaths: SourcePath[] = [];
   const shortWireIds = new Set<string>();
   const shortComponentIds = new Set<string>();
   let shortDetected = false;
 
-  for (const battery of batteries) {
-    const [positiveId, negativeId] = EXPECTED_TERMINAL_IDS.battery;
-    const positiveKey = terminalKey({ componentId: battery.id, terminalId: positiveId });
-    const negativeKey = terminalKey({ componentId: battery.id, terminalId: negativeId });
+  for (const source of sources) {
+    const [positiveId, negativeId] = EXPECTED_TERMINAL_IDS[source.type];
+    if (positiveId === undefined || negativeId === undefined) {
+      continue;
+    }
+
+    const positiveKey = terminalKey({
+      componentId: source.id,
+      terminalId: positiveId,
+    });
+    const negativeKey = terminalKey({
+      componentId: source.id,
+      terminalId: negativeId,
+    });
 
     const zeroPath = findPath(positiveKey, negativeKey, zeroGraph);
     if (zeroPath !== null) {
@@ -113,12 +135,12 @@ export function analyzeCircuit(model: CircuitModel): CircuitAnalysis {
 
     const allGraph = buildAdjacency(
       allEdges.filter(
-        (edge) => !(edge.kind === 'battery' && edge.componentId === battery.id),
+        (edge) => !(edge.kind === 'source' && edge.componentId === source.id),
       ),
     );
 
-    batteryPaths.push({
-      battery,
+    sourcePaths.push({
+      source,
       path: findMinBlockerPath(positiveKey, negativeKey, allGraph),
     });
   }
@@ -141,12 +163,12 @@ export function analyzeCircuit(model: CircuitModel): CircuitAnalysis {
   const switchIds = new Set<string>();
   const materialIds = new Set<string>();
 
-  for (const batteryPath of batteryPaths) {
-    const path = batteryPath.path;
+  for (const sourcePath of sourcePaths) {
+    const path = sourcePath.path;
 
     if (path === null || path.cost > 0) {
       addDiagnostic(diagnostics, 'open_circuit', {
-        componentIds: [batteryPath.battery.id],
+        componentIds: [sourcePath.source.id],
         terminalRefs: model.danglingTerminals,
       });
 
@@ -177,14 +199,17 @@ export function analyzeCircuit(model: CircuitModel): CircuitAnalysis {
   }
 
   const closed =
-    batteryPaths.length > 0 &&
-    batteryPaths.every((batteryPath) => batteryPath.path !== null && batteryPath.path.cost === 0);
+    sourcePaths.length > 0 &&
+    sourcePaths.every(
+      (sourcePath) => sourcePath.path !== null && sourcePath.path.cost === 0,
+    );
 
   return {
     model,
-    hasBattery: true,
+    hasBattery: batteries.length > 0,
+    hasSource: true,
     shortInfo,
-    batteryPaths,
+    sourcePaths,
     closed,
     danglingTerminals: model.danglingTerminals,
     diagnostics: sortDiagnostics(diagnostics),
@@ -265,13 +290,49 @@ function buildGraphs(model: CircuitModel): {
   );
 
   for (const component of components) {
-    if (component.type === 'battery') {
-      const [positiveId, negativeId] = EXPECTED_TERMINAL_IDS.battery;
+    if (isSourceComponent(component)) {
+      const [positiveId, negativeId] = EXPECTED_TERMINAL_IDS[component.type];
+      if (positiveId === undefined || negativeId === undefined) {
+        continue;
+      }
+
       allEdges.push({
         from: terminalKey({ componentId: component.id, terminalId: positiveId }),
         to: terminalKey({ componentId: component.id, terminalId: negativeId }),
         cost: 0,
-        kind: 'battery',
+        kind: 'source',
+        componentId: component.id,
+        wireId: null,
+      });
+      continue;
+    }
+
+    if (component.type === 'relay') {
+      const [coilA, coilB, contactA, contactB] =
+        EXPECTED_TERMINAL_IDS.relay;
+
+      if (
+        coilA === undefined ||
+        coilB === undefined ||
+        contactA === undefined ||
+        contactB === undefined
+      ) {
+        continue;
+      }
+
+      allEdges.push({
+        from: terminalKey({ componentId: component.id, terminalId: coilA }),
+        to: terminalKey({ componentId: component.id, terminalId: coilB }),
+        cost: 0,
+        kind: 'relay-coil',
+        componentId: component.id,
+        wireId: null,
+      });
+      allEdges.push({
+        from: terminalKey({ componentId: component.id, terminalId: contactA }),
+        to: terminalKey({ componentId: component.id, terminalId: contactB }),
+        cost: 0,
+        kind: 'relay-contact',
         componentId: component.id,
         wireId: null,
       });
@@ -279,6 +340,10 @@ function buildGraphs(model: CircuitModel): {
     }
 
     const [firstId, secondId] = EXPECTED_TERMINAL_IDS[component.type];
+    if (firstId === undefined || secondId === undefined) {
+      continue;
+    }
+
     const from = terminalKey({ componentId: component.id, terminalId: firstId });
     const to = terminalKey({ componentId: component.id, terminalId: secondId });
 
@@ -290,6 +355,14 @@ function buildGraphs(model: CircuitModel): {
         kind = component.closed ? 'closed-switch' : 'open-switch';
         cost = component.closed ? 0 : 1;
         break;
+      case 'reed': {
+        const closed = component.normallyOpen
+          ? component.magnetNear
+          : !component.magnetNear;
+        kind = closed ? 'closed-switch' : 'open-switch';
+        cost = closed ? 0 : 1;
+        break;
+      }
       case 'material':
         kind = component.conductive ? 'conductive-material' : 'insulating-material';
         cost = component.conductive ? 0 : 1;
@@ -300,6 +373,16 @@ function buildGraphs(model: CircuitModel): {
         break;
       case 'led':
         kind = 'led';
+        cost = 0;
+        break;
+      case 'diode':
+        kind = 'diode';
+        cost = 0;
+        break;
+      case 'capacitor':
+      case 'ldr':
+      case 'electromagnet':
+        kind = 'load';
         cost = 0;
         break;
       default:
@@ -509,15 +592,21 @@ function isBatteryComponent(component: CircuitComponent): component is BatteryCo
   return component.type === 'battery';
 }
 
+function isSourceComponent(component: CircuitComponent): component is SourceComponent {
+  return component.type === 'battery' || component.type === 'solar';
+}
+
 function severityFor(code: DiagnosticCode): DiagnosticSeverity {
   switch (code) {
     case 'short_circuit':
     case 'simulation_error':
       return 'danger';
     case 'missing_battery':
+    case 'missing_source':
     case 'open_circuit':
     case 'bulb_one_side':
     case 'led_reversed':
+    case 'diode_reversed':
       return 'warning';
     case 'switch_open':
     case 'insulating_material':

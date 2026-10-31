@@ -139,7 +139,10 @@ export function StudentProgressSections({ studentId }: { studentId: string }) {
               >
                 <span aria-hidden="true">{mastered ? '✓' : '○'}</span>
                 <div>
-                  <strong>{concept.label}</strong>
+                  <strong>
+                    {adminTexts.dashboard.conceptLabels[concept.id] ??
+                      concept.label}
+                  </strong>
                   <small>
                     {mastered
                       ? adminTexts.dashboard.conceptMastered

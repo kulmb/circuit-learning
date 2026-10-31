@@ -3,10 +3,10 @@
 Date : 30 octobre 2026
 Statut : plan de conception, non implémenté. Aucune maquette ni prototype
 n’est lancé à ce stade.
-Dépendance : la version 0.4.0 (chapitres 5 à 8, composants électroniques)
-doit être livrée avant. Les nouveaux chapitres de ce plan portent donc les
-numéros 9 à 12. Si 0.4.0 change de numérotation, renuméroter les chapitres
-et les identifiants de niveaux avant de commencer.
+Dépendance : la version 0.4.0 (chapitres 5 à 9, sons et composants
+électroniques) doit être livrée avant. Les nouveaux chapitres de ce plan
+portent donc les numéros 10 à 13. Si 0.4.0 change de numérotation, renuméroter
+les chapitres et les identifiants de niveaux avant de commencer.
 
 ## 1. Sources
 
@@ -189,20 +189,20 @@ missions, le vocabulaire et les critères suivent EuroBot.
 ## 4. Nouveau mode : « Le Labo Robot »
 
 Le mode est accessible depuis l’accueil et depuis la carte des niveaux.
-Il ajoute quatre chapitres après le chapitre 4 (ou après les chapitres 5-8
+Il ajoute quatre chapitres après le chapitre 9 (ou après les chapitres 5-9
 de la 0.4.0), soit 21 niveaux.
 
 | Chapitre | Titre | Niveaux | Idée directrice | Livre |
 |---|---|---:|---|---|
-| 9 | Les machines de Zap | 6 | transmettre et transformer le mouvement | EV3 |
-| 10 | Le cerveau du robot | 6 | capter, décider, répéter | EV3 + IA ch. 3-4 |
-| 11 | Les yeux du robot | 5 | voir, filtrer, trouver, reconnaître | IA ch. 5-7 |
-| 12 | Mission Robot | 4 | préparer et réussir une manche EuroBot | EuroBot / EuroBot Junior |
+| 10 | Les machines de Zap | 6 | transmettre et transformer le mouvement | EV3 |
+| 11 | Le cerveau du robot | 6 | capter, décider, répéter | EV3 + IA ch. 3-4 |
+| 12 | Les yeux du robot | 5 | voir, filtrer, trouver, reconnaître | IA ch. 5-7 |
+| 13 | Mission Robot | 4 | préparer et réussir une manche EuroBot | EuroBot / EuroBot Junior |
 
 Chaque niveau garde la structure existante : titre, objectif, introduction,
 trois indices, vocabulaire, étoiles selon les indices utilisés.
 
-### 4.1 Chapitre 9 — « Les machines de Zap » (6 niveaux)
+### 4.1 Chapitre 10 — « Les machines de Zap » (6 niveaux)
 
 | ID | Titre | Objectif | Concept | Pièces | Réussite | Source |
 |---|---|---|---|---|---|---|
@@ -226,7 +226,7 @@ dents pour être exact ; à l’écran, il ne renvoie que trois classes
 rotation et un état `bloqué`. Il détecte les conflits (deux moteurs qui se
 contredisent) et les boucles impossibles, et donne un indice.
 
-### 4.2 Chapitre 10 — « Le cerveau du robot » (6 niveaux)
+### 4.2 Chapitre 11 — « Le cerveau du robot » (6 niveaux)
 
 | ID | Titre | Objectif | Concept | Capteur | Blocs | Réussite | Source |
 |---|---|---|---|---|---|---|---|
@@ -264,7 +264,7 @@ Le programme est limité (200 pas, 20 répétitions par boucle). Si la limite
 est atteinte, Zap explique « On tourne en rond ? » et propose de regarder
 le capteur, jamais « Perdu ».
 
-### 4.3 Chapitre 11 — « Les yeux du robot » (5 niveaux)
+### 4.3 Chapitre 12 — « Les yeux du robot » (5 niveaux)
 
 | ID | Titre | Objectif | Concept | Interaction | Réussite | Source |
 |---|---|---|---|---|---|---|
@@ -292,7 +292,7 @@ Le vocabulaire distingue clairement :
 Aucune photo réelle, aucun visage d’enfant, aucune donnée biométrique.
 Les visages sont des dessins de Zap et de Robo.
 
-### 4.4 Chapitre 12 — « Mission Robot » (4 missions)
+### 4.4 Chapitre 13 — « Mission Robot » (4 missions)
 
 | ID | Titre | Objectif | Compétence | Inspiration EuroBot 2026 |
 |---|---|---|---|---|
@@ -674,7 +674,7 @@ Le mode Défi n’est pas un autre chapitre : c’est une option de niveau
 
 ## 8. Migration et compatibilité
 
-- Les chapitres 9 à 12 se placent après le dernier niveau de la 0.4.0
+- Les chapitres 10 à 13 se placent après le dernier niveau de la 0.4.0
   (`cap-06`). `cap-06.nextLevelId = 'meca-01'`.
 - Si la 0.4.0 n’est pas encore livrée, ne pas démarrer la 0.5.0 : les
   numéros de chapitres et les liens se chevaucheraient.
@@ -705,8 +705,8 @@ peuvent avancer en parallèle après la phase 0 ; compter 6 à 8 semaines.
 
 Découpe de secours si le temps manque :
 
-- **0.5.0** : chapitres 9 et 10 (mécanique + cerveau), 12 niveaux.
-- **0.5.1** : chapitres 11 et 12 (vision + missions), 9 niveaux.
+- **0.5.0** : chapitres 10 et 11 (mécanique + cerveau), 12 niveaux.
+- **0.5.1** : chapitres 12 et 13 (vision + missions), 9 niveaux.
 
 Cette découpe garde une histoire complète : on construit, on programme,
 puis on voit et on concourt.
@@ -760,10 +760,10 @@ parallèle. Les missions donnent du sens à tout le reste.
 Ordre de mise en œuvre conseillé :
 
 1. valider les spécifications du banc mécanique et du programme en blocs ;
-2. chapitre 9 (mécanique) ;
-3. chapitre 10 (cerveau) ;
-4. chapitre 11 (vision) ;
-5. chapitre 12 (missions) ;
+2. chapitre 10 (mécanique) ;
+3. chapitre 11 (cerveau) ;
+4. chapitre 12 (vision) ;
+5. chapitre 13 (missions) ;
 6. page coach, i18n, PWA, tests iPad.
 
 Le plan doit rester simple à valider : un engrenage qui tourne, un robot

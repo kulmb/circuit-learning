@@ -34,6 +34,17 @@ function completeCircuit(): Circuit {
         wiperPosition: 0.4,
       }),
       createComponent('material', { id: 'material', conductive: true }),
+      createComponent('diode', { id: 'diode', forwardVoltage: 0.7 }),
+      createComponent('electromagnet', { id: 'electromagnet', turns: 120 }),
+      createComponent('reed', { id: 'reed', magnetNear: true }),
+      createComponent('relay', { id: 'relay', normallyClosed: true }),
+      createComponent('ldr', { id: 'ldr', lightLevel: 0.4 }),
+      createComponent('solar', { id: 'solar', lightLevel: 0.8 }),
+      createComponent('capacitor', {
+        id: 'capacitor',
+        capacitance: 0.5,
+        initialVoltage: 1.2,
+      }),
     ],
     wires: [
       createWire('w1', ref('battery', 'positive'), ref('bulb', 'a'), [

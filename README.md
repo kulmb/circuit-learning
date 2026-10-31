@@ -475,6 +475,14 @@ Le chapitre 4, « Les défis de Zap », contient quatre paliers à budget fixe
 (2, 3, 4 puis 5 composants) ; chaque défi est généré à partir d’une graine,
 avec un circuit à construire ou une panne à réparer. Le générateur vérifie
 chaque sortie avec le moteur de simulation avant de l’afficher.
+Le chapitre 5, « Le coin des sons », réinvestit la sonnerie en trois niveaux
+sans nouveau composant. Le chapitre 6, « Une porte à sens unique », introduit
+la diode. Le chapitre 7, « L’aimant électrique », ajoute l’électroaimant, la
+lame souple et le relais à quatre bornes. Le chapitre 8, « La lumière
+commande », utilise la photorésistance, le panneau solaire et un bouton
+jour/nuit. Le chapitre 9, « Le réservoir d’électricité », introduit le
+condensateur avec un vrai solveur transitoire. Le jeu compte ainsi neuf
+chapitres et 46 niveaux.
 Les définitions, conditions de réussite et règles d'étoiles vivent
 dans `packages/shared/src/levels` ; le front les consomme sans les dupliquer.
 Les définitions complètes sont chargées avec l’écran de jeu
@@ -674,7 +682,7 @@ Le front est une PWA générée par `vite-plugin-pwa` (Workbox, mode `generateSW
   terminée ! » s’affiche ensuite sur toutes les pages. Aucune vérification
   périodique n’est lancée, pour ne jamais interrompre une partie ouverte.
 - La version applicative vient de `apps/web/package.json` (actuellement
-  `0.3.0`). Elle est écrite dans `localStorage` sous
+  `0.4.0`). Elle est écrite dans `localStorage` sous
   `circuits-de-zap:app-version:v1`, affichée en haut à droite de l’accueil et
   dans le pied de page de l’espace adulte.
 - Le service worker n’est enregistré qu’en build de production

@@ -9,6 +9,8 @@ const meters: CircuitMeters = {
   courant: { id: 'courant', status: 'high', value: 0.8 },
   resistance: { id: 'resistance', status: 'low', value: 5 },
   puissance: { id: 'puissance', status: 'off', value: null },
+  charge: { id: 'charge', status: 'off', value: 0 },
+  aimant: { id: 'aimant', status: 'off', value: 0 },
 };
 
 describe('Zap-meter', () => {

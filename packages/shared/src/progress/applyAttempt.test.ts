@@ -84,8 +84,52 @@ describe('applyAttemptToProgress', () => {
     expect(progress.levels['defi-01']?.status).toBe('locked');
   });
 
-  it('unlocks the assembly chapter after the power level', () => {
-    const progress = applyAttemptToProgress(
+  it('reconciles progress saved before the 0.4.0 chapters existed', () => {
+    const initial = initialPlayerProgress();
+    const oldLevels = { ...initial.levels };
+
+    for (const levelId of [
+      'sound-01',
+      'sound-02',
+      'sound-03',
+      'diode-01',
+      'diode-02',
+      'diode-03',
+      'mag-01',
+      'mag-02',
+      'mag-03',
+      'mag-04',
+      'mag-05',
+      'sensor-01',
+      'sensor-02',
+      'sensor-03',
+      'cap-01',
+      'cap-02',
+      'cap-03',
+      'cap-04',
+      'cap-05',
+      'cap-06',
+    ]) {
+      delete oldLevels[levelId];
+    }
+
+    oldLevels['defi-04'] = {
+      ...initial.levels['defi-04']!,
+      status: 'completed',
+    };
+
+    const progress = reconcileProgress({
+      levels: oldLevels,
+      vocabulary: ['combinaison'],
+    });
+
+    expect(progress.levels['sound-01']?.status).toBe('unlocked');
+    expect(progress.levels['sound-02']?.status).toBe('locked');
+    expect(progress.levels['cap-06']?.status).toBe('locked');
+    expect(progress.vocabulary).toEqual(['combinaison']);
+  });
+
+  it('unlocks the assembly chapter after the power level', () => {    const progress = applyAttemptToProgress(
       initialPlayerProgress(),
       'current-07',
       {

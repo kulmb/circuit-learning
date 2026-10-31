@@ -2,6 +2,7 @@ import type {
   BatteryComponent,
   Circuit,
   CircuitSimulation,
+  SolarComponent,
 } from './types';
 
 export const METER_IDS = [
@@ -9,6 +10,8 @@ export const METER_IDS = [
   'courant',
   'resistance',
   'puissance',
+  'charge',
+  'aimant',
 ] as const;
 
 export type MeterId = (typeof METER_IDS)[number];
@@ -38,15 +41,22 @@ const RESISTANCE_LOW = 8;
 const RESISTANCE_HIGH = 18;
 const POWER_LOW = 1.5;
 const POWER_HIGH = 4;
+const CHARGE_LOW = 0.4;
+const CHARGE_HIGH = 0.8;
+const MAGNET_LOW = 0.35;
+const MAGNET_HIGH = 0.7;
+
+type ExtraReadings = Pick<CircuitMeters, 'charge' | 'aimant'>;
 
 export function readCircuitMeters(
   circuit: Circuit,
   simulation: CircuitSimulation,
 ): CircuitMeters {
-  const batteries = circuit.components.filter(isBatteryComponent);
+  const sources = circuit.components.filter(isSourceComponent);
+  const extras = extraReadings(simulation);
 
-  if (batteries.length === 0) {
-    return allReadings('off');
+  if (sources.length === 0) {
+    return allReadings('off', extras);
   }
 
   if (
@@ -55,11 +65,11 @@ export function readCircuitMeters(
       (diagnostic) => diagnostic.code === 'simulation_error',
     )
   ) {
-    return allReadings('alert');
+    return allReadings('alert', extras);
   }
 
-  const nominalVoltage = batteries.reduce(
-    (total, battery) => total + battery.voltage,
+  const nominalVoltage = sources.reduce(
+    (total, source) => total + sourceVoltage(source),
     0,
   );
   const tension = reading(
@@ -75,13 +85,14 @@ export function readCircuitMeters(
       courant: offReading('courant'),
       resistance: offReading('resistance'),
       puissance: offReading('puissance'),
+      ...extras,
     };
   }
 
   let maxCurrent = 0;
 
-  for (const battery of batteries) {
-    const state = simulation.states[battery.id];
+  for (const source of sources) {
+    const state = simulation.states[source.id];
 
     if (state !== undefined) {
       maxCurrent = Math.max(maxCurrent, Math.abs(state.current));
@@ -94,6 +105,7 @@ export function readCircuitMeters(
       courant: offReading('courant'),
       resistance: offReading('resistance'),
       puissance: offReading('puissance'),
+      ...extras,
     };
   }
 
@@ -112,6 +124,28 @@ export function readCircuitMeters(
       POWER_LOW,
       POWER_HIGH,
     ),
+    ...extras,
+  };
+}
+
+function extraReadings(simulation: CircuitSimulation): ExtraReadings {
+  let maxCharge = 0;
+  let maxMagnet = 0;
+
+  for (const state of Object.values(simulation.states)) {
+    maxCharge = Math.max(maxCharge, state.charge ?? 0);
+    maxMagnet = Math.max(maxMagnet, state.magneticStrength ?? 0);
+  }
+
+  return {
+    charge:
+      maxCharge <= 0.02
+        ? offReading('charge')
+        : reading('charge', maxCharge, CHARGE_LOW, CHARGE_HIGH),
+    aimant:
+      maxMagnet <= 0.02
+        ? offReading('aimant')
+        : reading('aimant', maxMagnet, MAGNET_LOW, MAGNET_HIGH),
   };
 }
 
@@ -136,17 +170,25 @@ function offReading(id: MeterId): MeterReading {
   return { id, status: 'off', value: null };
 }
 
-function allReadings(status: MeterStatus): CircuitMeters {
+function allReadings(status: MeterStatus, extras: ExtraReadings): CircuitMeters {
   return {
     tension: { id: 'tension', status, value: null },
     courant: { id: 'courant', status, value: null },
     resistance: { id: 'resistance', status, value: null },
     puissance: { id: 'puissance', status, value: null },
+    charge: extras.charge,
+    aimant: extras.aimant,
   };
 }
 
-function isBatteryComponent(
+function sourceVoltage(source: BatteryComponent | SolarComponent): number {
+  return source.type === 'battery'
+    ? source.voltage
+    : source.voltage * source.lightLevel;
+}
+
+function isSourceComponent(
   component: Circuit['components'][number],
-): component is BatteryComponent {
-  return component.type === 'battery';
+): component is BatteryComponent | SolarComponent {
+  return component.type === 'battery' || component.type === 'solar';
 }

@@ -71,6 +71,34 @@ function componentVisuals(): Record<ComponentType, ComponentVisual> {
       label: fr.components.rheostat.label,
       color: '#b08968',
     },
+    diode: {
+      label: fr.components.diode.label,
+      color: '#e76f51',
+    },
+    electromagnet: {
+      label: fr.components.electromagnet.label,
+      color: '#8e7dbe',
+    },
+    reed: {
+      label: fr.components.reed.label,
+      color: '#48cae4',
+    },
+    relay: {
+      label: fr.components.relay.label,
+      color: '#6d597a',
+    },
+    ldr: {
+      label: fr.components.ldr.label,
+      color: '#f4a261',
+    },
+    solar: {
+      label: fr.components.solar.label,
+      color: '#457b9d',
+    },
+    capacitor: {
+      label: fr.components.capacitor.label,
+      color: '#e9c46a',
+    },
     material: metalVisual(),
   };
 }
@@ -86,6 +114,27 @@ export function buildPaletteItems(): PaletteItem[] {
     paletteItem('motor', 'motor', visuals.motor),
     paletteItem('buzzer', 'buzzer', visuals.buzzer),
     paletteItem('led', 'led', visuals.led),
+    paletteItem('diode', 'diode', visuals.diode),
+    paletteItem('electromagnet-short', 'electromagnet', {
+      label: fr.components.electromagnetShort.label,
+      color: visuals.electromagnet.color,
+    }, { turns: 40 }),
+    paletteItem('electromagnet-long', 'electromagnet', {
+      label: fr.components.electromagnetLong.label,
+      color: visuals.electromagnet.color,
+    }, { turns: 120 }),
+    paletteItem('reed', 'reed', visuals.reed),
+    paletteItem('relay', 'relay', visuals.relay),
+    paletteItem('ldr', 'ldr', visuals.ldr),
+    paletteItem('solar', 'solar', visuals.solar),
+    paletteItem('capacitor-small', 'capacitor', {
+      label: fr.components.capacitorSmall.label,
+      color: visuals.capacitor.color,
+    }, { capacitance: 0.2 }),
+    paletteItem('capacitor-large', 'capacitor', {
+      label: fr.components.capacitorLarge.label,
+      color: visuals.capacitor.color,
+    }, { capacitance: 0.5 }),
     paletteItem('resistor', 'resistor', visuals.resistor),
     paletteItem('rheostat', 'rheostat', visuals.rheostat, {
       wiperPosition: 0,

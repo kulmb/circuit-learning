@@ -161,5 +161,35 @@ function MeterIcon({ id }: { id: MeterId }) {
           />
         </svg>
       );
+    case 'charge':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect
+            x="4"
+            y="7"
+            width="16"
+            height="10"
+            rx="2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <rect x="7" y="10" width="7" height="4" fill="currentColor" />
+          <path d="M20 10v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'aimant':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M6 5v7a6 6 0 0 0 12 0V5h-4v7a2 2 0 0 1-4 0V5z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <path d="M6 8h4M14 8h4" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      );
   }
 }

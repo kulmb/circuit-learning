@@ -173,8 +173,143 @@ export const CHAPTER_4_LEVEL_METADATA: readonly LevelMetadata[] = [
   {
     id: 'defi-04',
     order: 26,
-    nextLevelId: null,
+    nextLevelId: 'sound-01',
     vocabularyIds: ['combinaison'],
+  },
+];
+
+export const CHAPTER_5_LEVEL_METADATA: readonly LevelMetadata[] = [
+  {
+    id: 'sound-01',
+    order: 27,
+    nextLevelId: 'sound-02',
+    vocabularyIds: ['circuitFerme', 'sonnerie'],
+  },
+  {
+    id: 'sound-02',
+    order: 28,
+    nextLevelId: 'sound-03',
+    vocabularyIds: ['serie', 'sonnerie'],
+  },
+  {
+    id: 'sound-03',
+    order: 29,
+    nextLevelId: 'diode-01',
+    vocabularyIds: ['parallele', 'sonnerie'],
+  },
+];
+
+export const CHAPTER_6_LEVEL_METADATA: readonly LevelMetadata[] = [
+  {
+    id: 'diode-01',
+    order: 30,
+    nextLevelId: 'diode-02',
+    vocabularyIds: ['diode', 'sensUnique'],
+  },
+  {
+    id: 'diode-02',
+    order: 31,
+    nextLevelId: 'diode-03',
+    vocabularyIds: ['diode', 'sensUnique'],
+  },
+  {
+    id: 'diode-03',
+    order: 32,
+    nextLevelId: 'mag-01',
+    vocabularyIds: ['diode', 'sensUnique'],
+  },
+];
+
+export const CHAPTER_7_LEVEL_METADATA: readonly LevelMetadata[] = [
+  {
+    id: 'mag-01',
+    order: 33,
+    nextLevelId: 'mag-02',
+    vocabularyIds: ['electroAimant', 'bobine'],
+  },
+  {
+    id: 'mag-02',
+    order: 34,
+    nextLevelId: 'mag-03',
+    vocabularyIds: ['electroAimant', 'bobine'],
+  },
+  {
+    id: 'mag-03',
+    order: 35,
+    nextLevelId: 'mag-04',
+    vocabularyIds: ['lameSouple'],
+  },
+  {
+    id: 'mag-04',
+    order: 36,
+    nextLevelId: 'mag-05',
+    vocabularyIds: ['relais'],
+  },
+  {
+    id: 'mag-05',
+    order: 37,
+    nextLevelId: 'sensor-01',
+    vocabularyIds: ['lameSouple'],
+  },
+];
+
+export const CHAPTER_8_LEVEL_METADATA: readonly LevelMetadata[] = [
+  {
+    id: 'sensor-01',
+    order: 38,
+    nextLevelId: 'sensor-02',
+    vocabularyIds: ['capteurLumiere'],
+  },
+  {
+    id: 'sensor-02',
+    order: 39,
+    nextLevelId: 'sensor-03',
+    vocabularyIds: ['capteurLumiere', 'relais'],
+  },
+  {
+    id: 'sensor-03',
+    order: 40,
+    nextLevelId: 'cap-01',
+    vocabularyIds: ['panneauSolaire'],
+  },
+];
+
+export const CHAPTER_9_LEVEL_METADATA: readonly LevelMetadata[] = [
+  {
+    id: 'cap-01',
+    order: 41,
+    nextLevelId: 'cap-02',
+    vocabularyIds: ['condensateur', 'reserve'],
+  },
+  {
+    id: 'cap-02',
+    order: 42,
+    nextLevelId: 'cap-03',
+    vocabularyIds: ['charge'],
+  },
+  {
+    id: 'cap-03',
+    order: 43,
+    nextLevelId: 'cap-04',
+    vocabularyIds: ['decharge'],
+  },
+  {
+    id: 'cap-04',
+    order: 44,
+    nextLevelId: 'cap-05',
+    vocabularyIds: ['condensateur', 'reserve'],
+  },
+  {
+    id: 'cap-05',
+    order: 45,
+    nextLevelId: 'cap-06',
+    vocabularyIds: ['condensateur', 'reserve'],
+  },
+  {
+    id: 'cap-06',
+    order: 46,
+    nextLevelId: null,
+    vocabularyIds: ['condensateur', 'charge', 'decharge'],
   },
 ];
 
@@ -183,6 +318,11 @@ export const ALL_LEVEL_METADATA: readonly LevelMetadata[] = [
   ...CHAPTER_2_LEVEL_METADATA,
   ...CHAPTER_3_LEVEL_METADATA,
   ...CHAPTER_4_LEVEL_METADATA,
+  ...CHAPTER_5_LEVEL_METADATA,
+  ...CHAPTER_6_LEVEL_METADATA,
+  ...CHAPTER_7_LEVEL_METADATA,
+  ...CHAPTER_8_LEVEL_METADATA,
+  ...CHAPTER_9_LEVEL_METADATA,
 ];
 
 export function getLevelMetadata(

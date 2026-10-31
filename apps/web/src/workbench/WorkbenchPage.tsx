@@ -64,6 +64,7 @@ import {
 } from './pointer';
 import { componentOverlaps } from './trashTarget';
 import { useBoardViewport } from './useBoardViewport';
+import { useTransientSimulation } from './useTransientSimulation';
 import {
   boardScale,
   measureElementRect,
@@ -155,6 +156,8 @@ export const WorkbenchPage = memo(function WorkbenchPage({
     rotateComponent,
     toggleSwitch,
     setRheostatWiper,
+    setLightLevel,
+    setReedMagnet,
     deleteComponent,
     deleteSelection,
     addWire,
@@ -219,12 +222,19 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const completedRef = useRef(false);
   const levelSession = useLevelSession(level ?? null);
+  const levelReady = level === undefined || levelId === level.id;
+  const transient = useTransientSimulation({
+    level,
+    circuit,
+    enabled: levelReady,
+  });
+  const effectiveSimulation = transient?.simulation ?? simulation;
 
-  const status = getStatus(simulation);
+  const status = getStatus(effectiveSimulation);
   const meterIds = useMemo(() => level?.meters ?? [], [level]);
   const meters = useMemo(
-    () => readCircuitMeters(circuit, simulation),
-    [circuit, simulation],
+    () => readCircuitMeters(circuit, effectiveSimulation),
+    [circuit, effectiveSimulation],
   );
   const ghostPoint =
     paletteDrag !== null && paletteDrag.gesture === 'drag'
@@ -234,8 +244,14 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   const hasLitBulb = circuit.components.some(
     (component) =>
       component.type === 'bulb' &&
-      simulation.states[component.id]?.state !== 'off',
+      effectiveSimulation.states[component.id]?.state !== 'off',
   );
+  const lightComponents = circuit.components.filter(
+    (component) => component.type === 'ldr' || component.type === 'solar',
+  );
+  const hasLightControl = lightComponents.length > 0;
+  const lightLevel =
+    lightComponents.some((component) => component.lightLevel >= 0.5) ? 1 : 0;
   const paletteItems = useMemo(() => {
     if (sandbox !== undefined) {
       return sandbox.items;
@@ -249,7 +265,18 @@ export const WorkbenchPage = memo(function WorkbenchPage({
 
     return level.availableComponents.flatMap((offer) => {
       const item = available.find((candidate) => candidate.key === offer.key);
-      return item === undefined ? [] : [item];
+      if (item === undefined) {
+        return [];
+      }
+
+      return [
+        offer.options === undefined
+          ? item
+          : {
+              ...item,
+              options: { ...item.options, ...offer.options },
+            },
+      ];
     });
   }, [language, level, sandbox]);
   // On a phone in landscape the tray steals precious height. With no
@@ -258,11 +285,15 @@ export const WorkbenchPage = memo(function WorkbenchPage({
   const levelSuccess = useMemo(
     () =>
       level === undefined
-        ? simulation.ok
-        : evaluateLevelSuccess(level, circuit, simulation),
-    [circuit, level, simulation],
+        ? effectiveSimulation.ok
+        : evaluateLevelSuccess(
+            level,
+            circuit,
+            effectiveSimulation,
+            transient?.runtime,
+          ),
+    [circuit, effectiveSimulation, level, transient?.runtime],
   );
-  const levelReady = level === undefined || levelId === level.id;
   const achieved = levelReady && levelSuccess;
 
   useEffect(() => {
@@ -1040,7 +1071,7 @@ export const WorkbenchPage = memo(function WorkbenchPage({
           >
             <WorkbenchSvg
               circuit={circuit}
-              simulation={simulation}
+              simulation={effectiveSimulation}
               selected={selected}
               pendingTerminal={pendingTerminal}
               displayMode={displayMode}
@@ -1068,6 +1099,11 @@ export const WorkbenchPage = memo(function WorkbenchPage({
               onDeleteComponent={deleteComponent}
               onToggleSwitch={toggleSwitch}
               onSetRheostatWiper={setRheostatWiper}
+              onSetReedMagnet={setReedMagnet}
+              onEmptyCapacitor={(componentId) =>
+                transient?.emptyCapacitor(componentId)
+              }
+              showMagnet={level?.magnet === true}
               onAddWire={addWire}
             />
 
@@ -1085,6 +1121,24 @@ export const WorkbenchPage = memo(function WorkbenchPage({
               >
                 <Icon name="maximize" />
                 <span>{fr.workbench.showAll}</span>
+              </button>
+            ) : null}
+
+            {hasLightControl ? (
+              <button
+                type="button"
+                className="workbench-zoom-reset workbench-daynight-button"
+                aria-label={fr.workbench.dayNight}
+                onPointerDown={(event) =>
+                  activateButton(event, () =>
+                    setLightLevel(lightLevel > 0.5 ? 0 : 1),
+                  )
+                }
+              >
+                <Icon name={lightLevel > 0.5 ? 'sun' : 'moon'} />
+                <span>
+                  {lightLevel > 0.5 ? fr.workbench.day : fr.workbench.night}
+                </span>
               </button>
             ) : null}
 
@@ -1284,6 +1338,12 @@ function getStatus(simulation: CircuitSimulation): Status {
   }
   if (simulation.missingBattery) {
     return { text: fr.workbench.statusMissingBattery, tone: 'info' };
+  }
+  if (simulation.missingSource) {
+    return { text: fr.workbench.statusMissingSource, tone: 'info' };
+  }
+  if (simulation.diodeReversed) {
+    return { text: fr.workbench.statusDiodeReversed, tone: 'info' };
   }
   if (simulation.ok) {
     return { text: fr.workbench.statusClosed, tone: 'success' };

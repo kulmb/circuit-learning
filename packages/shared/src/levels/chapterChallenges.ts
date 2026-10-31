@@ -108,7 +108,7 @@ export const CHAPTER_4_LEVELS: LevelDefinition[] = [
       'level.defi.04.hint.3',
     ],
     vocabularyIds: ['combinaison'],
-    nextLevelId: null,
+    nextLevelId: 'sound-01',
     challenge: { tier: 4, budget: 5 },
   },
 ];

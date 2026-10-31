@@ -1,6 +1,6 @@
 # Tests et vérifications sur appareils
 
-Mise à jour : 24 octobre 2026.
+Mise à jour : 30 octobre 2026.
 
 La suite automatisée couvre les parcours adultes et enfants sur sept profils de
 navigateur. Les contrôles qui dépendent du matériel réel (voix, gestes, PWA)
@@ -80,6 +80,13 @@ Les enfants de test utilisent la suite d’images Renard, Pomme, Ballon.
 | `e2e/parent.spec.ts` | Connexion parente sur téléphone, deux niveaux terminés, cinq étoiles, groupe et fiche de l’enfant accessibles. |
 | `e2e/permissions.spec.ts` | L’encadrante B reçoit `403 forbidden` et un message d’accès refusé sur la fiche d’un élève du groupe A. |
 | `e2e/chapter2.spec.ts` | Chapitre 2 : sélection du variateur verrouillé et glissement du grand curseur jusqu’à obtenir une ampoule faible, sur les sept profils. |
+| `e2e/chapter3.spec.ts` | Chapitre 3 : câblage d’un circuit combiné et réussite du niveau. |
+| `e2e/chapter5-sound.spec.ts` | Chapitre 5 : sonnerie et deux interrupteurs en série. |
+| `e2e/chapter6-diode.spec.ts` | Chapitre 6 : diode dans le bon sens, puis diode à l’envers avec l’indice de Zap. |
+| `e2e/chapter7-magnet.spec.ts` | Chapitre 7 : électroaimant, aimant déplacé vers la lame souple et relais à quatre bornes. |
+| `e2e/chapter8-sensor.spec.ts` | Chapitre 8 : photorésistance, veilleuse automatique de nuit et panneau solaire. |
+| `e2e/chapter9-capacitor.spec.ts` | Chapitre 9 : charge puis décharge maintenant la lampe allumée, et condensateur préchargé. |
+| `e2e/challenges.spec.ts` | Chapitre 4 : génération et renouvellement d’un défi. |
 | `e2e/screenshots.spec.ts` | Capture de la carte et de l’écran de niveau sur chaque appareil, avec contrôle du point de rupture. |
 
 ### Captures de référence
@@ -171,6 +178,28 @@ le comportement.
    réparant une panne et en construisant un circuit.
 6. Vérifier qu’aucun composant généré ne se cache sous la bulle de Zap, sur
    ordinateur comme sur téléphone en paysage.
+
+### 2 quater. Tablette et téléphone — chapitres 5 à 9
+
+1. `sound-01` à `sound-03` : la sonnerie doit se déclencher sans grésillement,
+   et `sound-02` doit échouer si les deux interrupteurs ne sont pas en série.
+2. `diode-01` à `diode-03` : retourner la diode avec le bouton de rotation doit
+   bloquer le courant ; l’indice « la diode est à l’envers » doit apparaître.
+3. `mag-01` et `mag-02` : les trombones doivent bouger selon la force de la
+   bobine ; la grande bobine attire tout, la courte seulement quelques-uns.
+4. `mag-03` et `mag-05` : faire glisser l’aimant jusqu’à la lame souple doit
+   fermer le circuit ; l’éloigner doit l’ouvrir. Vérifier au doigt sur iPad.
+5. `mag-04` : le relais doit cliquer visuellement quand la bobine est
+   alimentée, et la lampe du grand circuit doit s’allumer.
+6. `sensor-01` à `sensor-03` : le bouton jour/nuit doit changer la scène et la
+   réponse ; `sensor-02` doit allumer la lampe la nuit et l’éteindre le jour.
+7. `cap-01` à `cap-06` : le condensateur doit se remplir et se vider
+   visiblement ; `cap-01` doit garder la lampe allumée après l’ouverture ;
+   `cap-06` doit produire un flash bref. Vérifier que la boucle ne tourne pas
+   quand l’onglet est caché et que le compteur de charge reste qualitatif.
+8. Vérifier qu’aucun chiffre (volts, farads, secondes) n’apparaît dans les
+   nouveaux chapitres, et que les nouveaux composants restent absents de
+   l’atelier libre.
 
 ### 3. Téléphone — invitation à tourner
 

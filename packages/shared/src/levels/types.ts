@@ -1,6 +1,7 @@
 import type {
   CircuitComponent,
   ComponentType,
+  CreateComponentOptions,
   MeterId,
   QualitativeState,
   Wire,
@@ -20,10 +21,17 @@ export interface PreplacedComponent {
   locked: boolean;
 }
 
+export type PaletteComponentOptions = Omit<
+  CreateComponentOptions,
+  'id' | 'position'
+>;
+
 export interface LevelAvailableComponent {
   key: string;
   type: ComponentType;
   count: number;
+  /** Variant options merged into the created component. */
+  options?: PaletteComponentOptions;
 }
 
 export type SuccessCondition =
@@ -59,7 +67,45 @@ export type SuccessCondition =
       type: 'brighter_than';
       componentId: string;
       thanComponentId: string;
-    };
+    }
+  | { type: 'capacitor_filled'; componentId: string }
+  | { type: 'capacitor_empty'; componentId: string }
+  | {
+      type: 'lamp_stays_on_after_open';
+      componentId: string;
+      minDurationMs: number;
+    }
+  | { type: 'flash_seen'; componentId: string }
+  | {
+      type: 'magnet_attracts';
+      componentId: string;
+      amount: 'some' | 'all';
+    }
+  | { type: 'reed_state'; componentId: string; closed: boolean }
+  | {
+      type: 'reed_controls';
+      reedId: string;
+      componentId: string;
+      stateNear: QualitativeState;
+      stateFar: QualitativeState;
+    }
+  | { type: 'relay_state'; componentId: string; closed: boolean }
+  | {
+      type: 'relay_controls';
+      relayId: string;
+      componentId: string;
+      stateOn: QualitativeState;
+      stateOff: QualitativeState;
+    }
+  | {
+      type: 'light_response';
+      componentId: string;
+      litState: QualitativeState;
+      darkState: QualitativeState;
+    }
+  | { type: 'diode_conducts'; componentId: string }
+  | { type: 'diode_blocks'; componentId: string }
+  | { type: 'every_source_powers'; componentId: string };
 
 export type MaterialVisualKind = 'metal' | 'gum' | 'spoon' | 'pencil' | 'aluminum';
 
@@ -113,6 +159,12 @@ export interface LevelDefinition {
   nextLevelId: string | null;
   /** Qualitative gauges shown next to the board. */
   meters?: MeterId[];
+  /** Run a time-based simulation for capacitor levels. */
+  transient?: {
+    stepMs?: number;
+  };
+  /** Show a draggable magnet accessory for reed levels. */
+  magnet?: boolean;
   /** Challenge tiers are generated from a seed before they are played. */
   challenge?: ChallengeConfig;
   materialsChallenge?: MaterialsChallenge;

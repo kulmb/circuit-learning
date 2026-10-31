@@ -20,6 +20,9 @@ blob-report/
 .github_key
 deploy/mongo/keyfile
 
+# Local security audit: contains vulnerability details, never publish it
+point_security.txt
+
 # Logs
 *.log
 npm-debug.log*

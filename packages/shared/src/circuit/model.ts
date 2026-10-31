@@ -22,6 +22,7 @@ export interface CircuitModel {
   wireEndpointKeys: Set<string>;
   danglingTerminals: TerminalRef[];
   nodesFor(component: CircuitComponent): [number, number];
+  nodesForTerminals(component: CircuitComponent, terminalIds: string[]): number[];
   nodeOf(ref: TerminalRef): number;
 }
 
@@ -115,7 +116,8 @@ export function buildCircuitModel(circuit: Circuit): CircuitModel {
 
   for (const component of circuit.components) {
     if (component.type === 'wire') {
-      const [first, second] = EXPECTED_TERMINAL_IDS.wire;
+      const first = EXPECTED_TERMINAL_IDS.wire[0]!;
+      const second = EXPECTED_TERMINAL_IDS.wire[1]!;
       unionFind.union(
         terminalKey({ componentId: component.id, terminalId: first }),
         terminalKey({ componentId: component.id, terminalId: second }),
@@ -161,8 +163,10 @@ export function buildCircuitModel(circuit: Circuit): CircuitModel {
     .filter((ref) => !wireEndpointKeys.has(terminalKey(ref)))
     .sort(compareTerminalRefs);
 
-  const nodesFor = (component: CircuitComponent): [number, number] => {
-    const terminalIds = EXPECTED_TERMINAL_IDS[component.type];
+  const nodesForTerminals = (
+    component: CircuitComponent,
+    terminalIds: string[],
+  ): number[] => {
     const nodes = componentNodes.get(component.id);
     if (!nodes) {
       throw new CircuitError(
@@ -171,8 +175,22 @@ export function buildCircuitModel(circuit: Circuit): CircuitModel {
       );
     }
 
-    const first = nodes.get(terminalIds[0]);
-    const second = nodes.get(terminalIds[1]);
+    return terminalIds.map((terminalId) => {
+      const node = nodes.get(terminalId);
+      if (node === undefined) {
+        throw new CircuitError(
+          'invalid_circuit',
+          `Missing terminal node ${terminalId} for component ${component.id}`,
+        );
+      }
+      return node;
+    });
+  };
+
+  const nodesFor = (component: CircuitComponent): [number, number] => {
+    const terminalIds = EXPECTED_TERMINAL_IDS[component.type];
+    const [first, second] = nodesForTerminals(component, terminalIds.slice(0, 2));
+
     if (first === undefined || second === undefined) {
       throw new CircuitError(
         'invalid_circuit',
@@ -206,6 +224,7 @@ export function buildCircuitModel(circuit: Circuit): CircuitModel {
     wireEndpointKeys,
     danglingTerminals,
     nodesFor,
+    nodesForTerminals,
     nodeOf,
   };
 }
@@ -308,6 +327,79 @@ function validateComponent(component: CircuitComponent): void {
       assertPositive(
         component.resistanceWhenConductive,
         `material ${component.id} conductive resistance`,
+      );
+      break;
+    case 'diode':
+      assertPositive(component.resistance, `diode ${component.id} resistance`);
+      assertNonNegative(
+        component.forwardVoltage,
+        `diode ${component.id} forward voltage`,
+      );
+      break;
+    case 'electromagnet':
+      assertPositive(
+        component.resistance,
+        `electromagnet ${component.id} resistance`,
+      );
+      assertPositive(component.turns, `electromagnet ${component.id} turns`);
+      break;
+    case 'reed':
+      assertBoolean(component.magnetNear, `reed ${component.id} magnetNear`);
+      assertBoolean(component.normallyOpen, `reed ${component.id} normallyOpen`);
+      assertPositive(
+        component.resistanceWhenClosed,
+        `reed ${component.id} closed resistance`,
+      );
+      break;
+    case 'relay':
+      assertPositive(
+        component.coilResistance,
+        `relay ${component.id} coil resistance`,
+      );
+      assertPositive(
+        component.contactResistance,
+        `relay ${component.id} contact resistance`,
+      );
+      assertPositive(component.threshold, `relay ${component.id} threshold`);
+      assertBoolean(
+        component.normallyClosed,
+        `relay ${component.id} normallyClosed`,
+      );
+      assertBoolean(component.closed, `relay ${component.id} closed`);
+      break;
+    case 'ldr':
+      assertPositive(
+        component.lightResistance,
+        `ldr ${component.id} light resistance`,
+      );
+      assertPositive(
+        component.darkResistance,
+        `ldr ${component.id} dark resistance`,
+      );
+      if (component.darkResistance <= component.lightResistance) {
+        throw new CircuitError(
+          'invalid_circuit',
+          `ldr ${component.id} dark resistance must exceed its light resistance`,
+        );
+      }
+      assertUnitInterval(component.lightLevel, `ldr ${component.id} light level`);
+      break;
+    case 'solar':
+      assertPositive(component.voltage, `solar ${component.id} voltage`);
+      assertPositive(
+        component.internalResistance,
+        `solar ${component.id} internal resistance`,
+      );
+      assertUnitInterval(component.lightLevel, `solar ${component.id} light level`);
+      break;
+    case 'capacitor':
+      assertPositive(
+        component.capacitance,
+        `capacitor ${component.id} capacitance`,
+      );
+      assertNonNegative(
+        component.initialVoltage,
+        `capacitor ${component.id} initial voltage`,
       );
       break;
   }

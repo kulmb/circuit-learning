@@ -4,5 +4,6 @@ export * from './ids';
 export * from './components';
 export * from './meters';
 export * from './simulate';
+export * from './transient';
 export * from './serialization';
 export * from './topology';
