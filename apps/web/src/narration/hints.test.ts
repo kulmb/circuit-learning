@@ -101,6 +101,29 @@ describe('circuit hints', () => {
     expect(result.highlight?.componentIds).toContain('switch');
   });
 
+  it('points at a reversed diode even when the circuit stays closed', () => {
+    const circuit: Circuit = {
+      components: [
+        createComponent('battery', { id: 'battery' }),
+        createComponent('switch', { id: 'switch', closed: true }),
+        createComponent('diode', { id: 'diode' }),
+        createComponent('bulb', { id: 'bulb' }),
+      ],
+      wires: [
+        createWire('w1', ref('battery', 'positive'), ref('switch', 'a')),
+        createWire('w2', ref('switch', 'b'), ref('diode', 'cathode')),
+        createWire('w3', ref('diode', 'anode'), ref('bulb', 'a')),
+        createWire('w4', ref('bulb', 'b'), ref('battery', 'negative')),
+      ],
+    };
+
+    const result = plan(circuit);
+
+    expect(result.code).toBe('diode_reversed');
+    expect(result.texts[0]).toBe('zap.hint.diode.1');
+    expect(result.highlight?.componentIds).toContain('diode');
+  });
+
   it('points at the insulating material', () => {
     const circuit: Circuit = {
       components: [

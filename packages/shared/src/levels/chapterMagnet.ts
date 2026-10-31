@@ -165,8 +165,10 @@ export const CHAPTER_7_LEVELS: LevelDefinition[] = [
       preplaced(batteryAt('coil-battery', 2, 2)),
       preplaced(switchAt('switch-1', 4, 2)),
       preplaced(relayAt('relay-1', 7, 4)),
-      preplaced(batteryAt('lamp-battery', 2, 6)),
-      preplaced(bulbAt('bulb-1', 10, 6)),
+      // Both circuits sit above the bottom edge: Zap, the trash and the zoom
+      // controls own that strip on tablets and phones.
+      preplaced(batteryAt('lamp-battery', 2, 4)),
+      preplaced(bulbAt('bulb-1', 10, 4)),
     ],
     preplacedWires: [],
     availableComponents: [],

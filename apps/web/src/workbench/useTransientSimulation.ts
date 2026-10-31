@@ -17,6 +17,15 @@ export interface TransientState {
   reset: () => void;
 }
 
+/**
+ * The physics runs at 16 ms, but the React tree only receives a new snapshot
+ * 20 times per second. A capacitor animation is slow enough for this rate,
+ * and it keeps the full workbench render off the 60 Hz path on tablets.
+ */
+const PUBLISH_INTERVAL_MS = 50;
+/** Ignore sub-millivolt drift so a charged capacitor stops re-rendering. */
+const CAPACITOR_VOLTAGE_EPSILON = 1e-3;
+
 interface Options {
   level: LevelDefinition | undefined;
   circuit: Circuit;
@@ -37,6 +46,9 @@ export function useTransientSimulation({
   const simulatorRef = useRef<TransientSimulator | null>(null);
   const runtimeRef = useRef<LevelRuntime | null>(null);
   const circuitRef = useRef(circuit);
+  const lastPublishAtRef = useRef(0);
+  const publishedVoltagesRef = useRef<Record<string, number>>({});
+  const forcePublishRef = useRef(false);
   const [frame, setFrame] = useState<ReturnType<TransientSimulator['snapshot']> | null>(
     null,
   );
@@ -51,13 +63,22 @@ export function useTransientSimulation({
       return;
     }
 
-    simulatorRef.current = createTransientSimulator(circuitRef.current, { stepMs });
+    const simulator = createTransientSimulator(circuitRef.current, { stepMs });
+    const initial = simulator.snapshot();
+
+    simulatorRef.current = simulator;
     runtimeRef.current = createLevelRuntime();
-    setFrame(simulatorRef.current.snapshot());
+    lastPublishAtRef.current = 0;
+    publishedVoltagesRef.current = { ...initial.capacitorVoltages };
+    forcePublishRef.current = false;
+    setFrame(initial);
   }, [levelId, level?.transient, stepMs]);
 
   useEffect(() => {
     simulatorRef.current?.setCircuit(circuit);
+    // A switch or wire change can alter the visible state without moving a
+    // capacitor voltage, so the next tick must publish regardless.
+    forcePublishRef.current = true;
   }, [circuit]);
 
   useEffect(() => {
@@ -94,7 +115,22 @@ export function useTransientSimulation({
         if (simulator !== null && runtime !== null) {
           const next = simulator.step();
           updateLevelRuntime(runtime, circuitRef.current, next.simulation, stepMs);
-          setFrame(next);
+
+          const changed = Object.entries(next.capacitorVoltages).some(
+            ([componentId, voltage]) =>
+              Math.abs(
+                voltage - (publishedVoltagesRef.current[componentId] ?? 0),
+              ) >= CAPACITOR_VOLTAGE_EPSILON,
+          );
+          const due =
+            now - lastPublishAtRef.current >= PUBLISH_INTERVAL_MS;
+
+          if ((changed || forcePublishRef.current) && due) {
+            forcePublishRef.current = false;
+            lastPublishAtRef.current = now;
+            publishedVoltagesRef.current = { ...next.capacitorVoltages };
+            setFrame(next);
+          }
         }
       }
 
@@ -120,6 +156,8 @@ export function useTransientSimulation({
     simulator.setCapacitorVoltage(componentId, 0);
     const next = simulator.snapshot();
     updateLevelRuntime(runtime, circuitRef.current, next.simulation, 0);
+    publishedVoltagesRef.current = { ...next.capacitorVoltages };
+    lastPublishAtRef.current = 0;
     setFrame(next);
   }, []);
 
@@ -133,7 +171,10 @@ export function useTransientSimulation({
 
     simulator.reset();
     runtimeRef.current = createLevelRuntime();
-    setFrame(simulator.snapshot());
+    const next = simulator.snapshot();
+    publishedVoltagesRef.current = { ...next.capacitorVoltages };
+    lastPublishAtRef.current = 0;
+    setFrame(next);
   }, []);
 
   if (

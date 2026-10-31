@@ -77,6 +77,21 @@ export function buildHintPlan(
   simulation: CircuitSimulation,
   circuit: Circuit,
 ): HintPlan {
+  // A reversed diode does not block the simulation (another path may still
+  // work), so `simulation.ok` can stay true. Surface the direction hint first
+  // instead of falling back to the level's generic hint.
+  const reversedDiode = simulation.diagnostics.find(
+    (diagnostic) => diagnostic.code === 'diode_reversed',
+  );
+
+  if (reversedDiode !== undefined) {
+    return {
+      code: 'diode_reversed',
+      texts: HINTS.diode_reversed,
+      highlight: buildHighlight('diode_reversed', reversedDiode),
+    };
+  }
+
   if (simulation.ok) {
     const hasLitBulb = circuit.components.some(
       (component) =>

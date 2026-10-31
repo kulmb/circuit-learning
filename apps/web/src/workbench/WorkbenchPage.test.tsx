@@ -1137,4 +1137,40 @@ describe('0.4.0 chapters', () => {
       screen.getByRole('button', { name: getText('workbench.dayNight') }),
     ).toBeInTheDocument();
   });
+
+  it('switches the scene between day and night', () => {
+    const level = getLevelById('sensor-01');
+    if (!level) throw new Error('Level missing');
+
+    render(<WorkbenchPage level={level} onBack={() => undefined} />);
+    getSvg();
+
+    const dayNight = screen.getByRole('button', {
+      name: getText('workbench.dayNight'),
+    });
+
+    expect(dayNight).toHaveTextContent(getText('workbench.day'));
+    fireEvent.pointerDown(dayNight);
+    expect(dayNight).toHaveTextContent(getText('workbench.night'));
+    fireEvent.pointerDown(dayNight);
+    expect(dayNight).toHaveTextContent(getText('workbench.day'));
+  });
+
+  it('offers the empty control when a capacitor is selected', () => {
+    const level = getLevelById('cap-01');
+    if (!level) throw new Error('Level missing');
+
+    render(<WorkbenchPage level={level} onBack={() => undefined} />);
+    getSvg();
+
+    tap(getComponent('capacitor-1'), 200, 200);
+
+    const emptyButton = screen.getByRole('button', {
+      name: getText('workbench.emptyCapacitor'),
+    });
+    expect(emptyButton).toBeInTheDocument();
+
+    fireEvent.pointerDown(emptyButton);
+    expect(emptyButton).toBeInTheDocument();
+  });
 });

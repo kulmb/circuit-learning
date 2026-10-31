@@ -1,6 +1,6 @@
 # Rapport de taille des ressources
 
-Généré le 2026-10-30 14:44 UTC depuis `apps/web/dist`.
+Généré le 2026-10-31 14:26 UTC depuis `apps/web/dist`.
 
 ## Budget du premier écran
 
@@ -8,7 +8,7 @@ Généré le 2026-10-30 14:44 UTC depuis `apps/web/dist`.
 |---|---:|---:|:---:|
 | JavaScript initial | 168.12 Ko | 300 Ko | OK |
 | CSS initial | 4.78 Ko | — | information |
-| Total JS + CSS initial | 172.90 Ko | — | information |
+| Total JS + CSS initial | 172.91 Ko | — | information |
 
 Le JavaScript initial est le script module référencé par `index.html`.
 `GameShell` (écrans de jeu et définitions de niveaux), `AdminApp` et
@@ -19,7 +19,7 @@ téléchargées qu’à l’ouverture de leur route.
 
 | Fichier | Brut | Gzip |
 |---|---:|---:|
-| `/assets/index-DaxAhvYw.js` | 560.63 Ko | 168.12 Ko |
+| `/assets/index-DleI1wo-.js` | 560.63 Ko | 168.12 Ko |
 
 ## CSS initial
 
@@ -33,11 +33,11 @@ Ces fichiers ne sont pas présents sur le premier écran.
 
 | Fichier | Brut | Gzip |
 |---|---:|---:|
-| `/assets/AdminApp-BNAxRtoJ.js` | 453.42 Ko | 125.42 Ko |
-| `/assets/GameShell-CNjpo9iZ.js` | 142.01 Ko | 39.45 Ko |
-| `/assets/ParentSettingsPage-Bjcg3POB.js` | 6.54 Ko | 1.70 Ko |
-| `/assets/haptics-BYq8sN-h.js` | 0.28 Ko | 0.21 Ko |
-| `/assets/levels-zzGwMqsk.js` | 49.47 Ko | 10.04 Ko |
+| `/assets/AdminApp-_JsfzXd_.js` | 453.42 Ko | 125.42 Ko |
+| `/assets/GameShell-Bu9U0hNt.js` | 142.78 Ko | 39.73 Ko |
+| `/assets/ParentSettingsPage-DpJTpUgC.js` | 6.54 Ko | 1.70 Ko |
+| `/assets/haptics-C3XkECzL.js` | 0.28 Ko | 0.21 Ko |
+| `/assets/levels-BAKbuD0K.js` | 49.47 Ko | 10.03 Ko |
 | `/assets/workbox-window.prod.es5-BqEJf4Xk.js` | 5.71 Ko | 2.34 Ko |
 
 ## CSS chargé à la demande
@@ -55,7 +55,7 @@ Entrées préchargées par Workbox : 28.
 | Fichier | Brut | Gzip |
 |---|---:|---:|
 | `/manifest.webmanifest` | 0.87 Ko | 0.35 Ko |
-| `/sw.js` | 3.10 Ko | 1.50 Ko |
+| `/sw.js` | 3.10 Ko | 1.49 Ko |
 | `/workbox-0fb4b014.js` | 22.88 Ko | 7.73 Ko |
 
 ## Polices auto-hébergées

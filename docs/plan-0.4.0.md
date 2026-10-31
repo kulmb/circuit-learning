@@ -1,7 +1,7 @@
 # Plan — version 0.4.0 « Les composants qui choisissent »
 
 Date : 30 octobre 2026
-Statut : implémenté dans la version 0.4.0.
+Statut : implémenté et validé dans la version 0.4.0.
 Source principale : `docs/plan-nouveaux-cours.md`, lui-même issu de la lecture
 du livre 《少年电子入门 元件和电路》.
 Dépendance : aucune. En revanche, la version 0.5.0 « Le Labo Robot » dépend de
@@ -623,3 +623,36 @@ réussi du solveur transitoire, la phase 4 peut descendre à 8-10 jours.
 - les lignes 6-8, 192-193, 677 et 708-709 sont concernées ;
 - les identifiants de niveaux `meca-*`, `robo-*`, `vision-*`, `mission-*` ne
   changent pas.
+
+## 14. Validation finale (31 octobre 2026)
+
+- **Tests unitaires** : `pnpm verify` passe (typecheck, 129 tests `shared`,
+  87 tests API, 276 tests web, build).
+- **E2E** : 168 tests sur les sept profils Playwright, soit 24 scénarios par
+  profil. Un fichier par chapitre : `chapter5-sound`, `chapter6-diode`,
+  `chapter7-magnet`, `chapter8-sensor`, `chapter9-capacitor`.
+- **Captures** : les 14 captures de référence (7 appareils × 2 écrans) sont
+  régénérées et relues ; aucune ne change.
+- **Budget** : `pnpm build:report` donne 168,12 Ko de JavaScript initial en
+  gzip, sous le budget de 300 Ko.
+- **Dépendances** : `pnpm audit --prod --audit-level=high` ne signale aucune
+  vulnérabilité connue.
+- **Transitoire** : la physique reste à 16 ms, mais la vue ne publie qu'à
+  20 Hz et s'arrête quand les tensions ne changent plus. Mesures :
+  - Galaxy Tab S4 (Chromium) : 16,7 ms p50 et p95, au repos comme en décharge.
+  - iPad paysage (WebKit headless sur aarch64) : niveau statique 55 ms p50 /
+    84 ms p95 ; transitoire au repos 67/101 ms ; décharge 61/296 ms.
+  - Avant le throttle : décharge 89 ms p50 / 351 ms p95.
+  - Le contrôle manuel sur iPad réel reste décrit dans `TESTING.md`.
+- **Défauts corrigés pendant la validation** :
+  - le bouton « Vider » était inaccessible sur les condensateurs verrouillés ;
+    la barre de sélection montre maintenant uniquement « Vider » pour eux ;
+  - l'indice `diode_reversed` était masqué par un `simulation.ok` vrai et
+    remplacé par l'indice générique du niveau ; il est désormais prioritaire ;
+  - l'aimant libre démarrait sous la bulle de Zap sur tablette ; il démarre
+    maintenant dans le coin supérieur droit ;
+  - `mag-04` plaçait une pile sous Zap et l'ampoule sous les commandes de
+    zoom sur téléphone ; les deux circuits sont remontés au-dessus de la
+    bande inférieure occupée par Zap, la corbeille et le zoom.
+- **Déploiement** : la version 0.4.0 est déployée sur l'environnement de
+  développement et le bundle servi correspond au build local.

@@ -81,7 +81,11 @@ Les enfants de test utilisent la suite d’images Renard, Pomme, Ballon.
 | `e2e/permissions.spec.ts` | L’encadrante B reçoit `403 forbidden` et un message d’accès refusé sur la fiche d’un élève du groupe A. |
 | `e2e/chapter2.spec.ts` | Chapitre 2 : sélection du variateur verrouillé et glissement du grand curseur jusqu’à obtenir une ampoule faible, sur les sept profils. |
 | `e2e/chapter3.spec.ts` | Chapitre 3 : câblage d’un circuit combiné et réussite du niveau. |
-| `e2e/chapter5.spec.ts` | Chapitres 5, 6 et 9 : sonnerie, diode et condensateur transitoire, sur les sept profils. |
+| `e2e/chapter5-sound.spec.ts` | Chapitre 5 : sonnerie et deux interrupteurs en série. |
+| `e2e/chapter6-diode.spec.ts` | Chapitre 6 : diode dans le bon sens, puis diode à l’envers avec l’indice de Zap. |
+| `e2e/chapter7-magnet.spec.ts` | Chapitre 7 : électroaimant, aimant déplacé vers la lame souple et relais à quatre bornes. |
+| `e2e/chapter8-sensor.spec.ts` | Chapitre 8 : photorésistance, veilleuse automatique de nuit et panneau solaire. |
+| `e2e/chapter9-capacitor.spec.ts` | Chapitre 9 : charge puis décharge maintenant la lampe allumée, et condensateur préchargé. |
 | `e2e/challenges.spec.ts` | Chapitre 4 : génération et renouvellement d’un défi. |
 | `e2e/screenshots.spec.ts` | Capture de la carte et de l’écran de niveau sur chaque appareil, avec contrôle du point de rupture. |
 

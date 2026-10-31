@@ -236,8 +236,10 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const [wirePreview, setWirePreview] = useState<WirePreview | null>(null);
   const [magnet, setMagnet] = useState<Point>({
-    x: CELL_SIZE * 1.4,
-    y: board.height - CELL_SIZE * 1.4,
+    // Keep the free magnet in the top-right corner: Zap and the palette own
+    // the bottom-left, and the trash and zoom controls own the bottom-right.
+    x: board.width - CELL_SIZE * 1.4,
+    y: CELL_SIZE * 1.4,
   });
 
   const panEnabled = pannable || view.zoom > 1.0001;
@@ -1338,6 +1340,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
       selectedComponent !== undefined &&
       dragPreview === null &&
       (selectedComponent.type === 'rheostat' ||
+        selectedComponent.type === 'capacitor' ||
         !lockedComponentIds.includes(selectedComponent.id)) ? (
         selectedComponent.type === 'rheostat' ? (
           <RheostatToolbar
@@ -1356,6 +1359,7 @@ export const WorkbenchSvg = memo(function WorkbenchSvg({
             board={board}
             compact={isCompact}
             viewportScale={scale}
+            locked={lockedComponentIds.includes(selectedComponent.id)}
             onRotate={() => onRotateComponent(selectedComponent.id)}
             onDelete={onDeleteSelection}
             onEmpty={
@@ -1498,6 +1502,7 @@ interface SelectionToolbarProps {
   board: BoardDimensions;
   compact: boolean;
   viewportScale: number;
+  locked: boolean;
   onRotate: () => void;
   onDelete: () => void;
   onEmpty?: (() => void) | undefined;
@@ -1510,6 +1515,7 @@ function SelectionToolbar({
   board,
   compact,
   viewportScale,
+  locked,
   onRotate,
   onDelete,
   onEmpty,
@@ -1519,7 +1525,11 @@ function SelectionToolbar({
   const visualScale = buttonSize / 72;
   const gap = 8 * visualScale;
   const padding = 6 * visualScale;
-  const buttonCount = onEmpty === undefined ? 2 : 3;
+  const showRotate = !locked;
+  const showEmpty = onEmpty !== undefined;
+  const showDelete = !locked;
+  const buttonCount =
+    (showRotate ? 1 : 0) + (showEmpty ? 1 : 0) + (showDelete ? 1 : 0);
   const width = padding * 2 + buttonSize * buttonCount + gap * (buttonCount - 1);
   const height = padding * 2 + buttonSize;
   const { left, top } = chooseToolbarPosition(
@@ -1529,6 +1539,21 @@ function SelectionToolbar({
     height,
     board,
   );
+
+  let nextX = padding;
+  const rotateX = nextX;
+
+  if (showRotate) {
+    nextX += buttonSize + gap;
+  }
+
+  const emptyX = nextX;
+
+  if (showEmpty) {
+    nextX += buttonSize + gap;
+  }
+
+  const deleteX = nextX;
 
   return (
     <g transform={`translate(${left} ${top})`} data-toolbar="true">
@@ -1541,18 +1566,20 @@ function SelectionToolbar({
         strokeWidth={2}
         pointerEvents="none"
       />
-      <ToolbarButton
-        x={padding}
-        y={padding}
-        size={buttonSize}
-        viewportScale={viewportScale}
-        label={fr.workbench.rotate}
-        icon="rotate"
-        onActivate={onRotate}
-      />
-      {onEmpty === undefined ? null : (
+      {showRotate ? (
         <ToolbarButton
-          x={padding + buttonSize + gap}
+          x={rotateX}
+          y={padding}
+          size={buttonSize}
+          viewportScale={viewportScale}
+          label={fr.workbench.rotate}
+          icon="rotate"
+          onActivate={onRotate}
+        />
+      ) : null}
+      {showEmpty ? (
+        <ToolbarButton
+          x={emptyX}
           y={padding}
           size={buttonSize}
           viewportScale={viewportScale}
@@ -1560,17 +1587,19 @@ function SelectionToolbar({
           icon="empty"
           onActivate={onEmpty}
         />
-      )}
-      <ToolbarButton
-        x={padding + (buttonSize + gap) * (buttonCount - 1)}
-        y={padding}
-        size={buttonSize}
-        viewportScale={viewportScale}
-        label={fr.workbench.delete}
-        icon="trash"
-        tone="danger"
-        onActivate={onDelete}
-      />
+      ) : null}
+      {showDelete ? (
+        <ToolbarButton
+          x={deleteX}
+          y={padding}
+          size={buttonSize}
+          viewportScale={viewportScale}
+          label={fr.workbench.delete}
+          icon="trash"
+          tone="danger"
+          onActivate={onDelete}
+        />
+      ) : null}
     </g>
   );
 }
