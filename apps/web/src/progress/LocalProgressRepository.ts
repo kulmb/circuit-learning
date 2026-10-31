@@ -25,6 +25,12 @@ export interface StoredAttempt {
   endedAt: number;
 }
 
+export interface GuestRecord {
+  completedLevels: number;
+  stars: number;
+  attempts: number;
+}
+
 interface StoredState {
   version: 1;
   levels: Record<string, LevelProgress>;
@@ -148,6 +154,29 @@ export class LocalProgressRepository implements ProgressRepository {
       ...attempt,
       errorsDetected: [...attempt.errorsDetected],
     }));
+  }
+
+  /**
+   * Summary shown to a guest on the level map. It only describes progress and
+   * attempts; workshop creations stay out of the record and survive a reset.
+   */
+  getGuestRecord(): GuestRecord {
+    const state = this.readState();
+    let completedLevels = 0;
+    let stars = 0;
+
+    for (const progress of Object.values(state.levels)) {
+      if (progress.status === 'completed') {
+        completedLevels += 1;
+        stars += progress.stars;
+      }
+    }
+
+    return {
+      completedLevels,
+      stars,
+      attempts: state.attempts.length,
+    };
   }
 
   hasGuestProgress(): boolean {

@@ -539,7 +539,11 @@ d’atelier sont mis en file ; ils sont rejoués dans l’ordre au retour de
 se recharge sur l’événement `circuits:progress-synced`.
 
 Sans session enfant, l’application utilise `LocalProgressRepository` : c’est le
-mode invité, signalé sur la carte des niveaux. Après une connexion enfant, si
+mode invité, signalé sur la carte des niveaux. La carte affiche aussi un petit
+record d’invité (niveaux terminés, étoiles, parties). Le bouton « Effacer ma
+progression » demande confirmation, remet ces compteurs à zéro et vide
+l’historique des tentatives ; les créations de l’atelier sont conservées. Après
+une connexion enfant, si
 l’appareil contient une progression d’invité, une boîte de dialogue demande à
 l’adulte s’il faut la fusionner ; les tentatives sont rejouées avec des
 identifiants déterministes pour qu’une fusion interrompue reste sans doublon.

@@ -241,6 +241,18 @@ export const texts = {
   'map.final': 'Chapitre terminé !',
   'map.guestNotice':
     'Tu joues en invité. Ta progression reste sur cet appareil.',
+  'map.guestRecordTitle': 'Ma progression d’invité',
+  'map.guestRecordLevels': 'Niveaux terminés',
+  'map.guestRecordStars': 'Étoiles',
+  'map.guestRecordAttempts': 'Parties',
+  'map.guestRecordEmpty': 'Aucune partie enregistrée pour l’instant.',
+  'map.guestRecordDelete': 'Effacer ma progression',
+  'map.guestRecordConfirmTitle': 'Effacer ta progression ?',
+  'map.guestRecordConfirmText':
+    'Tes niveaux et tes étoiles seront effacés. Tes créations restent.',
+  'map.guestRecordConfirmYes': 'Oui, effacer',
+  'map.guestRecordConfirmNo': 'Non, garder',
+  'map.guestRecordDeleted': 'Ta progression a été effacée.',
   'map.collection': 'Ma collection',
   'map.sandbox': 'Atelier libre',
   'map.bye': 'Au revoir',

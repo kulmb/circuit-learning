@@ -180,6 +180,18 @@ export const textsEn: Record<TextId, string> = {
   'map.final': 'Chapter complete!',
   'map.guestNotice':
     'You are playing as a guest. Your progress stays on this device.',
+  'map.guestRecordTitle': 'My guest progress',
+  'map.guestRecordLevels': 'Levels completed',
+  'map.guestRecordStars': 'Stars',
+  'map.guestRecordAttempts': 'Games',
+  'map.guestRecordEmpty': 'No game saved yet.',
+  'map.guestRecordDelete': 'Erase my progress',
+  'map.guestRecordConfirmTitle': 'Erase your progress?',
+  'map.guestRecordConfirmText':
+    'Your levels and stars will be erased. Your creations stay.',
+  'map.guestRecordConfirmYes': 'Yes, erase',
+  'map.guestRecordConfirmNo': 'No, keep',
+  'map.guestRecordDeleted': 'Your progress has been erased.',
   'map.collection': 'My collection',
   'map.sandbox': 'Free workshop',
   'map.bye': 'Goodbye',

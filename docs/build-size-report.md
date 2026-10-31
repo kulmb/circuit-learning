@@ -1,14 +1,14 @@
 # Rapport de taille des ressources
 
-Généré le 2026-10-31 14:26 UTC depuis `apps/web/dist`.
+Généré le 2026-10-31 15:45 UTC depuis `apps/web/dist`.
 
 ## Budget du premier écran
 
 | Mesure | Taille gzip | Budget | État |
 |---|---:|---:|:---:|
-| JavaScript initial | 168.12 Ko | 300 Ko | OK |
+| JavaScript initial | 168.55 Ko | 300 Ko | OK |
 | CSS initial | 4.78 Ko | — | information |
-| Total JS + CSS initial | 172.91 Ko | — | information |
+| Total JS + CSS initial | 173.33 Ko | — | information |
 
 Le JavaScript initial est le script module référencé par `index.html`.
 `GameShell` (écrans de jeu et définitions de niveaux), `AdminApp` et
@@ -19,7 +19,7 @@ téléchargées qu’à l’ouverture de leur route.
 
 | Fichier | Brut | Gzip |
 |---|---:|---:|
-| `/assets/index-DleI1wo-.js` | 560.63 Ko | 168.12 Ko |
+| `/assets/index-mHsOJdSl.js` | 562.48 Ko | 168.55 Ko |
 
 ## CSS initial
 
@@ -33,11 +33,11 @@ Ces fichiers ne sont pas présents sur le premier écran.
 
 | Fichier | Brut | Gzip |
 |---|---:|---:|
-| `/assets/AdminApp-_JsfzXd_.js` | 453.42 Ko | 125.42 Ko |
-| `/assets/GameShell-Bu9U0hNt.js` | 142.78 Ko | 39.73 Ko |
-| `/assets/ParentSettingsPage-DpJTpUgC.js` | 6.54 Ko | 1.70 Ko |
-| `/assets/haptics-C3XkECzL.js` | 0.28 Ko | 0.21 Ko |
-| `/assets/levels-BAKbuD0K.js` | 49.47 Ko | 10.03 Ko |
+| `/assets/AdminApp-DdfO5aNP.js` | 453.42 Ko | 125.42 Ko |
+| `/assets/GameShell-Cf2KnGbH.js` | 144.84 Ko | 40.12 Ko |
+| `/assets/ParentSettingsPage-tfvC-gII.js` | 6.54 Ko | 1.70 Ko |
+| `/assets/haptics-D1k5XMfP.js` | 0.28 Ko | 0.21 Ko |
+| `/assets/levels-B57WoRJ6.js` | 49.47 Ko | 10.03 Ko |
 | `/assets/workbox-window.prod.es5-BqEJf4Xk.js` | 5.71 Ko | 2.34 Ko |
 
 ## CSS chargé à la demande
@@ -45,7 +45,7 @@ Ces fichiers ne sont pas présents sur le premier écran.
 | Fichier | Brut | Gzip |
 |---|---:|---:|
 | `/assets/AdminApp-CApOn6fC.css` | 17.30 Ko | 4.01 Ko |
-| `/assets/GameShell-D5FI5NVh.css` | 55.33 Ko | 9.60 Ko |
+| `/assets/GameShell-CsSDXbRa.css` | 57.66 Ko | 9.98 Ko |
 | `/assets/ParentSettingsPage-CmvvkCYX.css` | 6.27 Ko | 1.55 Ko |
 
 ## Fichiers PWA
