@@ -16,6 +16,10 @@ import { getText } from '../narration/fr';
 import {
   PROGRESS_SYNCED_EVENT,
 } from '../progress/ApiProgressRepository';
+import {
+  localProgressRepository,
+  type GuestRecord,
+} from '../progress/LocalProgressRepository';
 import { useProgress } from '../progress/ProgressContext';
 import './LevelMapPage.css';
 
@@ -36,6 +40,9 @@ export function LevelMapPage({
   const [progress, setProgress] = useState<PlayerProgress | null>(null);
   const { repository, isGuest, ready, session, logout } = useProgress();
   const child = session?.user.role === 'eleve' ? session.user : null;
+  const [guestRecord, setGuestRecord] = useState<GuestRecord | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteDone, setDeleteDone] = useState(false);
 
   useEffect(() => {
     if (!ready) {
@@ -44,8 +51,13 @@ export function LevelMapPage({
 
     let active = true;
     setProgress(null);
+    setGuestRecord(isGuest ? localProgressRepository.getGuestRecord() : null);
 
     const reload = (): void => {
+      if (isGuest) {
+        setGuestRecord(localProgressRepository.getGuestRecord());
+      }
+
       void repository.getProgress().then((value) => {
         if (active) {
           setProgress(value);
@@ -60,7 +72,31 @@ export function LevelMapPage({
       active = false;
       window.removeEventListener(PROGRESS_SYNCED_EVENT, reload);
     };
-  }, [ready, repository]);
+  }, [isGuest, ready, repository]);
+
+  useEffect(() => {
+    if (!confirmDelete) {
+      return;
+    }
+
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [confirmDelete]);
+
+  function deleteGuestRecord(): void {
+    if (!isGuest) {
+      return;
+    }
+
+    localProgressRepository.resetLocalProgress();
+    setGuestRecord(localProgressRepository.getGuestRecord());
+    setConfirmDelete(false);
+    setDeleteDone(true);
+    void repository.getProgress().then(setProgress);
+  }
 
   return (
     <div className="level-map">
@@ -131,9 +167,55 @@ export function LevelMapPage({
       </div>
 
       {isGuest && ready ? (
-        <p className="level-map__guest" role="status">
-          {getText('map.guestNotice')}
-        </p>
+        <section
+          className="level-map__guest"
+          aria-label={getText('map.guestRecordTitle')}
+        >
+          <p className="level-map__guest-notice">
+            {getText('map.guestNotice')}
+          </p>
+
+          {guestRecord !== null ? (
+            guestRecord.attempts > 0 || guestRecord.completedLevels > 0 ? (
+              <div className="level-map__guest-record">
+                <h2>{getText('map.guestRecordTitle')}</h2>
+                <dl className="level-map__guest-stats">
+                  <div>
+                    <dt>{getText('map.guestRecordLevels')}</dt>
+                    <dd>{guestRecord.completedLevels}</dd>
+                  </div>
+                  <div>
+                    <dt>{getText('map.guestRecordStars')}</dt>
+                    <dd>{guestRecord.stars}</dd>
+                  </div>
+                  <div>
+                    <dt>{getText('map.guestRecordAttempts')}</dt>
+                    <dd>{guestRecord.attempts}</dd>
+                  </div>
+                </dl>
+                <button
+                  type="button"
+                  className="level-map__guest-delete"
+                  onPointerDown={(event) =>
+                    activate(event, () => setConfirmDelete(true))
+                  }
+                >
+                  {getText('map.guestRecordDelete')}
+                </button>
+              </div>
+            ) : (
+              <p className="level-map__guest-empty">
+                {getText('map.guestRecordEmpty')}
+              </p>
+            )
+          ) : null}
+
+          {deleteDone ? (
+            <p className="level-map__guest-done" role="status">
+              {getText('map.guestRecordDeleted')}
+            </p>
+          ) : null}
+        </section>
       ) : null}
 
       {!ready || progress === null ? (
@@ -165,6 +247,42 @@ export function LevelMapPage({
           </section>
         ))
       )}
+
+      {confirmDelete ? (
+        <div
+          className="level-map__confirm-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="guest-delete-confirm-title"
+        >
+          <section className="level-map__confirm">
+            <h2 id="guest-delete-confirm-title">
+              {getText('map.guestRecordConfirmTitle')}
+            </h2>
+            <p>{getText('map.guestRecordConfirmText')}</p>
+            <div className="level-map__confirm-actions">
+              <button
+                type="button"
+                className="level-map__guest-delete"
+                onPointerDown={(event) =>
+                  activate(event, deleteGuestRecord)
+                }
+              >
+                {getText('map.guestRecordConfirmYes')}
+              </button>
+              <button
+                type="button"
+                className="level-map__guest-cancel"
+                onPointerDown={(event) =>
+                  activate(event, () => setConfirmDelete(false))
+                }
+              >
+                {getText('map.guestRecordConfirmNo')}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

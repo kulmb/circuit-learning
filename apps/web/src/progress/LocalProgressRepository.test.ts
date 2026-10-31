@@ -215,7 +215,19 @@ describe('LocalProgressRepository', () => {
       data: serializeCircuit({ components: [], wires: [] }),
     });
 
+    expect(repository.getGuestRecord()).toEqual({
+      completedLevels: 1,
+      stars: 3,
+      attempts: 1,
+    });
+
     repository.resetLocalProgress();
+
+    expect(repository.getGuestRecord()).toEqual({
+      completedLevels: 0,
+      stars: 0,
+      attempts: 0,
+    });
 
     const progress = await repository.getProgress();
     expect(progress.levels['light-01']?.status).toBe('unlocked');
